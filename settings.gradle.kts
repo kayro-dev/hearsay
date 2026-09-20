@@ -12,3 +12,4 @@ plugins {
 
 rootProject.name = "hearsay"
 include("core")
+include("cli")
