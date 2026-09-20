@@ -34,8 +34,14 @@ final class Displays {
     private static final float LABEL_HEIGHT = 0.9f;
 
     private final Map<Integer, UUID> labels = new LinkedHashMap<>();
+    /**
+     * Says there is no market rather than showing a dash, which reads as a fault. Villagers
+     * have no position until they are seen meeting somebody, so the market cannot open
+     * until enough of them have been, however far a rumor has got in the meantime.
+     */
     private final BossBar priceBar = BossBar.bossBar(
-            Component.text("Diamond price: -"), 0.5f, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+            Component.text("Diamonds: no market yet", NamedTextColor.GRAY),
+            0.0f, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
 
     void showPriceBarTo(Player player) {
         player.showBossBar(priceBar);

@@ -28,7 +28,8 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 2 | `/hearsay status` before starting | "Nothing bound", not an error |
 | 3 | Stand in a village, `/hearsay start` | "Bound N villagers, seed …" with N matching roughly what you can see. If N is under 20 it warns you, and it should: see the limits below |
 | 4 | `/hearsay start` again | Refuses, telling you to stop first |
-| 5 | Watch for a minute | A price bar at the top of the screen; no text above any head yet, because nobody has heard anything |
+| 5 | Watch for a minute | A price bar reading "Diamonds: no market yet"; no text above any head yet, because nobody has heard anything |
+| 5b | Keep watching | The bar shows a price once enough villagers have been seen meeting — a few ticks. It waits on positions, not on beliefs, so it can stay empty while a rumor is already spreading |
 | 6 | Stand next to a villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce" |
 | 7 | Wait one tick (10s) | **Gold** text above that villager: `Diamonds scarce? 100%`. Gold because they are certain — you told them. Grey is for villagers who have merely heard it from someone else |
 | 8 | Watch that villager walk | The label stays over their head as they move, with no lag and without being left behind at a workstation |
@@ -73,6 +74,11 @@ These are deliberate, not bugs to report:
   the next piece of work.
 - **A villager standing alone at the market is invisible to the price**, because only pairs
   are reported.
+- **The market never closes once it has opened.** A villager's spot only changes when
+  another meeting moves them, and every meeting is reported as being at the market, so after
+  the first few ticks the whole village is standing in the marketplace for good. The quorum
+  stops mattering: sweeping it from 3 to 6 changes neither when the first price appears nor
+  how many ticks have one. This goes away once locations are mapped to spots properly.
 - **One village at a time**, and the binding is lost if the server restarts mid-session.
 - **Many worlds cannot be asked of a played session.** Forking needs futures to roll, and
   Minecraft decided where everybody walked exactly once. A played session answers "what
