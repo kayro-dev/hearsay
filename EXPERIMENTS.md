@@ -994,3 +994,66 @@ the feedback loop that the whole model rests on.
 **Decision.** Nothing changed. The mapping from where a villager stands to what spot that
 makes them is the thing to fix, and it cannot be swept from these traces, because a trace
 records the spot that was decided and not the position it was decided from.
+
+---
+
+## E13 — Sweeping the rule that decides where a villager is
+
+The first sweep of the one number that had never been swept. A survey records where every
+villager stood and how far they were from their bed and their workstation, so a played
+session's entire input stream can be built again under a different rule and run: who was
+near enough to whom to talk, and what spot each of them counted as.
+
+One session: 14 villagers, 449 ticks, 5,893 sightings, two rumors planted. Talking range
+held at 6 blocks throughout; what varies is how near a villager must be to their bed or
+workstation to count as being there, and whether a villager out walking the village counts
+as somewhere to trade.
+
+```
+  range  wandering counts   meetings/tick   at market   ticks priced   peak$   believers   bubbles
+      3                 no            2.47         4.9            21%     107           2         0
+      3                yes            2.47        11.0            82%     130           2         0
+      6                 no            2.46         6.3            35%     108           2         0
+      6                yes            2.46        11.0            76%     122           2         0
+     10                 no            2.43         6.2            39%     129           1         0
+     10                yes            2.43        10.5            76%     122           2         0
+     16                 no            2.39         6.3            43%     129           2         0
+     16                yes            2.39        10.1            74%     122           1         0
+     24                 no            2.35         6.2            43%     129           6         0
+     24                yes            2.35         9.3            73%     142           6         2
+```
+
+**Widening the range is the fix; counting wandering as trade is not.** Going from 3 blocks
+to 10 doubles the share of ticks with a price, 21% to 39%, and lifts the peak from 107 to
+129. It does that by taking the market from 4.9 villagers to 6.2 of 14, which is 44% of the
+village — almost exactly the share the headless model puts in its market by construction.
+Counting the village at large as a marketplace also opens the market, to 73-82% of ticks,
+but it does so by putting 9 to 11 of 14 villagers in it, 66% to 79% of the village. That is
+the degenerate market of E9 and E11 arrived at for the third time, and it should be refused
+for the third time.
+
+**Three blocks was simply too tight.** E12 measured villagers spending 5% of their time at a
+workstation and read it as a fact about Minecraft villagers. It was mostly a fact about the
+number three: at ten blocks the same villagers are in the market 44% of the time.
+
+**It is necessary and might not be sufficient.** The peak price settles at 129 across
+ranges 10 to 24 with wandering off, and a bubble needs 130. No cell without wandering
+produced one. The market now opens; the price still barely reaches the level that counts as
+a bubble, and the remaining gap is a small village with few believers rather than an empty
+market.
+
+**This rests on one session with two lies.** Believers move between 1 and 6 across cells
+that differ little otherwise, which is more noise than signal at this sample size. The
+direction is clear and the size of the effect is not.
+
+**Decision.** Nothing changed. Proposed: raise `SpotMapper.AT_A_PLACE` from 3 to 10, which
+is the smallest range that reaches the market attendance the model was built around, and
+leave wandering out of the market.
+
+A bug worth recording, because it nearly cost the session. The survey was written with
+`String.format` and no locale, and the server's JVM writes decimals with a comma, so every
+number split into two columns and the file was unreadable: `139,46` where `139.46` was
+meant. Every row held exactly 13 fields rather than 8, which made it repairable without
+loss, and the sweep above ran on the repaired file. Every file-writing format call in the
+project is now pinned to `Locale.ROOT`, with a test that writes a survey under a
+comma-decimal locale and reads it back.

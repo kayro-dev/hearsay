@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -53,7 +54,7 @@ public final class Sweep {
         List<Double> thresholds = doubles(options.getOrDefault("tell", "0.2,0.3,0.4"));
         Path csv = Path.of(options.getOrDefault("csv", "sweep.csv"));
 
-        System.out.printf("Sweep: %d seeds (%d..%d), %d ticks, %d combinations%n",
+        System.out.printf(Locale.ROOT, "Sweep: %d seeds (%d..%d), %d ticks, %d combinations%n",
                 seeds, firstSeed, firstSeed + seeds - 1, ticks, decays.size() * thresholds.size());
         System.out.println("Planted in each seed's gossipiest villager, one rumor on tick 1.");
         System.out.println();
@@ -136,13 +137,13 @@ public final class Sweep {
                 System.out.println();
             }
             lastDecay = row.dailyDecay();
-            System.out.printf("   %.2f  %.1f   %5.1f  %4d  %4d   %12s   %12.1f   %9.1f   %6s   %9s   %10.1f%n",
+            System.out.printf(Locale.ROOT, "   %.2f  %.1f   %5.1f  %4d  %4d   %12s   %12.1f   %9.1f   %6s   %9s   %10.1f%n",
                     row.dailyDecay(), row.tellThreshold(), row.meanPeakBelieves(),
                     row.p10PeakBelieves(), row.p90PeakBelieves(),
                     percent(row.shareReachingHalf()), row.meanDaysWithBeliever(),
                     row.meanDaysAtHalfPeak(),
                     Double.isNaN(row.meanMedianSpellDays()) ? "-"
-                            : String.format("%.1f", row.meanMedianSpellDays()),
+                            : String.format(Locale.ROOT, "%.1f", row.meanMedianSpellDays()),
                     percent(row.shareOvershooting()), row.meanPeakHeard());
         }
     }
@@ -163,7 +164,7 @@ public final class Sweep {
                     + "meanDaysWithBeliever,meanDaysAtHalfPeak,meanMedianSpellDays,"
                     + "seedsWithASpell,shareOvershooting,meanPeakHeard");
             for (SweepStats.Summary row : table) {
-                out.printf("%.2f,%.2f,%d,%d,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%.3f%n",
+                out.printf(Locale.ROOT, "%.2f,%.2f,%d,%d,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%.3f%n",
                         row.dailyDecay(), row.tellThreshold(), row.seeds(), firstSeed, ticks,
                         row.meanPeakBelieves(), row.p10PeakBelieves(), row.p90PeakBelieves(),
                         row.shareReachingHalf(), row.meanDaysWithBeliever(),

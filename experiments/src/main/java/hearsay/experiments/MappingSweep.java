@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -73,9 +74,9 @@ public final class MappingSweep {
         for (Sighting sighting : survey) {
             byTick.computeIfAbsent(sighting.tick(), t -> new ArrayList<>()).add(sighting);
         }
-        System.out.printf("Survey: %d sightings over %d ticks, %d villagers, %d lies planted.%n",
+        System.out.printf(Locale.ROOT, "Survey: %d sightings over %d ticks, %d villagers, %d lies planted.%n",
                 survey.size(), byTick.size(), played.params().villagers(), lies.size());
-        System.out.printf("Rebuilding who met whom at a talking range of %.0f blocks.%n%n",
+        System.out.printf(Locale.ROOT, "Rebuilding who met whom at a talking range of %.0f blocks.%n%n",
                 talkingRange);
         System.out.println("  range  wandering counts   meetings/tick   at market   ticks priced"
                 + "   peak$   believers   bubbles");
@@ -147,11 +148,11 @@ public final class MappingSweep {
                 sellers += price.askingVillagers();
             }
         }
-        System.out.printf("  %5.0f %18s %15.2f %11.1f %14s %7d %11d %9d%n",
+        System.out.printf(Locale.ROOT, "  %5.0f %18s %15.2f %11.1f %14s %7d %11d %9d%n",
                 range, wanderingTrades ? "yes" : "no", meetings / (double) ticks,
                 priced == 0 ? 0 : sellers / priced, percent(priced / (double) ticks),
                 stats.peakPrice(), stats.peakBelievers(), stats.bubbles().size());
-        return String.format("%.0f,%s,%.3f,%.2f,%.4f,%d,%d,%d", range, wanderingTrades,
+        return String.format(Locale.ROOT, "%.0f,%s,%.3f,%.2f,%.4f,%d,%d,%d", range, wanderingTrades,
                 meetings / (double) ticks, priced == 0 ? 0 : sellers / priced,
                 priced / (double) ticks, stats.peakPrice(), stats.peakBelievers(),
                 stats.bubbles().size());

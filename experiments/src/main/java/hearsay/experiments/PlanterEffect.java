@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -60,11 +61,11 @@ public final class PlanterEffect {
         Params params = Params.defaults();
         Path csv = Path.of(options.getOrDefault("csv", "planters.csv"));
 
-        System.out.printf("Planters: %d villages of %d, each villager told in turn, "
+        System.out.printf(Locale.ROOT, "Planters: %d villages of %d, each villager told in turn, "
                         + "%d futures each.%n", villages, params.villagers(), worlds);
-        System.out.printf("Forked from a shared history at tick %d; world w uses the same "
+        System.out.printf(Locale.ROOT, "Forked from a shared history at tick %d; world w uses the same "
                 + "branch seed whoever is told.%n", toldAt - 1);
-        System.out.printf("That is %d runs.%n%n",
+        System.out.printf(Locale.ROOT, "That is %d runs.%n%n",
                 villages * (params.villagers() * worlds + worlds));
 
         List<String> rows = new ArrayList<>();
@@ -99,7 +100,7 @@ public final class PlanterEffect {
                 Villager villager = villageState.villager(planter);
                 gossipAgainstOutcome.add(new double[] {villager.traits().gossip(),
                         planterMeans[planter]});
-                rows.add(String.format("%d,%d,%s,%.3f,%.4f,%.4f", seed, planter,
+                rows.add(String.format(Locale.ROOT, "%d,%d,%s,%.3f,%.4f,%.4f", seed, planter,
                         villager.name(), villager.traits().gossip(), planterMeans[planter],
                         Math.sqrt(variance(outcomes[planter]))));
             }
@@ -108,18 +109,18 @@ public final class PlanterEffect {
             totalWithin += within;
             totalBetween += between;
 
-            System.out.printf("  %7d %24.3f %25.3f %23s%n", seed, Math.sqrt(within),
+            System.out.printf(Locale.ROOT, "  %7d %24.3f %25.3f %23s%n", seed, Math.sqrt(within),
                     Math.sqrt(between), percent(between / (between + within)));
         }
 
         double within = totalWithin / villages;
         double between = totalBetween / villages;
         System.out.println();
-        System.out.printf("  mean spread within a planter (luck):        %.3f%n", Math.sqrt(within));
-        System.out.printf("  mean spread between planters (who):         %.3f%n", Math.sqrt(between));
-        System.out.printf("  share of variation explained by who is told: %s%n",
+        System.out.printf(Locale.ROOT, "  mean spread within a planter (luck):        %.3f%n", Math.sqrt(within));
+        System.out.printf(Locale.ROOT, "  mean spread between planters (who):         %.3f%n", Math.sqrt(between));
+        System.out.printf(Locale.ROOT, "  share of variation explained by who is told: %s%n",
                 percent(between / (between + within)));
-        System.out.printf("  gossip against a planter's average outcome:  r = %.2f (n = %d)%n",
+        System.out.printf(Locale.ROOT, "  gossip against a planter's average outcome:  r = %.2f (n = %d)%n",
                 correlation(gossipAgainstOutcome), gossipAgainstOutcome.size());
 
         if (csv.getParent() != null) {

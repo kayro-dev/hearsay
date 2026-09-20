@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Reading and writing a survey: where every villager stood, every tick, alongside the
@@ -28,7 +29,10 @@ public final class SurveyFile {
         List<String> lines = new ArrayList<>();
         lines.add(HEADER);
         for (Sighting sighting : sightings) {
-            lines.add(String.format("%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%s",
+            // Locale.ROOT, or a machine whose language writes decimals with a comma
+            // produces a file whose every number splits into two columns. A server does
+            // not have to share the locale of whoever reads what it wrote.
+            lines.add(String.format(Locale.ROOT, "%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%s",
                     sighting.tick(), sighting.villagerId(), sighting.x(), sighting.y(),
                     sighting.z(), sighting.toBed(), sighting.toJobSite(),
                     sighting.jobSiteKind()));

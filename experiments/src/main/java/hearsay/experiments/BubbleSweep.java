@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -61,10 +62,10 @@ public final class BubbleSweep {
         double noiseDecay = Cli.doubleOption(options, "decay", Params.defaults().noiseDecay());
         Path csv = Path.of(options.getOrDefault("csv", "bubble.csv"));
 
-        System.out.printf("Bubble: %d seeds (%d..%d), %d ticks, %d settings, each run three ways%n",
+        System.out.printf(Locale.ROOT, "Bubble: %d seeds (%d..%d), %d ticks, %d settings, each run three ways%n",
                 seeds, firstSeed, firstSeed + seeds - 1, ticks,
                 observation.size() * sensitivity.size());
-        System.out.printf("Market noise %.3f carried at %.2f. A bubble peaks above %d "
+        System.out.printf(Locale.ROOT, "Market noise %.3f carried at %.2f. A bubble peaks above %d "
                 + "and comes back under %d.%n", noise, noiseDecay, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW);
         System.out.println();
 
@@ -156,7 +157,7 @@ public final class BubbleSweep {
                 System.out.println();
             }
             lastWeight = row.observationWeight();
-            System.out.printf(" %.2f  %.2f  %5s %6.1f %6s %5s |%6.1f %6s %5s |%5s %6.1f %6s%n",
+            System.out.printf(Locale.ROOT, " %.2f  %.2f  %5s %6.1f %6s %5s |%6.1f %6s %5s |%5s %6.1f %6s%n",
                     row.observationWeight(), row.priceSensitivity(),
                     percent(row.rumorAndFeedback().shareHalfBelieving()),
                     row.rumorAndFeedback().meanPeakPrice(),
@@ -172,7 +173,7 @@ public final class BubbleSweep {
     }
 
     private static String days(double value) {
-        return Double.isNaN(value) ? "-" : String.format("%.1f", value);
+        return Double.isNaN(value) ? "-" : String.format(Locale.ROOT, "%.1f", value);
     }
 
     private static String percent(double share) {
@@ -191,7 +192,7 @@ public final class BubbleSweep {
                     + "rumorOnlyHalfBelieving,rumorOnlyPeakPrice,rumorOnlyBurst,rumorOnlyBurstDays,"
                     + "quietAnyHolder,quietHalfBelieving,quietPeakPrice,quietBurst");
             for (Row row : table) {
-                out.printf("%.2f,%.2f,%d,%d,%d,%.3f,%.2f,%d,%d,"
+                out.printf(Locale.ROOT, "%.2f,%.2f,%d,%d,%d,%.3f,%.2f,%d,%d,"
                                 + "%.3f,%.2f,%.3f,%.2f,%.3f,%.2f,%.3f,%.2f,%.3f,%.3f,%.2f,%.3f%n",
                         row.observationWeight(), row.priceSensitivity(), seeds, firstSeed, ticks,
                         noise, noiseDecay, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW,

@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -44,10 +45,10 @@ public final class ManyWorlds {
 
         Params params = Params.defaults();
 
-        System.out.printf("Paired worlds over %d villages (seeds %d..%d), %d pairs each, "
+        System.out.printf(Locale.ROOT, "Paired worlds over %d villages (seeds %d..%d), %d pairs each, "
                         + "%d ticks, lie told on tick %d.%n",
                 seeds, firstSeed, firstSeed + seeds - 1, pairs, ticks, toldAt);
-        System.out.printf("That is %d worlds, run as %d pairs sharing a future within each pair.%n",
+        System.out.printf(Locale.ROOT, "That is %d worlds, run as %d pairs sharing a future within each pair.%n",
                 seeds * pairs * 2, seeds * pairs);
         System.out.println();
 
@@ -79,24 +80,24 @@ public final class ManyWorlds {
             totalPeakDifference += meanPeak * pairs;
             totalExtraCost += meanCost * pairs;
             perVillageShare.add(caused / (double) pairs);
-            rows.add(String.format("%d,%d,%d,%d,%d,%d,%d,%d,%.2f,%.2f",
+            rows.add(String.format(Locale.ROOT, "%d,%d,%d,%d,%d,%d,%d,%d,%.2f,%.2f",
                     seed, planter, pairs, ticks, toldAt, caused, withLie, without,
                     meanPeak, meanCost));
         }
 
         Collections.sort(perVillageShare);
-        System.out.printf("  pairs run:                       %d%n", totalPairs);
-        System.out.printf("  bubbled with the lie:            %d (%.1f%%)%n",
+        System.out.printf(Locale.ROOT, "  pairs run:                       %d%n", totalPairs);
+        System.out.printf(Locale.ROOT, "  bubbled with the lie:            %d (%.1f%%)%n",
                 bubbledWithTheLie, 100.0 * bubbledWithTheLie / totalPairs);
-        System.out.printf("  bubbled without it:              %d (%.1f%%)%n",
+        System.out.printf(Locale.ROOT, "  bubbled without it:              %d (%.1f%%)%n",
                 bubbledWithout, 100.0 * bubbledWithout / totalPairs);
-        System.out.printf("  the lie made the difference in:  %d (%.1f%%)%n",
+        System.out.printf(Locale.ROOT, "  the lie made the difference in:  %d (%.1f%%)%n",
                 causedByTheLie, 100.0 * causedByTheLie / totalPairs);
-        System.out.printf("  mean peak price effect:          %+.1f%n",
+        System.out.printf(Locale.ROOT, "  mean peak price effect:          %+.1f%n",
                 totalPeakDifference / totalPairs);
-        System.out.printf("  mean extra cost of a diamond a day: %+.1f%n",
+        System.out.printf(Locale.ROOT, "  mean extra cost of a diamond a day: %+.1f%n",
                 totalExtraCost / totalPairs);
-        System.out.printf("  per-village share the lie caused: p10 %.0f%%, median %.0f%%, p90 %.0f%%%n",
+        System.out.printf(Locale.ROOT, "  per-village share the lie caused: p10 %.0f%%, median %.0f%%, p90 %.0f%%%n",
                 100 * percentile(perVillageShare, 0.10), 100 * percentile(perVillageShare, 0.50),
                 100 * percentile(perVillageShare, 0.90));
 

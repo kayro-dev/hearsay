@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -52,7 +53,7 @@ public final class MarketWindow {
 
         if (trace != null) {
             Run played = RecipeFile.read(trace);
-            System.out.printf("Played: %s, %d villagers, %d ticks, quorum %d%n",
+            System.out.printf(Locale.ROOT, "Played: %s, %d villagers, %d ticks, quorum %d%n",
                     trace.getFileName(), played.params().villagers(), played.ticks(),
                     played.params().marketQuorum());
             System.out.println("  window   ticks priced   peak$   peak holders   peak believers   bubbles");
@@ -62,17 +63,17 @@ public final class MarketWindow {
                 MarketStats stats = MarketStats.of(again.log(), DIAMONDS_SCARCE);
                 long priced = again.log().stream().filter(e -> e instanceof MarketPriceSet).count();
 
-                System.out.printf("  %6.0f %13s %7d %14d %16d %9d%n", window,
+                System.out.printf(Locale.ROOT, "  %6.0f %13s %7d %14d %16d %9d%n", window,
                         percent(priced / (double) played.ticks()), stats.peakPrice(),
                         stats.peakHolders(), stats.peakBelievers(), stats.bubbles().size());
-                rows.add(String.format("played,%.0f,%.4f,%d,%d,%d,%d", window,
+                rows.add(String.format(Locale.ROOT, "played,%.0f,%.4f,%d,%d,%d,%d", window,
                         priced / (double) played.ticks(), stats.peakPrice(),
                         stats.peakHolders(), stats.peakBelievers(), stats.bubbles().size()));
             }
             System.out.println();
         }
 
-        System.out.printf("Headless model, %d villagers, %d seeds, a lie on tick 41:%n",
+        System.out.printf(Locale.ROOT, "Headless model, %d villagers, %d seeds, a lie on tick 41:%n",
                 Params.defaults().villagers(), seeds);
         System.out.println("  window   ticks priced   peak$   peak believers   bubbled within 30d");
         for (double window : windows) {
@@ -94,10 +95,10 @@ public final class MarketWindow {
                     bubbled++;
                 }
             }
-            System.out.printf("  %6.0f %13s %7.1f %16s %20s%n", window,
+            System.out.printf(Locale.ROOT, "  %6.0f %13s %7.1f %16s %20s%n", window,
                     percent(priced / seeds), peak / seeds, percent(believers / seeds),
                     percent(bubbled / (double) seeds));
-            rows.add(String.format("headless,%.0f,%.4f,%.2f,%.4f,%.4f", window,
+            rows.add(String.format(Locale.ROOT, "headless,%.0f,%.4f,%.2f,%.4f,%.4f", window,
                     priced / seeds, peak / seeds, believers / seeds, bubbled / (double) seeds));
         }
 

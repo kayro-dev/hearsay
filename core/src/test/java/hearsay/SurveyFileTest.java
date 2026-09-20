@@ -77,6 +77,29 @@ class SurveyFileTest {
     }
 
     @Test
+    void aSurveyIsWrittenTheSameWhateverTheMachineCallsADecimalPoint(@TempDir Path folder) {
+        // A server whose language writes decimals with a comma once produced a file where
+        // every number split into two columns, and the whole session was unreadable.
+        java.util.Locale was = java.util.Locale.getDefault();
+        try {
+            java.util.Locale.setDefault(java.util.Locale.GERMANY);
+            Path file = folder.resolve("survey.csv");
+
+            SurveyFile.write(A_FEW, file);
+
+            assertEquals(A_FEW, SurveyFile.read(file));
+            for (String line : Files.readAllLines(file).subList(1, A_FEW.size() + 1)) {
+                assertEquals(8, line.split(",").length,
+                        "a comma inside a number turns one column into two: " + line);
+            }
+        } catch (java.io.IOException e) {
+            throw new AssertionError(e);
+        } finally {
+            java.util.Locale.setDefault(was);
+        }
+    }
+
+    @Test
     void somethingThatIsNotASurveyIsRefused(@TempDir Path folder) throws Exception {
         Path file = folder.resolve("nope.csv");
         Files.writeString(file, "x,y,z\n1,2,3\n");

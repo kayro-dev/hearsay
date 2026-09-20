@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -49,11 +50,11 @@ public final class VillageSizes {
         MeetingTrace trace = options.containsKey("trace")
                 ? MeetingTrace.from(Path.of(options.get("trace"))) : null;
 
-        System.out.printf("Village sizes: %d seeds (%d..%d), %d ticks, lie on tick %d, "
+        System.out.printf(Locale.ROOT, "Village sizes: %d seeds (%d..%d), %d ticks, lie on tick %d, "
                         + "bubbles counted within %d days of it.%n",
                 seeds, firstSeed, firstSeed + seeds - 1, ticks, toldAt, window);
         if (trace != null) {
-            System.out.printf("Replaying %s: %d meetings recorded over %d ticks, naming %d "
+            System.out.printf(Locale.ROOT, "Replaying %s: %d meetings recorded over %d ticks, naming %d "
                             + "villagers.%n",
                     trace.name(), trace.scheduleFor(Simulation.MOST_VILLAGERS, trace.ticks()).size(),
                     trace.ticks(), trace.villagersSeen());
@@ -82,7 +83,7 @@ public final class VillageSizes {
         table.forEach(VillageSizes::print);
         if (trace != null) {
             System.out.println();
-            System.out.printf("  The played row rests on one recorded session of %d villagers, "
+            System.out.printf(Locale.ROOT, "  The played row rests on one recorded session of %d villagers, "
                     + "replayed under %d seeds.%n", trace.villagersSeen(), seeds);
             System.out.println("  Different seeds give those same bodies different "
                     + "personalities, but the meetings");
@@ -141,7 +142,7 @@ public final class VillageSizes {
                        double beliefOnsetsPerHundredDays, double peakPrice) {}
 
     private static void print(Row row) {
-        System.out.printf("  %-11s %4d %9s %16s %9.2f %15.2f %7.1f%n",
+        System.out.printf(Locale.ROOT, "  %-11s %4d %9s %16s %9.2f %15.2f %7.1f%n",
                 row.movement(), row.size(),
                 percent(row.bubbled()), percent(row.peakBelieverShare()),
                 row.bubblesPerHundredDays(), row.beliefOnsetsPerHundredDays(),
@@ -163,7 +164,7 @@ public final class VillageSizes {
                     + "meanPeakBelieverShare,quietBubblesPerHundredDays,"
                     + "quietBeliefOnsetsPerHundredDays,meanPeakPrice");
             for (Row row : table) {
-                out.printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%.3f,%.3f,%.2f%n",
+                out.printf(Locale.ROOT, "%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%.3f,%.3f,%.2f%n",
                         row.movement(), row.size(), row.active(), seeds, firstSeed, ticks,
                         toldAt, window, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW,
                         row.bubbled(), row.peakBelieverShare(),

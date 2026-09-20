@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -48,7 +49,7 @@ public final class Noise {
         List<Double> decays = Cli.doubles(options.getOrDefault("decay", "0.80,0.85,0.90,0.95"));
         Path csv = Path.of(options.getOrDefault("csv", "noise.csv"));
 
-        System.out.printf("Noise: %d quiet villages (seeds %d..%d), %d ticks, nothing planted%n",
+        System.out.printf(Locale.ROOT, "Noise: %d quiet villages (seeds %d..%d), %d ticks, nothing planted%n",
                 seeds, firstSeed, firstSeed + seeds - 1, ticks);
         System.out.println("Target: somebody comes to believe in roughly 2-8% of seeds.");
         System.out.println();
@@ -84,10 +85,10 @@ public final class Noise {
                     totalPeak += stats.peakPrice();
                     highest = Math.max(highest, stats.peakPrice());
                 }
-                System.out.printf("  %.3f   %.2f   %10s   %12s   %5s   %5.1f   %4d%n",
+                System.out.printf(Locale.ROOT, "  %.3f   %.2f   %10s   %12s   %5s   %5.1f   %4d%n",
                         noise, decay, percent(anyHolder, seeds), percent(anyBeliever, seeds),
                         percent(burst, seeds), totalPeak / (double) seeds, highest);
-                rows.add(String.format("%.3f,%.2f,%d,%d,%d,%.4f,%.4f,%.4f,%.2f,%d",
+                rows.add(String.format(Locale.ROOT, "%.3f,%.2f,%d,%d,%d,%.4f,%.4f,%.4f,%.2f,%d",
                         noise, decay, seeds, firstSeed, ticks,
                         anyHolder / (double) seeds, anyBeliever / (double) seeds,
                         burst / (double) seeds, totalPeak / (double) seeds, highest));
@@ -107,7 +108,7 @@ public final class Noise {
     }
 
     private static String percent(int count, int of) {
-        return String.format("%.1f%%", 100.0 * count / of);
+        return String.format(Locale.ROOT, "%.1f%%", 100.0 * count / of);
     }
 
     private static final String USAGE = """
