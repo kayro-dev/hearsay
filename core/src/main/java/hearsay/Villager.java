@@ -25,6 +25,11 @@ public final class Villager {
     /** The price this villager last read something into, or 0 if they never have. */
     private int lastObservedPrice = 0;
 
+    /** When they were last known to be at the market, or {@link #NEVER}. */
+    private long lastAtMarket = NEVER;
+
+    private static final long NEVER = Long.MIN_VALUE;
+
     Villager(int id, String name, Traits traits, Spot spot) {
         this.id = id;
         this.name = name;
@@ -32,8 +37,28 @@ public final class Villager {
         this.spot = spot;
     }
 
-    void moveTo(Spot destination) {
+    void moveTo(Spot destination, long tick) {
         this.spot = destination;
+        if (destination == Spot.MARKET) {
+            lastAtMarket = tick;
+        }
+    }
+
+    /**
+     * Whether this villager counts as being in the market, allowing for a market that is
+     * watched rather than photographed: somebody who was at a stall a moment ago and is
+     * walking back to it is still a trader.
+     *
+     * @param within how many ticks of grace a villager keeps after leaving
+     */
+    public boolean inTheMarket(long tick, int within) {
+        if (spot == Spot.MARKET) {
+            return true;
+        }
+        // Guarded rather than arithmetic: subtracting NEVER from a tick overflows, and a
+        // negative answer compares as "recently", which would put every villager who has
+        // never set foot in the market permanently inside it.
+        return lastAtMarket != NEVER && tick - lastAtMarket <= within;
     }
 
     void sawPrice(int price) {
@@ -106,11 +131,12 @@ public final class Villager {
             && traits.equals(v.traits)
             && spot == v.spot
             && lastObservedPrice == v.lastObservedPrice
+            && lastAtMarket == v.lastAtMarket
             && beliefs.equals(v.beliefs);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(id, name, traits, spot, lastObservedPrice, beliefs); }
+    public int hashCode() { return Objects.hash(id, name, traits, spot, lastObservedPrice, lastAtMarket, beliefs); }
 
     @Override
     public String toString() { return name + "#" + id + " at " + spot; }

@@ -156,6 +156,70 @@ class ExternalMeetingsTest {
     }
 
     @Test
+    void aSightingPutsAVillagerSomewhereWithoutThemMeetingAnybody() {
+        // The point of sightings: a villager standing at a stall alone used to be invisible,
+        // because where anyone stood could only be inferred from who they were talking to.
+        Simulation sim = new Simulation(42, EXTERNAL,
+                List.of(new VillagerSeen(2, 7, Spot.MARKET)));
+        sim.run(3);
+
+        assertEquals(Spot.MARKET, sim.state().villager(7).spot());
+        assertEquals(Spot.HOME, sim.state().villager(6).spot(), "nobody else was seen");
+    }
+
+    @Test
+    void aSightingThatChangesNothingIsNotWrittenDown() {
+        // Reported every tick for every villager, so only the changes are worth recording.
+        List<Input> sameSpotTwice = List.of(
+                new VillagerSeen(2, 7, Spot.MARKET), new VillagerSeen(3, 7, Spot.MARKET));
+        Simulation sim = new Simulation(42, EXTERNAL, sameSpotTwice);
+        sim.run(4);
+
+        int moves = 0;
+        for (Event event : sim.log()) {
+            if (event instanceof VillagerMoved) {
+                moves++;
+            }
+        }
+        assertEquals(1, moves, "standing still is not news");
+    }
+
+    @Test
+    void aMarketRemembersItsTradersForTheLengthOfTheWindow() {
+        Params windowed = EXTERNAL.withMarketWindowTicks(4);
+        Simulation sim = new Simulation(42, windowed,
+                List.of(new VillagerSeen(2, 7, Spot.MARKET), new VillagerSeen(3, 7, Spot.WELL)));
+        sim.run(4);
+
+        // Left the market on tick 3, still counts as a trader on tick 4.
+        assertTrue(sim.state().villager(7).inTheMarket(4, 4));
+        assertFalse(sim.state().villager(7).inTheMarket(20, 4), "but not forever");
+        assertFalse(sim.state().villager(7).inTheMarket(4, 0),
+                "and not at all without a window");
+    }
+
+    @Test
+    void aVillagerWhoHasNeverBeenToTheMarketIsNotInIt() {
+        // Whatever the window, somebody who has never been there is not there. Measuring
+        // the gap from "never" instead of guarding it overflows, and a negative answer
+        // reads as "just now", which quietly puts the whole village in the market.
+        Simulation sim = new Simulation(42, EXTERNAL.withMarketWindowTicks(8), List.of());
+        sim.run(20);
+
+        for (Villager villager : sim.state().villagers().values()) {
+            assertFalse(villager.inTheMarket(20, 8),
+                    villager.name() + " has never been seen anywhere, let alone the market");
+            assertFalse(villager.inTheMarket(1, 1000));
+        }
+    }
+
+    @Test
+    void reportingASightingToASimulationThatWalksItsOwnVillagersIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new Simulation(42, Params.defaults(),
+                List.of(new VillagerSeen(2, 0, Spot.MARKET))));
+    }
+
+    @Test
     void reportingAMeetingToASimulationThatWalksItsOwnVillagersIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> new Simulation(42, Params.defaults(),
                 List.of(new ObservedMeeting(2, 0, 1, Spot.WELL))));

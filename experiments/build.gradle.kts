@@ -65,3 +65,11 @@ tasks.register<JavaExec>("planters") {
     mainClass = "hearsay.experiments.PlanterEffect"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** How long the market remembers its traders: ./gradlew :experiments:window --args="..." */
+tasks.register<JavaExec>("window") {
+    group = "application"
+    description = "Sweeps the market window against a recorded session and the model."
+    mainClass = "hearsay.experiments.MarketWindow"
+    classpath = sourceSets["main"].runtimeClasspath
+}

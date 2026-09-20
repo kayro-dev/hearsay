@@ -72,7 +72,7 @@ class RecipeFileTest {
         RecipeFile.write(anInGameSession(), file);
 
         List<String> lines = Files.readAllLines(file);
-        assertEquals("hearsay-recipe 3", lines.get(0));
+        assertEquals("hearsay-recipe 4", lines.get(0));
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("seed 1234")));
         assertTrue(lines.stream().anyMatch(l -> l.contains("meetingSource=EXTERNAL")));
         assertTrue(lines.stream().anyMatch(l -> l.contains("villagers=")));

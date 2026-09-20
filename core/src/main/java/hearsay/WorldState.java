@@ -45,7 +45,7 @@ public final class WorldState {
             }
             case VillagerMoved e -> {
                 tick = e.tick();
-                villager(e.id()).moveTo(e.spot());
+                villager(e.id()).moveTo(e.spot(), e.tick());
             }
             case VillagersMet e -> {
                 // Meeting alone changes nothing. What gets said is its own event.

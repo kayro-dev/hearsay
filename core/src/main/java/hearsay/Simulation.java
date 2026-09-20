@@ -114,10 +114,11 @@ public final class Simulation {
     }
 
     private void rejectMismatchedMeeting(Input input) {
-        if (input instanceof ObservedMeeting && params.meetingSource() != MeetingSource.EXTERNAL) {
-            throw new IllegalArgumentException("An observed meeting was given to a simulation "
-                    + "that moves its own villagers. Mixing the two would have people "
-                    + "meeting twice over.");
+        boolean fromOutside = input instanceof ObservedMeeting || input instanceof VillagerSeen;
+        if (fromOutside && params.meetingSource() != MeetingSource.EXTERNAL) {
+            throw new IllegalArgumentException("A sighting was given to a simulation that "
+                    + "moves its own villagers. Mixing the two would have people in two "
+                    + "places at once.");
         }
     }
 
@@ -185,6 +186,13 @@ public final class Simulation {
                         p.claim(), p.severity(), p.villagerId(), params.plantedConfidence()));
                 // Somebody outside saw these two together. Where they are is as much news
                 // as who they are with, since the market is made of whoever stands in it.
+                // Only worth writing down when it changes something: a villager who has
+                // not moved has told the world nothing new.
+                case VillagerSeen seen -> {
+                    if (state.villager(seen.villagerId()).spot() != seen.spot()) {
+                        record(new VillagerMoved(tick, seen.villagerId(), seen.spot()));
+                    }
+                }
                 case ObservedMeeting m -> {
                     record(new VillagerMoved(tick, m.a(), m.spot()));
                     record(new VillagerMoved(tick, m.b(), m.spot()));
@@ -410,7 +418,7 @@ public final class Simulation {
     private OptionalInt settleMarketPrice(long tick) {
         List<Double> asks = new ArrayList<>();
         for (Villager villager : state.villagers().values()) { // id order
-            if (villager.spot() == Spot.MARKET) {
+            if (villager.inTheMarket(tick, params.marketWindowTicks())) {
                 asks.add(askingPrice(villager));
             }
         }

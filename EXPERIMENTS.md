@@ -851,3 +851,88 @@ Under an eight-tick window the market averages 5.9 sellers whenever it has any.
 rather than here; what this entry establishes is that market attendance, not gossip, is what
 stops a real village from bubbling, and that either fix has to lift the priced share from 1%
 to something in the twenties before the loop can run at all.
+
+---
+
+## E11 — Measuring the market instead of inferring it, and how long to remember it
+
+E10 left the market as the thing stopping a real village from bubbling: thirty-one
+villagers, a quorum of eight, and the market open on 1% of ticks. Two changes were built for
+it.
+
+**Sightings.** The plugin now reports where every villager is standing every tick, as
+`VillagerSeen` inputs, rather than leaving their whereabouts to be inferred from who they
+were last talking to. A villager alone at a stall used to be invisible. Only changes reach
+the log, so a villager who has not moved costs nothing.
+
+**A window.** `marketWindowTicks` gives a villager who has left the market a little grace
+before they stop counting as a trader, so a market read from one instant becomes a sample.
+
+### Sweeping the window
+
+Against the recorded village of thirty-one, whose trace predates sightings and so still
+infers position from meetings:
+
+| window | ticks priced | peak price | peak believers | bubbles |
+| --- | --- | --- | --- | --- |
+| 0 | 1% | 103 | 4 | 0 |
+| 4 | 3% | 104 | 4 | 0 |
+| 8 | 8% | 105 | 4 | 0 |
+| 16 | 14% | 105 | 4 | 0 |
+| 32 | 27% | 108 | 4 | 0 |
+
+Against the headless model, 20 villagers, 30 seeds, a lie on tick 41:
+
+| window | ticks priced | peak price | peak believers | bubbled within 30 days |
+| --- | --- | --- | --- | --- |
+| 0 | 44% | 160.3 | 53% | 87% |
+| 2 | 97% | 160.7 | 56% | 93% |
+| 4 | 100% | 165.6 | 58% | 93% |
+| 8 | 100% | 159.6 | 54% | 90% |
+| 32 | 100% | 159.6 | 52% | 90% |
+
+And what each window does to the calibration, on the hundred seeds the sweeps never touch:
+
+| window | half-believing | quiet villages bursting | mean market size, of 20 |
+| --- | --- | --- | --- |
+| 0 | 63% | 0% | 8.2 |
+| 2 | 65% | 1% | 11.4 |
+| 4 | 64% | 0% | 15.0 |
+| 8 | 64% | 0% | 18.3 |
+| 16 | 59% | 0% | 19.6 |
+
+### What moved
+
+**The calibration barely notices.** Half-believing stays between 59% and 65% at every
+window, well inside the 50-85% the regression check allows, and quiet villages still almost
+never burst. Whatever else the window does, it does not retune the model.
+
+**The window opens the market by filling it with the whole village.** That last column is
+the reason not to use one. At a window of eight the market averages 18.3 villagers out of
+20, and at sixteen it is 19.6: the market stops being a place some villagers are and becomes
+the village. That is precisely the degenerate state E9 was written to remove, arrived at by
+a different road. In the headless model it also props the market open on 100% of ticks,
+including at night, which a market should not be.
+
+**And on the real village it did not help anyway.** Every window from 0 to 32 leaves the
+peak price at 103 to 108, peak believers at 4, and no bubble at all. Widening the window
+adds sellers who believe nothing, so it opens the market and dilutes the believers inside it
+in the same motion. Coverage rose from 1% to 27% and bought nothing.
+
+**Conclusion: the window was the wrong fix, and building it was how that became clear.**
+The market being shut was a symptom of not knowing where anybody was, and the answer to
+that is to look, which is what sightings do. `marketWindowTicks` defaults to 0, leaving
+every earlier experiment and the calibration exactly as they were; the parameter stays
+because it costs nothing and a future session may yet show a use for it.
+
+**Decision.** No defaults changed: `marketWindowTicks` is 0, which is the behaviour of every
+run before it existed. The open question is whether sightings alone lift a real village's
+market, and that cannot be answered from traces recorded before sightings existed. It needs
+one session recorded with the current plugin.
+
+A bug worth recording, since the first sweep reported 100% of ticks priced at every window
+and it was wrong. A villager's last visit to the market started at `Long.MIN_VALUE`, and
+`tick - Long.MIN_VALUE` overflows to a negative number, which compares as "just now" — so
+every villager who had never once been to the market counted as permanently standing in it.
+Guarded now, with a test that a villager never seen anywhere is not in the market whatever
+the window.

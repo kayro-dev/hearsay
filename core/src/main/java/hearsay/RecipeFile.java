@@ -26,10 +26,10 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 3";
+    private static final String HEADER = "hearsay-recipe 4";
 
     private static final java.util.Set<String> READABLE_HEADERS =
-            java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", HEADER);
+            java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3", HEADER);
 
     private RecipeFile() {
     }
@@ -104,6 +104,7 @@ public final class RecipeFile {
                 + " marketNoise=" + p.marketNoise()
                 + " noiseDecay=" + p.noiseDecay()
                 + " marketQuorumFraction=" + p.marketQuorumFraction()
+                + " marketWindowTicks=" + p.marketWindowTicks()
                 + " meetingSource=" + p.meetingSource()
                 + " villagers=" + p.villagers();
     }
@@ -126,6 +127,9 @@ public final class RecipeFile {
                 number(values, "observationThreshold"), number(values, "fullMoveSize"),
                 number(values, "marketNoise"), number(values, "noiseDecay"),
                 quorumFractionIn(values),
+                // Older files predate the window; they ran without one.
+                values.containsKey("marketWindowTicks")
+                        ? (int) number(values, "marketWindowTicks") : 0,
                 MeetingSource.valueOf(required(values, "meetingSource")),
                 // Written by a version that had no village size, from when it was always
                 // twenty. Sessions saved then really did simulate twenty villagers, so
@@ -166,6 +170,7 @@ public final class RecipeFile {
                     + p.claim().type() + " " + p.severity() + " " + p.villagerId();
             case ObservedMeeting m -> "meet " + m.tick() + " " + m.a() + " " + m.b()
                     + " " + m.spot();
+            case VillagerSeen s -> "seen " + s.tick() + " " + s.villagerId() + " " + s.spot();
         };
     }
 
@@ -175,6 +180,8 @@ public final class RecipeFile {
             case "plant" -> new PlantRumor(Long.parseLong(parts[1]),
                     new Claim(parts[2], ClaimType.valueOf(parts[3])),
                     Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
+            case "seen" -> new VillagerSeen(Long.parseLong(parts[1]),
+                    Integer.parseInt(parts[2]), Spot.valueOf(parts[3]));
             case "meet" -> new ObservedMeeting(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
                     Spot.valueOf(parts[4]));

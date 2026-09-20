@@ -75,9 +75,9 @@ These are deliberate, not bugs to report:
 - **Every observed meeting is reported as happening at the market.** The price needs to know
   where people are, and a pair on its own does not say. Mapping real locations to spots is
   the next piece of work.
-- **A villager standing alone at the market is invisible to the price**, because only pairs
-  are reported. Spots now come from beds and workstations, so a pair's spot is real, but a
-  villager nobody is standing near still tells the simulation nothing.
+- **Where everyone stands is reported every tick**, not only when they meet, so a villager
+  alone at a stall is part of the market. Only changes reach the log, so a villager who has
+  not moved costs nothing.
 - **Two villagers both in bed do not meet.** Two beds are two rooms, which is the same rule
   the headless model uses for home. Expect quiet nights.
 - **One village at a time**, and the binding is lost if the server restarts mid-session.

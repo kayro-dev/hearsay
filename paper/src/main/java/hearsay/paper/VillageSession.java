@@ -11,6 +11,7 @@ import hearsay.RecipeFile;
 import hearsay.Run;
 import hearsay.Simulation;
 import hearsay.Spot;
+import hearsay.VillagerSeen;
 import hearsay.SpotMapper;
 import hearsay.Villager;
 
@@ -111,6 +112,11 @@ final class VillageSession {
      */
     List<Telling> advance(Map<Integer, Location> positions, Map<Integer, Spot> spots) {
         long nextTick = simulation.state().tick() + 1;
+
+        // Where everybody is, every tick, whether or not they are talking to anyone. The
+        // market is then something measured rather than guessed at from who happened to be
+        // gossiping in it. Only the changes reach the log.
+        spots.forEach((id, spot) -> simulation.schedule(new VillagerSeen(nextTick, id, spot)));
 
         List<ProximityPairing.Position> standing = new ArrayList<>();
         positions.forEach((id, where) -> standing.add(
