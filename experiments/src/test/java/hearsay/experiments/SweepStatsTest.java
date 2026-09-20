@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class SweepStatsTest {
 
     private static SweepStats.SeedOutcome outcome(long seed, int peakBelieves, int days, boolean half) {
-        return new SweepStats.SeedOutcome(seed, 0, 20, peakBelieves, days, half);
+        return new SweepStats.SeedOutcome(seed, 0, 20, peakBelieves, days, days, 2.0, half);
     }
 
     @Test

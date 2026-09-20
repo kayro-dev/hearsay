@@ -32,8 +32,15 @@ public record Params(
         requireFraction(plantedConfidence, "plantedConfidence");
     }
 
+    /**
+     * Chosen from a seed sweep rather than by hand: see EXPERIMENTS.md. A decay of 0.92
+     * with a telling threshold of 0.4 gives a mean peak of 4.7 believers out of 20, a grip
+     * lasting about eight days, and no seed in fifty running away to convince the village.
+     * Deliberately modest, because week 5's market feedback is meant to do the work of
+     * turning a rumor into a bubble.
+     */
     public static Params defaults() {
-        return new Params(0.3, 0.25, 0.5, 0.9, 0.05, 0.05, 1.0);
+        return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0);
     }
 
     private static void requireFraction(double value, String name) {

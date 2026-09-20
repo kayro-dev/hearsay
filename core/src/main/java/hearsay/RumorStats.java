@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -45,6 +46,7 @@ public final class RumorStats {
     }
 
     private final double believeThreshold;
+    private final NavigableMap<Integer, List<Double>> lifetimeDays;
     private final NavigableMap<Integer, List<DayStats>> daily;
     private final NavigableMap<Integer, Integer> everHeard;
     private final NavigableMap<Integer, Long> halfHeard;
@@ -53,6 +55,7 @@ public final class RumorStats {
     private final NavigableMap<Integer, Claim> claims;
 
     private RumorStats(double believeThreshold,
+                       NavigableMap<Integer, List<Double>> lifetimeDays,
                        NavigableMap<Integer, List<DayStats>> daily,
                        NavigableMap<Integer, Integer> everHeard,
                        NavigableMap<Integer, Long> halfHeard,
@@ -60,6 +63,7 @@ public final class RumorStats {
                        NavigableMap<Integer, Double> reproduction,
                        NavigableMap<Integer, Claim> claims) {
         this.believeThreshold = believeThreshold;
+        this.lifetimeDays = lifetimeDays;
         this.daily = daily;
         this.everHeard = everHeard;
         this.halfHeard = halfHeard;
@@ -82,6 +86,9 @@ public final class RumorStats {
         NavigableMap<Integer, Long> halfBelieves = new TreeMap<>();
         Map<Integer, NavigableSet<Integer>> everHeardBy = new TreeMap<>();
         Map<Integer, Map<Integer, Integer>> conversionsBy = new TreeMap<>();
+        NavigableMap<Integer, List<Double>> lifetimeDays = new TreeMap<>();
+        // villager and family -> the tick their confidence last rose above the threshold
+        Map<String, Long> aboveSince = new TreeMap<>();
 
         int day = 0;
         for (Event event : log) {
@@ -91,6 +98,7 @@ public final class RumorStats {
                     familyOf.put(e.rumorId(), e.rumorId());
                     claims.put(e.rumorId(), e.claim());
                     daily.put(e.rumorId(), new ArrayList<>());
+                    lifetimeDays.put(e.rumorId(), new ArrayList<>());
                     everHeardBy.put(e.rumorId(), new TreeSet<>());
                     conversionsBy.put(e.rumorId(), new TreeMap<>());
                 }
@@ -122,6 +130,13 @@ public final class RumorStats {
                             halfHeard, halfBelieves, event.tick());
                 }
             }
+            if (event instanceof RumorTold || event instanceof RumorPlanted
+                    || event instanceof DayEnded) {
+                for (int known : daily.keySet()) {
+                    trackSpells(mirror, known, familyOf, believeThreshold,
+                            aboveSince, lifetimeDays.get(known), event.tick());
+                }
+            }
             if (event instanceof DayEnded) {
                 day++;
                 for (int known : daily.keySet()) {
@@ -144,9 +159,32 @@ public final class RumorStats {
                     reachedVillagers.isEmpty() ? 0.0 : converted / (double) reachedVillagers.size());
         }
 
-        return new RumorStats(believeThreshold, daily, everHeard,
+        return new RumorStats(believeThreshold, lifetimeDays, daily, everHeard,
                 halfHeard, halfBelieves, reproduction, claims);
     }
+
+    /**
+     * Notices villagers crossing the believing threshold and records how long they stayed
+     * over it, in days. A spell still running when the log ends is left out rather than
+     * counted short, so the figure describes beliefs that actually finished.
+     */
+    private static void trackSpells(WorldState state, int family, Map<Integer, Integer> familyOf,
+                                    double threshold, Map<String, Long> aboveSince,
+                                    List<Double> lifetimeDays, long tick) {
+        for (Villager villager : state.villagers().values()) {
+            String who = villager.id() + "/" + family;
+            Belief belief = beliefIn(state, villager.id(), family, familyOf);
+            boolean believing = belief != null && belief.confidence() >= threshold;
+
+            if (believing && !aboveSince.containsKey(who)) {
+                aboveSince.put(who, tick);
+            } else if (!believing && aboveSince.containsKey(who)) {
+                lifetimeDays.add((tick - aboveSince.remove(who)) / (double) TICKS_PER_DAY);
+            }
+        }
+    }
+
+    private static final int TICKS_PER_DAY = 4;
 
     private static void noteHalfway(WorldState state, int family, Map<Integer, Integer> familyOf,
                                     double threshold, NavigableMap<Integer, Long> halfHeard,
@@ -239,6 +277,47 @@ public final class RumorStats {
     private static OptionalLong at(NavigableMap<Integer, Long> ticks, int family) {
         Long tick = ticks.get(family);
         return tick == null ? OptionalLong.empty() : OptionalLong.of(tick);
+    }
+
+    /**
+     * How many days the claim held at least half as many believers as it ever had. A
+     * plainer "days with any believer" counts a single stubborn holdout as though the
+     * village still believed, which overstates how long a rumor had a grip.
+     */
+    public int daysAtLeastHalfPeak(int family) {
+        int peak = peakBelieves(family);
+        if (peak == 0) {
+            return 0;
+        }
+        int days = 0;
+        for (DayStats stats : daily(family)) {
+            if (stats.believes() * 2 >= peak) {
+                days++;
+            }
+        }
+        return days;
+    }
+
+    /**
+     * The middle length, in days, of a spell spent believing this claim: how long one
+     * villager stays above the threshold before fading back under it. Empty when no spell
+     * finished within the log.
+     */
+    public OptionalDouble medianBeliefLifetimeDays(int family) {
+        List<Double> spells = new ArrayList<>(lifetimeDays.getOrDefault(family, List.of()));
+        if (spells.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+        Collections.sort(spells);
+        int middle = spells.size() / 2;
+        return OptionalDouble.of(spells.size() % 2 == 1
+                ? spells.get(middle)
+                : (spells.get(middle - 1) + spells.get(middle)) / 2);
+    }
+
+    /** How many finished spells of believing went into the median. */
+    public int completedBeliefSpells(int family) {
+        return lifetimeDays.getOrDefault(family, List.of()).size();
     }
 
     /**

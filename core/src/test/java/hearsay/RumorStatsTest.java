@@ -61,6 +61,63 @@ class RumorStatsTest {
     }
 
     @Test
+    void daysAtHalfPeakNeverExceedsDaysWithAnyBeliever() {
+        RumorStats stats = RumorStats.of(aRun(200).log());
+        int family = stats.families().first();
+
+        int anyBeliever = 0;
+        for (RumorStats.DayStats day : stats.daily(family)) {
+            if (day.believes() > 0) {
+                anyBeliever++;
+            }
+        }
+
+        int atHalfPeak = stats.daysAtLeastHalfPeak(family);
+        assertTrue(atHalfPeak > 0, "the rumor should have had a grip at some point");
+        assertTrue(atHalfPeak <= anyBeliever,
+                "a stricter measure cannot count more days: " + atHalfPeak + " vs " + anyBeliever);
+    }
+
+    @Test
+    void everyDayCountedAtHalfPeakReallyHadHalfThePeakBelievers() {
+        RumorStats stats = RumorStats.of(aRun(200).log());
+        int family = stats.families().first();
+        int peak = stats.peakBelieves(family);
+
+        int counted = 0;
+        for (RumorStats.DayStats day : stats.daily(family)) {
+            if (day.believes() * 2 >= peak && peak > 0) {
+                counted++;
+            }
+        }
+        assertEquals(counted, stats.daysAtLeastHalfPeak(family));
+    }
+
+    @Test
+    void theMedianBeliefSpellIsMeasuredOverSpellsThatFinished() {
+        RumorStats stats = RumorStats.of(aRun(200).log());
+        int family = stats.families().first();
+
+        assertTrue(stats.completedBeliefSpells(family) > 0, "spells should have finished");
+        assertTrue(stats.medianBeliefLifetimeDays(family).isPresent());
+        double median = stats.medianBeliefLifetimeDays(family).getAsDouble();
+        assertTrue(median > 0, "a spell that finished lasted some time");
+        assertTrue(median <= stats.daily(family).size(), "a spell cannot outlast the run");
+    }
+
+    @Test
+    void aRunNobodyEverBelievesHasNoMedianSpell() {
+        // An impossible threshold: nobody ever crosses it, so no spell ever starts.
+        RumorStats stats = RumorStats.of(aRun(200).log(), 1.01);
+        int family = stats.families().first();
+
+        assertEquals(0, stats.peakBelieves(family));
+        assertEquals(0, stats.daysAtLeastHalfPeak(family));
+        assertEquals(0, stats.completedBeliefSpells(family));
+        assertTrue(stats.medianBeliefLifetimeDays(family).isEmpty());
+    }
+
+    @Test
     void theThresholdIsAReportingChoiceNotAChangeToTheRun() {
         List<Event> log = aRun(200).log();
 

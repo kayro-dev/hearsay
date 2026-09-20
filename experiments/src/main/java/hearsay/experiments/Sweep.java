@@ -102,6 +102,8 @@ public final class Sweep {
         }
         return new SweepStats.SeedOutcome(seed, planter, stats.peakHeard(family),
                 stats.peakBelieves(family), daysWithBeliever,
+                stats.daysAtLeastHalfPeak(family),
+                stats.medianBeliefLifetimeDays(family).orElse(Double.NaN),
                 stats.ticksUntilHalfBelieves(family).isPresent());
     }
 
@@ -124,18 +126,23 @@ public final class Sweep {
     }
 
     private static void print(List<SweepStats.Summary> table) {
-        System.out.println("                      peak believes (of " + Simulation.VILLAGER_COUNT + ")");
-        System.out.println("  decay  tell    mean   p10   p90   half-believes   days w/ believer   overshoot   peak heard");
+        System.out.println("                      peak believes (of " + Simulation.VILLAGER_COUNT
+                + ")            days at    median spell");
+        System.out.println("  decay  tell    mean   p10   p90   half-believes   any believer   "
+                + "half peak   (days)   overshoot   peak heard");
         double lastDecay = Double.NaN;
         for (SweepStats.Summary row : table) {
             if (!Double.isNaN(lastDecay) && row.dailyDecay() != lastDecay) {
                 System.out.println();
             }
             lastDecay = row.dailyDecay();
-            System.out.printf("   %.2f  %.1f   %5.1f  %4d  %4d   %12s   %16.1f   %9s   %10.1f%n",
+            System.out.printf("   %.2f  %.1f   %5.1f  %4d  %4d   %12s   %12.1f   %9.1f   %6s   %9s   %10.1f%n",
                     row.dailyDecay(), row.tellThreshold(), row.meanPeakBelieves(),
                     row.p10PeakBelieves(), row.p90PeakBelieves(),
                     percent(row.shareReachingHalf()), row.meanDaysWithBeliever(),
+                    row.meanDaysAtHalfPeak(),
+                    Double.isNaN(row.meanMedianSpellDays()) ? "-"
+                            : String.format("%.1f", row.meanMedianSpellDays()),
                     percent(row.shareOvershooting()), row.meanPeakHeard());
         }
     }
@@ -153,13 +160,15 @@ public final class Sweep {
             // Every row repeats the settings, so a row is readable without the command.
             out.println("dailyDecay,tellThreshold,seeds,firstSeed,ticks,meanPeakBelieves,"
                     + "p10PeakBelieves,p90PeakBelieves,shareReachingHalfBelieves,"
-                    + "meanDaysWithBeliever,shareOvershooting,meanPeakHeard");
+                    + "meanDaysWithBeliever,meanDaysAtHalfPeak,meanMedianSpellDays,"
+                    + "seedsWithASpell,shareOvershooting,meanPeakHeard");
             for (SweepStats.Summary row : table) {
-                out.printf("%.2f,%.2f,%d,%d,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f%n",
+                out.printf("%.2f,%.2f,%d,%d,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f,%d,%.3f,%.3f%n",
                         row.dailyDecay(), row.tellThreshold(), row.seeds(), firstSeed, ticks,
                         row.meanPeakBelieves(), row.p10PeakBelieves(), row.p90PeakBelieves(),
                         row.shareReachingHalf(), row.meanDaysWithBeliever(),
-                        row.shareOvershooting(), row.meanPeakHeard());
+                        row.meanDaysAtHalfPeak(), row.meanMedianSpellDays(),
+                        row.seedsWithASpell(), row.shareOvershooting(), row.meanPeakHeard());
             }
         }
     }
