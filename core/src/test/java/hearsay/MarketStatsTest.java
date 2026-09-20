@@ -179,6 +179,30 @@ class MarketStatsTest {
     }
 
     @Test
+    void aSmallVillageCanStillOpenItsMarket() {
+        // The market needs a share of the village, not a count. A count chosen for twenty
+        // demanded every villager in a village of five, so no price ever appeared.
+        for (int size : new int[] {5, 6, 9, 20, 30}) {
+            Params params = Params.defaults().withVillagers(size);
+            assertTrue(params.marketQuorum() < size || size == 2,
+                    "a village of " + size + " needs " + params.marketQuorum()
+                            + " sellers, which is everybody");
+            assertTrue(params.marketQuorum() >= 2, "one villager is not a market");
+        }
+        assertEquals(5, Params.defaults().marketQuorum(),
+                "at twenty villagers it must still be the five everything was tuned with");
+    }
+
+    @Test
+    void aVillageOfFiveActuallyTrades() {
+        Params five = Params.defaults().withVillagers(5);
+        MarketStats stats = MarketStats.of(Run.execute(3, five, List.of(), 200).log(),
+                DIAMONDS_SCARCE);
+
+        assertTrue(stats.peakPrice() > 0, "a village of five never opened its market");
+    }
+
+    @Test
     void peakPriceIsTheHighestAnyDayReached() {
         MarketStats stats = afterARumor();
 

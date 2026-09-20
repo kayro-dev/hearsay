@@ -72,7 +72,7 @@ class RecipeFileTest {
         RecipeFile.write(anInGameSession(), file);
 
         List<String> lines = Files.readAllLines(file);
-        assertEquals("hearsay-recipe 2", lines.get(0));
+        assertEquals("hearsay-recipe 3", lines.get(0));
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("seed 1234")));
         assertTrue(lines.stream().anyMatch(l -> l.contains("meetingSource=EXTERNAL")));
         assertTrue(lines.stream().anyMatch(l -> l.contains("villagers=")));
@@ -100,6 +100,8 @@ class RecipeFileTest {
 
         assertEquals(Simulation.VILLAGER_COUNT, loaded.params().villagers(),
                 "a recipe from before the field existed was written when every village had 20");
+        assertEquals(5, loaded.params().marketQuorum(),
+                "an older file names a count of 5; over its village of 20 that is the same market");
         assertEquals(99, loaded.seed());
         assertEquals(Simulation.VILLAGER_COUNT, loaded.finalState().villagers().size());
     }

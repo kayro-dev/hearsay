@@ -543,6 +543,13 @@ A trace is only ever run at its own size. Asking for a bigger village leaves the
 villagers with nobody to meet; asking for a smaller one throws meetings away. Neither tells
 you anything about the village that was played.
 
+Running it turned up a fourth change. The market quorum was a count of five, chosen when
+every village had twenty, where it meant a quarter of the village. In a village of five it
+demanded everybody, and a played session of five villagers showed no price at all, ever: of
+its eleven ticks, not one opened a market. The quorum is now a share of the village, 0.25,
+which is exactly five at twenty villagers and so leaves everything calibrated there
+untouched. That same eleven-tick session now prices every one of its ticks.
+
 ### Two rates, kept apart
 
 A **bubble** is counted only if it began within 30 days of the lie: a long enough run
@@ -572,11 +579,11 @@ Replaying a session of 1499 meetings over 1413 ticks, naming 9 villagers.
 ```
                             with the lie           quiet village, per 100 days
   movement     size   bubbled   peak believers   bubbles   belief onsets   peak$
-  simulated      8       56%              41%      0.00            0.02   132.9
-  simulated     12       68%              37%      0.00            0.12   139.8
+  simulated      8       86%              49%      0.00            0.16   153.1
+  simulated     12       80%              43%      0.00            0.14   150.6
   simulated     20       62%              32%      0.00            0.12   142.2
-  simulated     30       50%              32%      0.00            0.16   143.9
-  simulated      9       62%              37%      0.00            0.06   135.2
+  simulated     30       44%              32%      0.00            0.16   140.0
+  simulated      9       84%              44%      0.00            0.20   151.5
   played         9       48%              36%      0.04            0.28   131.7
 ```
 
@@ -584,12 +591,17 @@ Replaying a session of 1499 meetings over 1413 ticks, naming 9 villagers.
 Different seeds give those same bodies different personalities, but the meetings are the one
 village that was played. This is a single village's evidence, not a sample of villages.
 
-**At the size where the two are comparable, they are consistent but not identical.** Nine
-villagers, simulated against played: peak believers 37% against 36%, peak price 135 against
-132, but bubbles within 30 days of the lie 62% against 48%. Belief spreads about as far in
-the recorded village; it turns into a bubble less often. That is consistent with one
-recorded village, and no more than that — a second and a third session might move it either
-way.
+**At the size where the two are comparable, they differ more than the first reading
+suggested.** Nine villagers, simulated against played: 84% bubbled against 48%, peak
+believers 44% against 36%, peak price 152 against 132. The recorded village is markedly
+harder to set off.
+
+An earlier version of this entry read that gap as 62% against 48% and called the two
+consistent. That was partly an artefact of the old quorum: at nine villagers a count of five
+held the simulated market closed far more than it should have been, which flattered the
+agreement. With the quorum scaled properly the simulated model bubbles a good deal more
+readily than the village that was played. This still rests on one session, so it is
+evidence about one recorded village rather than about real villages.
 
 **The quiet village differs more clearly.** Beliefs start about four times as often on the
 recorded trace, 0.28 onsets per 100 days against 0.06, and it is the only row that ever
@@ -598,12 +610,20 @@ days. Real villagers cluster, so the same few keep meeting and a belief that for
 smaller pool to die out in. The simulated model never produced an unprompted bubble in any
 of these runs.
 
-**Bubbles get harder as a village grows**, on the simulated model: 68% at twelve down to 50%
-at thirty, with peak believer share falling from 37% to 32%. A rumor has further to travel
-and the median ask has more sellers to move.
+**Bubbles get steadily harder as a village grows**, on the simulated model: 86% at eight,
+80% at twelve, 62% at twenty, 44% at thirty, with peak believer share falling from 49% to
+32%. A rumor has further to travel, and the median ask has more sellers to move. Village
+size is the strongest single influence on the headline figure found so far, which is a good
+reason for the in-game session to size itself to the village it binds.
 
-**Decision.** No defaults changed. The 20-villager calibration still sits inside its target
-band on this stricter measure — 62% bubbling within 30 days of the lie, against the 60-80%
-target. The in-game session now sizes itself to the village it bound, which is a correctness
-fix rather than a tuning one. Whether the model should be tuned against recorded villages
-rather than simulated movement is not answerable from one session.
+**Decision.** The market quorum becomes a share of the village, 0.25, replacing the count of
+five. At twenty villagers it is still five, so nothing calibrated there moves and E1 to E6
+stand; below twenty it is the difference between a market and no market at all. No other
+default changed.
+
+The 20-villager calibration still sits inside its target band on this stricter measure — 62%
+bubbling within 30 days of the lie, against the 60-80% target — so nothing forces a retune.
+But the headline figure is far more sensitive to village size than to anything swept in E5,
+and a real village of nine bubbles at 48% where the model says 84%. Tuning against recorded
+villages rather than simulated movement is the obvious next question, and it needs more than
+one session to answer.

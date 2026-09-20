@@ -26,9 +26,10 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 2";
+    private static final String HEADER = "hearsay-recipe 3";
 
-    private static final String OLDEST_HEADER = "hearsay-recipe 1";
+    private static final java.util.Set<String> READABLE_HEADERS =
+            java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", HEADER);
 
     private RecipeFile() {
     }
@@ -61,7 +62,7 @@ public final class RecipeFile {
             throw new UncheckedIOException("Could not read a recipe from " + path, e);
         }
         String header = lines.isEmpty() ? "" : lines.get(0).trim();
-        if (!header.equals(HEADER) && !header.equals(OLDEST_HEADER)) {
+        if (!READABLE_HEADERS.contains(header)) {
             throw new IllegalArgumentException(path + " is not a Hearsay recipe");
         }
 
@@ -102,7 +103,7 @@ public final class RecipeFile {
                 + " fullMoveSize=" + p.fullMoveSize()
                 + " marketNoise=" + p.marketNoise()
                 + " noiseDecay=" + p.noiseDecay()
-                + " marketQuorum=" + p.marketQuorum()
+                + " marketQuorumFraction=" + p.marketQuorumFraction()
                 + " meetingSource=" + p.meetingSource()
                 + " villagers=" + p.villagers();
     }
@@ -124,7 +125,7 @@ public final class RecipeFile {
                 number(values, "priceSensitivity"), number(values, "observationWeight"),
                 number(values, "observationThreshold"), number(values, "fullMoveSize"),
                 number(values, "marketNoise"), number(values, "noiseDecay"),
-                (int) number(values, "marketQuorum"),
+                quorumFractionIn(values),
                 MeetingSource.valueOf(required(values, "meetingSource")),
                 // Written by a version that had no village size, from when it was always
                 // twenty. Sessions saved then really did simulate twenty villagers, so
@@ -132,6 +133,19 @@ public final class RecipeFile {
                 values.containsKey("villagers")
                         ? (int) number(values, "villagers")
                         : Simulation.VILLAGER_COUNT);
+    }
+
+    /**
+     * The quorum, however the file spells it. Older files name a count, from when it was a
+     * count; dividing it by the village they were written with gives back the same market.
+     */
+    private static double quorumFractionIn(Map<String, String> values) {
+        if (values.containsKey("marketQuorumFraction")) {
+            return number(values, "marketQuorumFraction");
+        }
+        double villagers = values.containsKey("villagers")
+                ? number(values, "villagers") : Simulation.VILLAGER_COUNT;
+        return number(values, "marketQuorum") / villagers;
     }
 
     private static double number(Map<String, String> values, String name) {
