@@ -182,6 +182,7 @@ public final class HearsayPlugin extends JavaPlugin {
             spots.put(id, Whereabouts.spotOf(body));
         });
 
+        session.survey(session.tick() + 1, bodies);
         List<Telling> tellings = session.advance(positions, spots);
 
         displays.showBeliefs(world, bodies, session.confidences(),
@@ -320,6 +321,9 @@ public final class HearsayPlugin extends JavaPlugin {
                     + " after " + session.tick() + " ticks.", NamedTextColor.GREEN));
             player.sendMessage(Component.text("Ask what would have happened without your lie: "
                     + "counterfactual --file <that file>", NamedTextColor.GRAY));
+            player.sendMessage(Component.text("A survey of " + session.sightingsRecorded()
+                    + " sightings was saved beside it, for sweeping the spot mapping.",
+                    NamedTextColor.GRAY));
         } catch (RuntimeException | LinkageError e) {
             // Keep the session bound: it is still in memory, and throwing it away would
             // turn a failed save into a lost one.

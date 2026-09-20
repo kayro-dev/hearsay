@@ -1,5 +1,6 @@
 package hearsay.paper;
 
+import hearsay.Sighting;
 import hearsay.Spot;
 import hearsay.SpotMapper;
 
@@ -29,6 +30,25 @@ final class Whereabouts {
                 remembered(villager, MemoryKey.HOME),
                 remembered(villager, MemoryKey.JOB_SITE),
                 kindOfWorkstation(villager));
+    }
+
+    /**
+     * What the spot was decided from: the position, and the distance to each of the two
+     * places that decide it. Recorded so the rule can be swept afterwards, which a recipe
+     * cannot support because it stores the answer rather than the question.
+     */
+    static Sighting sightingOf(long tick, int villagerId, Villager villager) {
+        Location standing = villager.getLocation();
+        return new Sighting(tick, villagerId, standing.getX(), standing.getY(), standing.getZ(),
+                distanceTo(standing, rememberedLocation(villager, MemoryKey.HOME)),
+                distanceTo(standing, rememberedLocation(villager, MemoryKey.JOB_SITE)),
+                kindOfWorkstation(villager));
+    }
+
+    private static double distanceTo(Location from, Optional<Location> to) {
+        return to.filter(place -> place.getWorld().equals(from.getWorld()))
+                .map(from::distance)
+                .orElse(Sighting.NO_SUCH_PLACE);
     }
 
     /**

@@ -8,6 +8,8 @@ import hearsay.Params;
 import hearsay.PlantRumor;
 import hearsay.ProximityPairing;
 import hearsay.RecipeFile;
+import hearsay.Sighting;
+import hearsay.SurveyFile;
 import hearsay.Run;
 import hearsay.Simulation;
 import hearsay.Spot;
@@ -47,6 +49,12 @@ final class VillageSession {
     private final Simulation simulation;
     private final Map<Integer, UUID> bodies = new LinkedHashMap<>();
     private final Claim tracked;
+
+    /**
+     * Where everybody stood, tick by tick. Held in memory and written beside the recipe at
+     * the end, since it is evidence about the village rather than part of the run.
+     */
+    private final List<Sighting> survey = new ArrayList<>();
 
     private VillageSession(long seed, Simulation simulation, Map<Integer, UUID> bodies) {
         this.seed = seed;
@@ -142,6 +150,11 @@ final class VillageSession {
         return Telling.from(simulation.log().subList(eventsBefore, simulation.log().size()));
     }
 
+    /** Notes where everybody was standing, for sweeping the mapping afterwards. */
+    void survey(long tick, Map<Integer, org.bukkit.entity.Villager> bodies) {
+        bodies.forEach((id, body) -> survey.add(Whereabouts.sightingOf(tick, id, body)));
+    }
+
     /** Plants a rumor in one villager, on the tick that has not happened yet. */
     void plantRumorIn(int villagerId, ClaimType type) {
         simulation.schedule(new PlantRumor(simulation.state().tick() + 1,
@@ -167,9 +180,17 @@ final class VillageSession {
 
     /** Saves the recipe, which the headless tools can rerun and ask questions of. */
     Path save(Path folder) {
-        Path file = folder.resolve("session-" + seed + "-" + System.currentTimeMillis() + ".hearsay");
+        String stamp = seed + "-" + System.currentTimeMillis();
+        Path file = folder.resolve("session-" + stamp + ".hearsay");
         RecipeFile.write(simulation.toRun(), file);
+        if (!survey.isEmpty()) {
+            SurveyFile.write(survey, folder.resolve("survey-" + stamp + ".csv"));
+        }
         return file;
+    }
+
+    int sightingsRecorded() {
+        return survey.size();
     }
 
     Run asRun() {

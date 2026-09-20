@@ -73,3 +73,11 @@ tasks.register<JavaExec>("window") {
     mainClass = "hearsay.experiments.MarketWindow"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Sweeps the position-to-spot rule: ./gradlew :experiments:mapping --args="..." */
+tasks.register<JavaExec>("mapping") {
+    group = "application"
+    description = "Rebuilds a played session's inputs under different spot rules."
+    mainClass = "hearsay.experiments.MappingSweep"
+    classpath = sourceSets["main"].runtimeClasspath
+}

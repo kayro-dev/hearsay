@@ -43,7 +43,8 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
 | 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
 | 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears. If it cannot save it says so and keeps the session running rather than losing it; `/hearsay stop force` ends it anyway |
-| 16 | Check `plugins/Hearsay/sessions/` | The file is there and is readable plain text: a `seed` line, a `params` line, `input plant …` and many `input meet …` lines |
+| 16 | Check `plugins/Hearsay/sessions/` | Two files: `session-….hearsay`, readable plain text with a `seed` line, a `params` line and `input …` lines; and `survey-….csv`, one row per villager per tick |
+| 16b | Check the survey has real distances | Columns `toBed` and `toJobSite` should mostly be numbers, with `-1.00` only for villagers with no bed or no job |
 | 17 | Stop the server | No errors on shutdown, and no floating text left behind when you restart |
 
 ## The bridge back to the headless tools
