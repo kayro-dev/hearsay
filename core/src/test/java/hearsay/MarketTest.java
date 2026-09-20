@@ -29,6 +29,7 @@ class MarketTest {
     @Test
     void withoutRumorsOrNoiseThePriceNeverLeavesBase() {
         Params silent = Params.defaults().withMarketNoise(0);
+        // With no step, the carried-over wobble stays at zero for the whole run.
 
         Run run = quietVillage(silent);
 
@@ -48,8 +49,9 @@ class MarketTest {
     void theMarketOnlyOpensWithAQuorum() {
         Run run = quietVillage(Params.defaults());
 
+        Params params = Params.defaults();
         for (MarketPriceSet price : prices(run.log())) {
-            assertTrue(price.askingVillagers() >= Simulation.MARKET_QUORUM,
+            assertTrue(price.askingVillagers() >= params.marketQuorum(),
                     "tick " + price.tick() + " settled a price with " + price.askingVillagers());
         }
     }
@@ -147,6 +149,73 @@ class MarketTest {
         assertEquals(physical(without), physical(withRumor),
                 "movement and meetings must survive the market loop");
         assertNotEquals(without, withRumor, "but the rumor must still change what happens");
+    }
+
+    @Test
+    void aSteadyPriceIsNoEvidenceHoweverHighItIs() {
+        Run run = Run.execute(3, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 12)), TICKS);
+
+        // Every observation must be a move away from that villager's own anchor, never a
+        // reading of the level. This is what stops a high plateau confirming itself.
+        WorldState mirror = new WorldState();
+        int observations = 0;
+        for (Event event : run.log()) {
+            if (event instanceof PriceObserved e) {
+                int anchor = mirror.villager(e.villagerId()).lastObservedPrice()
+                        .orElse(Params.defaults().basePrice());
+                double move = Math.abs(e.price() - anchor) / (double) anchor;
+                assertTrue(move > Params.defaults().observationThreshold(),
+                        "tick " + e.tick() + ": read " + e.price() + " against anchor " + anchor);
+                observations++;
+            }
+            mirror.apply(event);
+        }
+        assertTrue(observations > 0);
+    }
+
+    @Test
+    void aRisingPriceMeansScarcityAndAFallingOneMeansPlenty() {
+        Run run = Run.execute(3, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 12)), TICKS);
+
+        WorldState mirror = new WorldState();
+        int rises = 0;
+        int falls = 0;
+        for (Event event : run.log()) {
+            if (event instanceof PriceObserved e) {
+                int anchor = mirror.villager(e.villagerId()).lastObservedPrice()
+                        .orElse(Params.defaults().basePrice());
+                if (e.price() > anchor) {
+                    assertEquals(ClaimType.SCARCE, e.claim().type(), "a rise means scarcity");
+                    rises++;
+                } else {
+                    assertEquals(ClaimType.ABUNDANT, e.claim().type(), "a fall means plenty");
+                    falls++;
+                }
+            }
+            mirror.apply(event);
+        }
+        assertTrue(rises > 0, "the price should have risen on somebody");
+        assertTrue(falls > 0, "and come back down on somebody, or nothing ever deflates");
+    }
+
+    @Test
+    void observingUpdatesTheAnchorToWhatWasSeen() {
+        Run run = Run.execute(3, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 12)), TICKS);
+
+        WorldState mirror = new WorldState();
+        int checked = 0;
+        for (Event event : run.log()) {
+            mirror.apply(event);
+            if (event instanceof PriceObserved e) {
+                assertEquals(e.price(),
+                        mirror.villager(e.villagerId()).lastObservedPrice().orElseThrow());
+                checked++;
+            }
+        }
+        assertTrue(checked > 0);
     }
 
     private static List<Event> physical(List<Event> log) {

@@ -17,7 +17,10 @@ package hearsay;
  * @param observationWeight   how much evidence the market price itself carries
  * @param observationThreshold how far the price must stray from base before anyone reads
  *                            anything into it
- * @param marketNoise         the wobble on the settled price, as a fraction either way
+ * @param marketNoise         the size of each step in the price wobble, as a fraction
+ * @param noiseDecay          how much of yesterday's wobble carries into today, which is
+ *                            what lets a streak build far enough to be noticed
+ * @param marketQuorum        fewer sellers than this and the market does not open
  */
 public record Params(
         double tellThreshold,
@@ -31,7 +34,9 @@ public record Params(
         double priceSensitivity,
         double observationWeight,
         double observationThreshold,
-        double marketNoise) {
+        double marketNoise,
+        double noiseDecay,
+        int marketQuorum) {
 
     public Params {
         requireFraction(tellThreshold, "tellThreshold");
@@ -44,6 +49,10 @@ public record Params(
         requireFraction(observationWeight, "observationWeight");
         requireFraction(observationThreshold, "observationThreshold");
         requireFraction(marketNoise, "marketNoise");
+        requireFraction(noiseDecay, "noiseDecay");
+        if (marketQuorum < 2) {
+            throw new IllegalArgumentException("marketQuorum must be at least 2, was " + marketQuorum);
+        }
         if (basePrice < 1) {
             throw new IllegalArgumentException("basePrice must be at least 1, was " + basePrice);
         }
@@ -63,7 +72,7 @@ public record Params(
      */
     public static Params defaults() {
         return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
-                100, 1.0, 0.15, 0.10, 0.03);
+                100, 1.0, 0.15, 0.10, 0.03, 0.8, 5);
     }
 
     // Tuning one knob should not mean restating the other eleven, and a sweep that did
@@ -72,43 +81,43 @@ public record Params(
     public Params withTellThreshold(double value) {
         return new Params(value, repeatWeight, contradictionFactor, dailyDecay, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                observationWeight, observationThreshold, marketNoise);
+                observationWeight, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withDailyDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, value, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                observationWeight, observationThreshold, marketNoise);
+                observationWeight, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withForgetThreshold(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay, value,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                observationWeight, observationThreshold, marketNoise);
+                observationWeight, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withMutationChance(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, value, plantedConfidence, basePrice, priceSensitivity,
-                observationWeight, observationThreshold, marketNoise);
+                observationWeight, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withPriceSensitivity(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, value,
-                observationWeight, observationThreshold, marketNoise);
+                observationWeight, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withObservationWeight(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                value, observationThreshold, marketNoise);
+                value, observationThreshold, marketNoise, noiseDecay, marketQuorum);
     }
 
     public Params withMarketNoise(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                observationWeight, observationThreshold, value);
+                observationWeight, observationThreshold, value, noiseDecay, marketQuorum);
     }
 
     private static void requireFraction(double value, String name) {

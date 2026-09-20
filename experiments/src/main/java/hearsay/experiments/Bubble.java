@@ -42,6 +42,12 @@ public final class Bubble {
     /** A price this far above base is the visible sign of a bubble. */
     private static final int BUBBLE_PRICE = 120;
 
+    /** A bubble is one that ran up past this... */
+    private static final int BURST_PEAK_ABOVE = 130;
+
+    /** ...and then came back under this before the run ended. */
+    private static final int BURST_BACK_BELOW = 110;
+
     public static void main(String[] args) throws IOException {
         Map<String, String> options = parse(args);
         if (options.containsKey("help")) {
@@ -103,9 +109,15 @@ public final class Bubble {
         private long totalPeakPrice;
         private long totalDaysAbove;
         private long totalPeakBelievers;
+        private int burst;
+        private double totalBurstDays;
 
         void add(MarketStats stats) {
             seeds++;
+            stats.burst(BURST_PEAK_ABOVE, BURST_BACK_BELOW).ifPresent(b -> {
+                burst++;
+                totalBurstDays += b.days();
+            });
             if (stats.reachedHalfBelieving()) {
                 halfBelieving++;
             }
@@ -123,6 +135,8 @@ public final class Bubble {
         double meanPeakPrice() { return totalPeakPrice / (double) seeds; }
         double meanDaysAbove() { return totalDaysAbove / (double) seeds; }
         double meanPeakBelievers() { return totalPeakBelievers / (double) seeds; }
+        double shareBurst() { return burst / (double) seeds; }
+        double meanBurstDays() { return burst == 0 ? Double.NaN : totalBurstDays / burst; }
     }
 
     private record Row(double observationWeight, double priceSensitivity,
@@ -140,26 +154,32 @@ public final class Bubble {
     }
 
     private static void print(List<Row> table) {
-        System.out.println("                    with a planted rumor              without any rumor");
-        System.out.println("   obs   sens   half  >120  peak$  days>120  believers "
-                + "|  half  >120  peak$  days>120  believers");
+        System.out.println("                         with a planted rumor                    "
+                + "     without any rumor");
+        System.out.println("   obs   sens   half  peak$  burst  burst-days  believers "
+                + "|  half  peak$  burst  believers");
         double lastWeight = Double.NaN;
         for (Row row : table) {
             if (!Double.isNaN(lastWeight) && row.observationWeight() != lastWeight) {
                 System.out.println();
             }
             lastWeight = row.observationWeight();
-            System.out.printf("  %.2f  %.1f   %5s %5s %6.1f %9.1f %10.1f |%6s %5s %6.1f %9.1f %10.1f%n",
+            System.out.printf("  %.2f  %.1f   %5s %6.1f %6s %11s %10.1f |%6s %6.1f %6s %10.1f%n",
                     row.observationWeight(), row.priceSensitivity(),
                     percent(row.withRumor().shareHalfBelieving()),
-                    percent(row.withRumor().shareAboveBubblePrice()),
-                    row.withRumor().meanPeakPrice(), row.withRumor().meanDaysAbove(),
+                    row.withRumor().meanPeakPrice(),
+                    percent(row.withRumor().shareBurst()),
+                    days(row.withRumor().meanBurstDays()),
                     row.withRumor().meanPeakBelievers(),
                     percent(row.without().shareHalfBelieving()),
-                    percent(row.without().shareAboveBubblePrice()),
-                    row.without().meanPeakPrice(), row.without().meanDaysAbove(),
+                    row.without().meanPeakPrice(),
+                    percent(row.without().shareBurst()),
                     row.without().meanPeakBelievers());
         }
+    }
+
+    private static String days(double value) {
+        return Double.isNaN(value) ? "-" : String.format("%.1f", value);
     }
 
     private static String percent(double share) {
@@ -174,19 +194,22 @@ public final class Bubble {
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(csv))) {
             out.println("observationWeight,priceSensitivity,seeds,firstSeed,ticks,bubblePrice,"
                     + "rumorShareHalfBelieving,rumorShareAbovePrice,rumorMeanPeakPrice,"
-                    + "rumorMeanDaysAbove,rumorMeanPeakBelievers,"
+                    + "rumorMeanDaysAbove,rumorMeanPeakBelievers,rumorShareBurst,rumorMeanBurstDays,"
                     + "quietShareHalfBelieving,quietShareAbovePrice,quietMeanPeakPrice,"
-                    + "quietMeanDaysAbove,quietMeanPeakBelievers");
+                    + "quietMeanDaysAbove,quietMeanPeakBelievers,quietShareBurst,quietMeanBurstDays");
             for (Row row : table) {
-                out.printf("%.2f,%.2f,%d,%d,%d,%d,%.3f,%.3f,%.2f,%.3f,%.2f,%.3f,%.3f,%.2f,%.3f,%.2f%n",
+                out.printf("%.2f,%.2f,%d,%d,%d,%d,%.3f,%.3f,%.2f,%.3f,%.2f,%.3f,%.2f,"
+                                + "%.3f,%.3f,%.2f,%.3f,%.2f,%.3f,%.2f%n",
                         row.observationWeight(), row.priceSensitivity(), seeds, firstSeed, ticks,
                         BUBBLE_PRICE,
                         row.withRumor().shareHalfBelieving(), row.withRumor().shareAboveBubblePrice(),
                         row.withRumor().meanPeakPrice(), row.withRumor().meanDaysAbove(),
                         row.withRumor().meanPeakBelievers(),
+                        row.withRumor().shareBurst(), row.withRumor().meanBurstDays(),
                         row.without().shareHalfBelieving(), row.without().shareAboveBubblePrice(),
                         row.without().meanPeakPrice(), row.without().meanDaysAbove(),
-                        row.without().meanPeakBelievers());
+                        row.without().meanPeakBelievers(),
+                        row.without().shareBurst(), row.without().meanBurstDays());
             }
         }
     }

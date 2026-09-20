@@ -85,6 +85,8 @@ public final class WorldState {
                 chain.add(Belief.MARKET);
                 villager(e.villagerId()).believe(new Belief(seen.claim(), e.newConfidence(),
                         Belief.MARKET, e.tick(), e.rumorId(), chain));
+                // From here on, this villager measures the price against this one.
+                villager(e.villagerId()).sawPrice(e.price());
             }
             case DayEnded e -> {
                 tick = e.tick();

@@ -193,3 +193,98 @@ permanent change of regime, not a bubble.
 
 **Decision.** None yet: defaults are unchanged pending a decision on whether a bubble is
 supposed to deflate. The three cells above hit the stated target as written.
+
+---
+
+## E4 — Bubbles that deflate
+
+Three changes since E3, all aimed at making a bubble able to end:
+
+1. **Momentum instead of level.** A villager reads the move since the price they last drew
+   a conclusion from, not how far the price stands from base. A steady price, however
+   high, is no evidence at all. A villager who has concluded nothing yet measures against
+   base, so the first move still registers and the loop can start.
+2. **Mean-reverting noise.** `noise(t) = 0.8 × noise(t-1) + step`, so a run of steps in one
+   direction compounds instead of being drawn fresh each tick.
+3. **Market quorum 5**, up from 3.
+
+Plus a burst metric: the share of seeds where the price peaked above 130 and then came back
+under 110 before the run ended, and how long that fall took.
+
+```
+./gradlew :experiments:bubble --args="--seeds 50 --ticks 200 \
+    --observation 0,0.1,0.15,0.2,0.3 --sensitivity 0.5,1.0,1.5 --csv build/e4.csv"
+```
+
+```
+                         with a planted rumor                         without any rumor
+   obs   sens   half  peak$  burst  burst-days  believers |  half  peak$  burst  believers
+  0.00  0.5      4%  126.5    28%        10.4        4.6 |    0%  106.3     0%        0.0
+  0.00  1.0      4%  151.4    88%         9.7        4.6 |    0%  106.3     0%        0.0
+  0.00  1.5      6%  177.4    98%        11.4        4.6 |    0%  106.3     0%        0.0
+
+  0.10  1.0     12%  153.8    92%        12.7        5.1 |    0%  106.3     0%        0.0
+  0.15  1.0     18%  157.2    92%        14.0        5.2 |    0%  106.3     0%        0.0
+  0.20  1.0     16%  159.3    92%        15.2        5.5 |    0%  106.3     0%        0.0
+  0.30  1.0     26%  164.5    94%        17.4        6.0 |    0%  106.3     0%        0.0
+  0.30  1.5     30%  200.9    96%        22.4        6.6 |    0%  106.3     0%        0.0
+```
+
+**Bubbles now deflate.** 88 to 98% of seeds run the price past 130 and bring it back under
+110, in a mean of 10 to 22 days. The permanent plateau of E3 is gone: the run-up stops
+confirming itself the moment it levels off, decay takes over, and the fall then reads as
+evidence the other way.
+
+**But belief collapsed**, from 72-100% reaching half the village in E3 to 4-30% here. The
+cause is arithmetic rather than anything conceptual. Evidence weight is
+`observationWeight × min(1, |move|)`, and that `min(1, ...)` was calibrated against levels,
+where a price of 200 against a base of 100 gives a full 1.0. Under momentum a move only
+just past the threshold gives about 0.12, so every observation is worth roughly eight
+times less than it used to be. The same knob now means something much smaller.
+
+**Note the burst column at `obs 0.00`:** 88 to 98% of seeds burst even with the feedback
+loop switched off entirely. A rumor rises and fades on its own, taking asks with it, so
+"the price went up and came down" does not by itself demonstrate feedback. What the
+feedback adds is size and duration: at sensitivity 1.0, going from observation 0 to 0.30
+lifts the mean peak from 151 to 165 and stretches the fall from 9.7 days to 17.4.
+
+### E4b — restoring the reach
+
+If the weight shrank by roughly eight times, the question is whether the target is still
+reachable further up the range.
+
+```
+./gradlew :experiments:bubble --args="--seeds 50 --ticks 200 \
+    --observation 0.3,0.5,0.75,1.0 --sensitivity 1.0,1.5 --csv build/e4b.csv"
+```
+
+```
+                         with a planted rumor                         without any rumor
+   obs   sens   half  peak$  burst  burst-days  believers |  half  peak$  burst  believers
+  0.30  1.0     26%  164.5    94%        17.4        6.0 |    0%  106.3     0%        0.0
+  0.30  1.5     30%  200.9    96%        22.4        6.6 |    0%  106.3     0%        0.0
+  0.50  1.0     36%  166.4    90%        17.6        7.0 |    0%  106.3     0%        0.0
+  0.50  1.5     62%  219.8    98%        19.7        9.8 |    0%  106.3     0%        0.0
+  0.75  1.0     70%  180.1    96%        15.1       10.6 |    0%  106.3     0%        0.0
+  0.75  1.5     88%  237.2   100%        18.4       15.6 |    0%  106.3     0%        0.0
+  1.00  1.0     84%  191.4    98%        16.3       14.9 |    0%  106.3     0%        0.0
+  1.00  1.5     98%  256.6    90%        16.2       19.3 |    0%  106.3     0%        0.0
+```
+
+**Two cells meet the whole target at once.** Observation 0.75 with sensitivity 1.0 gives
+half the village believing in 70% of seeds, a burst in 96% of them taking 15 days to come
+back down, and 0% of quiet villages panicking. Observation 0.50 with sensitivity 1.5 gives
+62%, 98% and 0%. Both sit inside the concept doc's 60-80% band with a rumor and under 10%
+without.
+
+**The 0% without a rumor is still structural.** Carrying the noise over does compound it:
+across 50 quiet seeds the peak price ranges 103 to 109, where a single step could only
+reach 103. But it never crosses the 110 an observation needs, so no quiet village ever
+panics. Making spontaneous panics rare-but-possible rather than impossible needs a larger
+`marketNoise` or a `noiseDecay` nearer 0.9; at the current 0.03 and 0.8 the stationary
+spread is about 0.029, which puts the threshold three and a half standard deviations away.
+
+**Decision.** None yet: defaults unchanged pending a choice between the two cells, and a
+decision on whether the weight formula should be rescaled against the threshold rather than
+the raw move, which would put the useful range of `observationWeight` back near its old
+values instead of near 1.

@@ -26,15 +26,47 @@ class MarketStatsTest {
     }
 
     @Test
-    void aQuietVillageNeverLeavesTheNoiseBand() {
-        // No rumor and no feedback: the price can only wobble by the market noise.
-        MarketStats stats = MarketStats.of(
-                Run.execute(3, Params.defaults(), List.of(), 200).log(), DIAMONDS_SCARCE);
+    void aQuietVillagePanicsOnlyRarely() {
+        // The carried-over wobble is meant to cross the threshold sometimes, so this is a
+        // rate rather than an absolute: checking one seed would only prove that seed.
+        Params params = Params.defaults();
+        int panicked = 0;
+        int seeds = 30;
+        for (long seed = 1; seed <= seeds; seed++) {
+            MarketStats stats = MarketStats.of(
+                    Run.execute(seed, params, List.of(), 200).log(), DIAMONDS_SCARCE);
+            if (stats.peakBelievers() > 0) {
+                panicked++;
+            }
+        }
+        assertTrue(panicked <= seeds / 10,
+                "a village nobody lied to should rarely panic: " + panicked + " of " + seeds);
+    }
 
-        int base = Params.defaults().basePrice();
-        int highestPossible = (int) Math.round(base * (1 + Params.defaults().marketNoise()));
-        assertTrue(stats.peakPrice() <= highestPossible,
-                "quiet village peaked at " + stats.peakPrice());
+    @Test
+    void theWobbleCarriesOverInsteadOfBeingDrawnFresh() {
+        // A single step can move the price by at most marketNoise. Because the wobble
+        // carries from tick to tick, a run of steps in one direction takes it further
+        // than any single step could, which is the whole point of the carry-over.
+        Params params = Params.defaults();
+        int reachableInOneStep = (int) Math.round(params.basePrice() * (1 + params.marketNoise()));
+
+        int highest = 0;
+        for (long seed = 1; seed <= 30; seed++) {
+            highest = Math.max(highest, MarketStats.of(
+                    Run.execute(seed, params, List.of(), 200).log(), DIAMONDS_SCARCE).peakPrice());
+        }
+        assertTrue(highest > reachableInOneStep,
+                "the wobble should compound past " + reachableInOneStep + ", reached " + highest);
+    }
+
+    @Test
+    void withoutAnyWobbleAQuietVillageNeverBudges() {
+        MarketStats stats = MarketStats.of(
+                Run.execute(3, Params.defaults().withMarketNoise(0), List.of(), 200).log(),
+                DIAMONDS_SCARCE);
+
+        assertEquals(Params.defaults().basePrice(), stats.peakPrice());
         assertEquals(0, stats.peakBelievers());
         assertFalse(stats.reachedHalfBelieving());
     }

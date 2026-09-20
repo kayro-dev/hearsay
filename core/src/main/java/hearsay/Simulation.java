@@ -30,9 +30,6 @@ public final class Simulation {
     /** The one item that is traded, for now. */
     public static final String DIAMOND = "diamond";
 
-    /** Fewer villagers than this at the market and there is no market to speak of. */
-    public static final int MARKET_QUORUM = 3;
-
     private final long seed;
     private final Params params;
 
@@ -46,6 +43,13 @@ public final class Simulation {
     private final List<Input> inputs;
     /** The same inputs, bucketed by the tick they are due. */
     private final NavigableMap<Long, List<Input>> scheduled = new TreeMap<>();
+
+    /**
+     * Today's market wobble. Part of the random process, like the generators themselves:
+     * reproducible from the seed, and never consulted by apply(), because every event
+     * already carries the price it produced.
+     */
+    private double noiseLevel = 0;
 
     private final WorldState state;
     private final List<Event> log = new ArrayList<>();
@@ -79,6 +83,7 @@ public final class Simulation {
         holdMeetings();
         // Price first, then the people standing there read it: within a tick, belief
         // moves the price and the price moves belief, in that order.
+        advanceMarketNoise();
         settleMarketPrice();
         observeTheMarket();
         if (DayPart.of(tick) == DayPart.NIGHT) {
@@ -313,6 +318,17 @@ public final class Simulation {
     }
 
     /**
+     * The wobble carries over from tick to tick instead of being drawn fresh, so a run of
+     * steps in the same direction can build into something the village notices. Drawn
+     * every tick whether or not the market opens, since it is a property of the day
+     * rather than of who turned up.
+     */
+    private void advanceMarketNoise() {
+        double step = params.marketNoise() * (market.nextDouble() * 2 - 1);
+        noiseLevel = params.noiseDecay() * noiseLevel + step;
+    }
+
+    /**
      * The market price is the median ask of whoever is standing there, so one extreme
      * villager cannot drag the whole market, while a real shift in belief can. Below a
      * quorum there is no market and no price is set.
@@ -324,7 +340,7 @@ public final class Simulation {
                 asks.add(askingPrice(villager));
             }
         }
-        if (asks.size() < MARKET_QUORUM) {
+        if (asks.size() < params.marketQuorum()) {
             return;
         }
         Collections.sort(asks);
@@ -334,15 +350,24 @@ public final class Simulation {
                 ? asks.get(middle)
                 : (asks.get(middle - 1) + asks.get(middle)) / 2;
 
-        double wobble = 1 + params.marketNoise() * (market.nextDouble() * 2 - 1);
-        int price = Math.max(1, (int) Math.round(median * wobble));
+        int price = Math.max(1, (int) Math.round(median * (1 + noiseLevel)));
         record(new MarketPriceSet(tick, price, asks.size()));
     }
 
     /**
-     * Everyone at the market reads the price. Far enough above base and it is evidence
-     * that diamonds are scarce; far enough below, that they are plentiful. This is what
-     * closes the loop: belief moves the price, and the price moves belief.
+     * Everyone at the market reads the price, and what they read into it is the move
+     * since they last drew a conclusion, not the level. A price that climbs is evidence
+     * of scarcity; one that falls back is evidence of plenty; one that holds steady,
+     * however high, is no evidence at all.
+     *
+     * <p>That last part is what lets a bubble deflate. While the price is climbing it
+     * keeps confirming itself, but the moment it levels off the confirmations stop, decay
+     * starts winning, asks come down, and the fall then reads as evidence in the other
+     * direction.
+     *
+     * <p>A villager who has never concluded anything measures against the base price, so
+     * the first move still registers as a level. Measuring the first one as a change would
+     * leave nobody with anything to compare against, and the loop could never start.
      */
     private void observeTheMarket() {
         OptionalInt settled = state.marketPrice();
@@ -350,18 +375,19 @@ public final class Simulation {
             return;
         }
         int price = settled.getAsInt();
-        double deviation = (price - params.basePrice()) / (double) params.basePrice();
-        if (Math.abs(deviation) <= params.observationThreshold()) {
-            return;
-        }
-
-        Claim claim = new Claim(DIAMOND, deviation > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
-        double weight = params.observationWeight() * Math.min(1, Math.abs(deviation));
 
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.spot() != Spot.MARKET) {
                 continue;
             }
+            int anchor = villager.lastObservedPrice().orElse(params.basePrice());
+            double move = (price - anchor) / (double) anchor;
+            if (Math.abs(move) <= params.observationThreshold()) {
+                continue;
+            }
+
+            Claim claim = new Claim(DIAMOND, move > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
+            double weight = params.observationWeight() * Math.min(1, Math.abs(move));
             Belief held = villager.belief(claim);
             double before = held == null ? 0 : held.confidence();
             double after = Math.min(1.0, 1 - (1 - before) * (1 - weight));

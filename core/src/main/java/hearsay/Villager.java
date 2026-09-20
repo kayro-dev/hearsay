@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 
 /**
@@ -21,6 +22,9 @@ public final class Villager {
     private final NavigableMap<Claim, Belief> beliefs = new TreeMap<>();
     private Spot spot;
 
+    /** The price this villager last read something into, or 0 if they never have. */
+    private int lastObservedPrice = 0;
+
     Villager(int id, String name, Traits traits, Spot spot) {
         this.id = id;
         this.name = name;
@@ -30,6 +34,10 @@ public final class Villager {
 
     void moveTo(Spot destination) {
         this.spot = destination;
+    }
+
+    void sawPrice(int price) {
+        this.lastObservedPrice = price;
     }
 
     /** Replaces whatever was held about this claim. */
@@ -55,6 +63,15 @@ public final class Villager {
     public String name() { return name; }
     public Traits traits() { return traits; }
     public Spot spot() { return spot; }
+
+    /**
+     * The price this villager last drew a conclusion from, or empty if they never have.
+     * Evidence comes from how far the price has moved since then, not from where it
+     * stands, so a price that stops climbing stops being news.
+     */
+    public OptionalInt lastObservedPrice() {
+        return lastObservedPrice == 0 ? OptionalInt.empty() : OptionalInt.of(lastObservedPrice);
+    }
 
     public NavigableMap<Claim, Belief> beliefs() {
         return Collections.unmodifiableNavigableMap(beliefs);
@@ -88,11 +105,12 @@ public final class Villager {
             && name.equals(v.name)
             && traits.equals(v.traits)
             && spot == v.spot
+            && lastObservedPrice == v.lastObservedPrice
             && beliefs.equals(v.beliefs);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(id, name, traits, spot, beliefs); }
+    public int hashCode() { return Objects.hash(id, name, traits, spot, lastObservedPrice, beliefs); }
 
     @Override
     public String toString() { return name + "#" + id + " at " + spot; }
