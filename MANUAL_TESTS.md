@@ -26,7 +26,7 @@ Run through it after any change to the `paper` module, and before recording anyt
 | --- | --- | --- |
 | 1 | Start the server | The log says `Hearsay is listening`, with no stack trace |
 | 2 | `/hearsay status` before starting | "Nothing bound", not an error |
-| 3 | Stand in a village, `/hearsay start` | "Bound N villagers, seed …" with N matching roughly what you can see |
+| 3 | Stand in a village, `/hearsay start` | "Bound N villagers, seed …" with N matching roughly what you can see. If N is under 20 it warns you, and it should: see the limits below |
 | 4 | `/hearsay start` again | Refuses, telling you to stop first |
 | 5 | Watch for a minute | A price bar at the top of the screen; no text above any head yet, because nobody has heard anything |
 | 6 | Stand next to a villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce" |
@@ -58,15 +58,22 @@ you actually played.
 
 These are deliberate, not bugs to report:
 
+- **The simulation always has twenty villagers, however many bodies it finds.** Bind a
+  village of nine and eleven simulated villagers sit at home forever, never meeting anyone.
+  They do not distort the price, which is made of whoever stands in the market, but every
+  figure counted out of twenty reads low, and "half the village believes" — ten of twenty —
+  cannot happen at all. Village size wants to become a parameter, which means recalibrating,
+  so for now the plugin warns and the numbers should be read against the bound count.
 - **Villagers who arrive after `/hearsay start` are ignored.** Binding a mind to a body
   halfway through would make the session unreplayable from its recipe.
+- **A tick is ten seconds of game time, not wall-clock.** `/tick sprint 20d` sprints the
+  simulation along with the world, which is a quick way to get a long session.
 - **Every observed meeting is reported as happening at the market.** The price needs to know
   where people are, and a pair on its own does not say. Mapping real locations to spots is
   the next piece of work.
 - **A villager standing alone at the market is invisible to the price**, because only pairs
   are reported.
 - **One village at a time**, and the binding is lost if the server restarts mid-session.
-- **A tick is 10 real seconds**, not tied to Minecraft's clock.
 - **Many worlds cannot be asked of a played session.** Forking needs futures to roll, and
   Minecraft decided where everybody walked exactly once. A played session answers "what
   would have happened without my lie"; it cannot answer "how likely was that".

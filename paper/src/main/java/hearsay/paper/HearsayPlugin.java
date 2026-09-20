@@ -149,7 +149,20 @@ public final class HearsayPlugin extends JavaPlugin {
         watcher = player.getUniqueId();
 
         player.sendMessage(Component.text("Bound " + session.boundCount() + " villagers, seed "
-                + seed + ". A tick every " + SECONDS_PER_TICK + "s.", NamedTextColor.GREEN));
+                + seed + ". A tick every " + SECONDS_PER_TICK + "s of game time.",
+                NamedTextColor.GREEN));
+
+        // The model was tuned on a village of twenty. A smaller one is not wrong, but the
+        // figures that count out of twenty stop meaning what they say: half the village is
+        // ten, which a village of nine can never reach.
+        if (session.boundCount() < Simulation.VILLAGER_COUNT) {
+            player.sendMessage(Component.text("Only " + session.boundCount() + " of "
+                    + Simulation.VILLAGER_COUNT + " simulated villagers have bodies. The rest "
+                    + "stay home and never meet anyone.", NamedTextColor.YELLOW));
+            player.sendMessage(Component.text("Anything measured against "
+                    + Simulation.VILLAGER_COUNT + " will read low, and \"half the village\" "
+                    + "cannot be reached at all.", NamedTextColor.YELLOW));
+        }
 
         long period = SECONDS_PER_TICK * GAME_TICKS_PER_SECOND;
         ticking = getServer().getScheduler().runTaskTimer(this, this::tick, period, period);
