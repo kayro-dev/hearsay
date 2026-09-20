@@ -18,147 +18,234 @@ import java.util.TreeSet;
  * the planted rumor it descends from, so "how far did that lie travel" has one answer
  * even after the lie has been exaggerated a dozen times.
  *
- * <p>It replays the log through {@link WorldState#apply(Event)} rather than counting
- * tellings, so believers who have since forgotten are not still counted. That needs the
- * params the run used, which are part of the run's recipe anyway.
+ * <p>Distinguishes <em>heard</em> from <em>believes</em>. A villager has heard a claim if
+ * they hold it at any strength; they believe it if their confidence reaches
+ * {@link #DEFAULT_BELIEVE_THRESHOLD}. Reporting only the first overstates a rumor's grip
+ * badly: a claim can reach half the village while convincing nobody.
+ *
+ * <p>The threshold lives here rather than in {@link Params} because it changes nothing
+ * about the run. Params are part of the recipe that reproduces a log; a reporting
+ * threshold that sat there would make the recipe claim a difference it does not make.
  */
 public final class RumorStats {
 
-    private final NavigableMap<Integer, List<Integer>> believersPerDay;
-    private final NavigableMap<Integer, Long> ticksUntilHalf;
-    private final NavigableMap<Integer, Double> reproductionNumber;
+    /** Confidence at which a villager counts as believing rather than merely informed. */
+    public static final double DEFAULT_BELIEVE_THRESHOLD = 0.5;
+
+    /** What one family looked like at the end of one day. */
+    public record DayStats(int day, int heard, int believes, NavigableMap<Integer, Integer> bySeverity) {
+        public DayStats {
+            bySeverity = Collections.unmodifiableNavigableMap(new TreeMap<>(bySeverity));
+        }
+
+        /** The most severe version anyone was holding that day, or 0 if nobody held it. */
+        public int worstSeverityHeld() {
+            return bySeverity.isEmpty() ? 0 : bySeverity.lastKey();
+        }
+    }
+
+    private final double believeThreshold;
+    private final NavigableMap<Integer, List<DayStats>> daily;
+    private final NavigableMap<Integer, Integer> everHeard;
+    private final NavigableMap<Integer, Long> halfHeard;
+    private final NavigableMap<Integer, Long> halfBelieves;
+    private final NavigableMap<Integer, Double> reproduction;
     private final NavigableMap<Integer, Claim> claims;
 
-    private RumorStats(NavigableMap<Integer, List<Integer>> believersPerDay,
-                       NavigableMap<Integer, Long> ticksUntilHalf,
-                       NavigableMap<Integer, Double> reproductionNumber,
+    private RumorStats(double believeThreshold,
+                       NavigableMap<Integer, List<DayStats>> daily,
+                       NavigableMap<Integer, Integer> everHeard,
+                       NavigableMap<Integer, Long> halfHeard,
+                       NavigableMap<Integer, Long> halfBelieves,
+                       NavigableMap<Integer, Double> reproduction,
                        NavigableMap<Integer, Claim> claims) {
-        this.believersPerDay = believersPerDay;
-        this.ticksUntilHalf = ticksUntilHalf;
-        this.reproductionNumber = reproductionNumber;
+        this.believeThreshold = believeThreshold;
+        this.daily = daily;
+        this.everHeard = everHeard;
+        this.halfHeard = halfHeard;
+        this.halfBelieves = halfBelieves;
+        this.reproduction = reproduction;
         this.claims = claims;
     }
 
-    public static RumorStats of(List<Event> log, Params params) {
-        WorldState mirror = new WorldState(params);
+    public static RumorStats of(List<Event> log) {
+        return of(log, DEFAULT_BELIEVE_THRESHOLD);
+    }
 
-        Map<Integer, Integer> familyOf = new TreeMap<>();          // rumor id -> planted ancestor
-        NavigableMap<Integer, List<Integer>> perDay = new TreeMap<>();
-        NavigableMap<Integer, Long> half = new TreeMap<>();
+    public static RumorStats of(List<Event> log, double believeThreshold) {
+        WorldState mirror = new WorldState();
+
+        Map<Integer, Integer> familyOf = new TreeMap<>();            // rumor id -> planted ancestor
+        NavigableMap<Integer, List<DayStats>> daily = new TreeMap<>();
         NavigableMap<Integer, Claim> claims = new TreeMap<>();
-        Map<Integer, NavigableSet<Integer>> everBelieved = new TreeMap<>();
+        NavigableMap<Integer, Long> halfHeard = new TreeMap<>();
+        NavigableMap<Integer, Long> halfBelieves = new TreeMap<>();
+        Map<Integer, NavigableSet<Integer>> everHeardBy = new TreeMap<>();
         Map<Integer, Map<Integer, Integer>> conversionsBy = new TreeMap<>();
 
+        int day = 0;
         for (Event event : log) {
             // Register lineage before applying, so a telling can always be attributed.
             switch (event) {
                 case RumorPlanted e -> {
                     familyOf.put(e.rumorId(), e.rumorId());
                     claims.put(e.rumorId(), e.claim());
-                    perDay.put(e.rumorId(), new ArrayList<>());
-                    everBelieved.put(e.rumorId(), new TreeSet<>());
+                    daily.put(e.rumorId(), new ArrayList<>());
+                    everHeardBy.put(e.rumorId(), new TreeSet<>());
                     conversionsBy.put(e.rumorId(), new TreeMap<>());
                 }
                 case RumorMutated e -> familyOf.put(e.rumorId(), familyOf.get(e.parentId()));
                 default -> { }
             }
 
-            if (event instanceof RumorTold told) {
-                int family = familyOf.get(told.rumorId());
-                boolean converted = !believes(mirror, told.listenerId(), family, familyOf);
-                mirror.apply(event);
-                everBelieved.get(family).add(told.listenerId());
-                if (converted) {
-                    conversionsBy.get(family).merge(told.tellerId(), 1, Integer::sum);
-                    if (!half.containsKey(family)
-                            && believers(mirror, family, familyOf) * 2 >= Simulation.VILLAGER_COUNT) {
-                        half.put(family, told.tick());
-                    }
-                }
-                continue;
-            }
+            boolean reached = event instanceof RumorTold;
+            // Attributed to the version the listener ends up holding, since that is what a
+            // later snapshot will find in their head.
+            int family = reached ? familyOf.get(((RumorTold) event).keptRumorId()) : -1;
+            boolean wasHolding = reached
+                    && beliefIn(mirror, ((RumorTold) event).listenerId(), family, familyOf) != null;
 
             mirror.apply(event);
 
             if (event instanceof RumorPlanted planted) {
-                everBelieved.get(planted.rumorId()).add(planted.villagerId());
+                everHeardBy.get(planted.rumorId()).add(planted.villagerId());
+            }
+            if (event instanceof RumorTold told) {
+                everHeardBy.get(family).add(told.listenerId());
+                if (!wasHolding) {
+                    conversionsBy.get(family).merge(told.tellerId(), 1, Integer::sum);
+                }
+            }
+            if (event instanceof RumorTold || event instanceof RumorPlanted) {
+                for (int known : daily.keySet()) {
+                    noteHalfway(mirror, known, familyOf, believeThreshold,
+                            halfHeard, halfBelieves, event.tick());
+                }
             }
             if (event instanceof DayEnded) {
-                for (Integer family : perDay.keySet()) {
-                    perDay.get(family).add(believers(mirror, family, familyOf));
+                day++;
+                for (int known : daily.keySet()) {
+                    daily.get(known).add(snapshot(mirror, known, familyOf, believeThreshold, day));
                 }
             }
         }
 
         NavigableMap<Integer, Double> reproduction = new TreeMap<>();
-        for (Map.Entry<Integer, NavigableSet<Integer>> entry : everBelieved.entrySet()) {
-            NavigableSet<Integer> believers = entry.getValue();
+        NavigableMap<Integer, Integer> everHeard = new TreeMap<>();
+        for (Map.Entry<Integer, NavigableSet<Integer>> entry : everHeardBy.entrySet()) {
+            NavigableSet<Integer> reachedVillagers = entry.getValue();
             Map<Integer, Integer> conversions = conversionsBy.get(entry.getKey());
             int converted = 0;
-            for (Integer believer : believers) {
-                converted += conversions.getOrDefault(believer, 0);
+            for (int villager : reachedVillagers) {
+                converted += conversions.getOrDefault(villager, 0);
             }
+            everHeard.put(entry.getKey(), reachedVillagers.size());
             reproduction.put(entry.getKey(),
-                    believers.isEmpty() ? 0.0 : converted / (double) believers.size());
+                    reachedVillagers.isEmpty() ? 0.0 : converted / (double) reachedVillagers.size());
         }
 
-        return new RumorStats(perDay, half, reproduction, claims);
+        return new RumorStats(believeThreshold, daily, everHeard,
+                halfHeard, halfBelieves, reproduction, claims);
     }
 
-    private static boolean believes(WorldState state, int villagerId, int family,
-                                    Map<Integer, Integer> familyOf) {
+    private static void noteHalfway(WorldState state, int family, Map<Integer, Integer> familyOf,
+                                    double threshold, NavigableMap<Integer, Long> halfHeard,
+                                    NavigableMap<Integer, Long> halfBelieves, long tick) {
+        DayStats now = snapshot(state, family, familyOf, threshold, 0);
+        if (!halfHeard.containsKey(family) && now.heard() * 2 >= Simulation.VILLAGER_COUNT) {
+            halfHeard.put(family, tick);
+        }
+        if (!halfBelieves.containsKey(family) && now.believes() * 2 >= Simulation.VILLAGER_COUNT) {
+            halfBelieves.put(family, tick);
+        }
+    }
+
+    private static DayStats snapshot(WorldState state, int family, Map<Integer, Integer> familyOf,
+                                     double threshold, int day) {
+        int heard = 0;
+        int believes = 0;
+        NavigableMap<Integer, Integer> bySeverity = new TreeMap<>();
+        for (Villager villager : state.villagers().values()) {
+            Belief belief = beliefIn(state, villager.id(), family, familyOf);
+            if (belief == null) {
+                continue;
+            }
+            heard++;
+            if (belief.confidence() >= threshold) {
+                believes++;
+            }
+            bySeverity.merge(state.rumor(belief.rumorId()).severity(), 1, Integer::sum);
+        }
+        return new DayStats(day, heard, believes, bySeverity);
+    }
+
+    /** What this villager holds from this rumor family, or null if nothing. */
+    private static Belief beliefIn(WorldState state, int villagerId, int family,
+                                   Map<Integer, Integer> familyOf) {
         if (!state.villagers().containsKey(villagerId)) {
-            return false;
+            return null;
         }
         for (Belief belief : state.villager(villagerId).beliefs().values()) {
             if (familyOf.getOrDefault(belief.rumorId(), -1) == family) {
-                return true;
+                return belief;
             }
         }
-        return false;
+        return null;
     }
 
-    private static int believers(WorldState state, int family, Map<Integer, Integer> familyOf) {
-        int count = 0;
-        for (Villager villager : state.villagers().values()) {
-            if (believes(state, villager.id(), family, familyOf)) {
-                count++;
-            }
-        }
-        return count;
-    }
+    public double believeThreshold() { return believeThreshold; }
 
     /** The planted rumor id of each family, in id order. */
     public NavigableSet<Integer> families() {
-        return new TreeSet<>(believersPerDay.keySet());
+        return new TreeSet<>(daily.keySet());
     }
 
-    public Claim claimOf(int family) {
-        return claims.get(family);
+    public Claim claimOf(int family) { return claims.get(family); }
+
+    /** One entry per day, day 1 first. */
+    public List<DayStats> daily(int family) {
+        return Collections.unmodifiableList(daily.getOrDefault(family, List.of()));
     }
 
-    /** How many villagers held this family's claim at the end of each day, day 1 first. */
-    public List<Integer> believersPerDay(int family) {
-        return Collections.unmodifiableList(believersPerDay.getOrDefault(family, List.of()));
+    /** How many villagers ever held this claim, whether or not they still do. */
+    public int everHeard(int family) {
+        return everHeard.getOrDefault(family, 0);
     }
 
-    /** The tick at which half the village first believed, if it ever did. */
-    public OptionalLong ticksUntilHalfTheVillage(int family) {
-        Long tick = ticksUntilHalf.get(family);
+    public int peakHeard(int family) {
+        int peak = 0;
+        for (DayStats stats : daily(family)) {
+            peak = Math.max(peak, stats.heard());
+        }
+        return peak;
+    }
+
+    public int peakBelieves(int family) {
+        int peak = 0;
+        for (DayStats stats : daily(family)) {
+            peak = Math.max(peak, stats.believes());
+        }
+        return peak;
+    }
+
+    public OptionalLong ticksUntilHalfHeard(int family) {
+        return at(halfHeard, family);
+    }
+
+    public OptionalLong ticksUntilHalfBelieves(int family) {
+        return at(halfBelieves, family);
+    }
+
+    private static OptionalLong at(NavigableMap<Integer, Long> ticks, int family) {
+        Long tick = ticks.get(family);
         return tick == null ? OptionalLong.empty() : OptionalLong.of(tick);
     }
 
-    /** New believers converted per believer: above 1 means the rumor is still growing. */
+    /**
+     * New people reached per person reached: transmission, not conviction. Above 1 means
+     * the claim was still finding fresh ears.
+     */
     public double reproductionNumber(int family) {
-        return reproductionNumber.getOrDefault(family, 0.0);
-    }
-
-    /** The largest number of simultaneous believers this family ever reached. */
-    public int peakBelievers(int family) {
-        int peak = 0;
-        for (int count : believersPerDay(family)) {
-            peak = Math.max(peak, count);
-        }
-        return peak;
+        return reproduction.getOrDefault(family, 0.0);
     }
 }

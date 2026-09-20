@@ -52,7 +52,7 @@ public final class Simulation {
         this.seed = seed;
         this.params = params;
         this.inputs = List.copyOf(inputs);
-        this.state = new WorldState(params);
+        this.state = new WorldState();
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
@@ -100,8 +100,8 @@ public final class Simulation {
     private void applyInputs() {
         for (Input input : scheduled.getOrDefault(tick, List.of())) {
             switch (input) {
-                case PlantRumor p -> record(new RumorPlanted(
-                        tick, state.nextRumorId(), p.claim(), p.severity(), p.villagerId()));
+                case PlantRumor p -> record(new RumorPlanted(tick, state.nextRumorId(),
+                        p.claim(), p.severity(), p.villagerId(), params.plantedConfidence()));
             }
         }
     }
@@ -180,10 +180,36 @@ public final class Simulation {
             return;
         }
 
-        int rumorId = growInTheTelling(toTell.rumorId());
-        Claim claim = state.rumor(rumorId).claim();
-        double heard = confidenceAfterHearing(state.villager(listenerId), claim, toTell.confidence());
-        record(new RumorTold(tick, tellerId, listenerId, rumorId, heard));
+        int toldRumorId = growInTheTelling(toTell.rumorId());
+        Claim claim = state.rumor(toldRumorId).claim();
+        Villager listener = state.villager(listenerId);
+        Belief held = listener.belief(claim);
+
+        // An echo: what the teller is passing on came through the listener in the first
+        // place, so it tells them nothing they did not already put into circulation. If
+        // the listener has since forgotten the claim entirely, the history goes with it
+        // and hearing it again is genuinely new.
+        boolean echo = held != null && toTell.cameThrough(listenerId);
+        double heard = echo
+                ? held.confidence()
+                : confidenceAfterHearing(listener, claim, toTell.confidence());
+
+        record(new RumorTold(tick, tellerId, listenerId, toldRumorId,
+                worseOf(held, toldRumorId), heard));
+    }
+
+    /**
+     * Which version of the claim the listener ends up holding. Once you have heard that
+     * the diamonds are gone, being told they are merely scarce does not walk it back.
+     * A tie goes to what was just said, so the freshest telling wins.
+     */
+    private int worseOf(Belief held, int toldRumorId) {
+        if (held == null) {
+            return toldRumorId;
+        }
+        return state.rumor(held.rumorId()).severity() > state.rumor(toldRumorId).severity()
+                ? held.rumorId()
+                : toldRumorId;
     }
 
     /**
@@ -250,11 +276,11 @@ public final class Simulation {
     }
 
     /**
-     * Rebuilds the world from an event list. Needs the params the log was produced with,
-     * because {@link DayEnded}'s consequences are calculated rather than stored.
+     * Rebuilds the world from an event list. Needs nothing but the events: every one of
+     * them carries whatever its own consequences depend on.
      */
-    public static WorldState replay(List<Event> events, Params params) {
-        WorldState fresh = new WorldState(params);
+    public static WorldState replay(List<Event> events) {
+        WorldState fresh = new WorldState();
         for (Event event : events) {
             fresh.apply(event);
         }

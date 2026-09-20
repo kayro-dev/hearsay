@@ -204,6 +204,86 @@ class RumorTest {
     }
 
     @Test
+    void hearingItBackFromSomeoneItPassedThroughConvincesNobody() {
+        Simulation sim = runWithRumor();
+
+        WorldState mirror = new WorldState();
+        int echoes = 0;
+        for (Event event : sim.log()) {
+            if (event instanceof RumorTold told) {
+                Claim claim = mirror.rumor(told.toldRumorId()).claim();
+                Belief tellerBelief = mirror.villager(told.tellerId()).belief(claim);
+                Belief held = mirror.villager(told.listenerId()).belief(claim);
+                if (held != null && tellerBelief != null && tellerBelief.cameThrough(told.listenerId())) {
+                    echoes++;
+                    assertEquals(held.confidence(), told.newConfidence(), 1e-12,
+                            "tick " + told.tick() + ": an echo moved the needle");
+                }
+            }
+            mirror.apply(event);
+        }
+        assertTrue(echoes > 0, "the run should contain at least one echo to check");
+    }
+
+    @Test
+    void nobodyIsInTheChainOfTheirOwnBelief() {
+        Simulation sim = runWithRumor();
+
+        int checked = 0;
+        for (Villager villager : sim.state().villagers().values()) {
+            for (Belief belief : villager.beliefs().values()) {
+                assertFalse(belief.cameThrough(villager.id()),
+                        villager.name() + " is in their own chain");
+                checked++;
+            }
+        }
+        assertTrue(checked > 0);
+    }
+
+    @Test
+    void aBeliefsChainContainsWhoeverLastToldThem() {
+        Simulation sim = runWithRumor();
+
+        int checked = 0;
+        for (Villager villager : sim.state().villagers().values()) {
+            for (Belief belief : villager.beliefs().values()) {
+                if (belief.sourceId() != Belief.NO_SOURCE) {
+                    assertTrue(belief.cameThrough(belief.sourceId()),
+                            villager.name() + " forgot who told them");
+                    checked++;
+                }
+            }
+        }
+        assertTrue(checked > 0, "somebody should have been told something");
+    }
+
+    @Test
+    void aBeliefNeverWalksBackToAMilderVersionOfTheClaim() {
+        Simulation sim = runWithRumor();
+
+        WorldState mirror = new WorldState();
+        int wouldHaveDowngraded = 0;
+        for (Event event : sim.log()) {
+            if (event instanceof RumorTold told) {
+                Claim claim = mirror.rumor(told.toldRumorId()).claim();
+                Belief held = mirror.villager(told.listenerId()).belief(claim);
+                int toldSeverity = mirror.rumor(told.toldRumorId()).severity();
+                if (held != null) {
+                    int heldSeverity = mirror.rumor(held.rumorId()).severity();
+                    if (toldSeverity < heldSeverity) {
+                        wouldHaveDowngraded++;
+                    }
+                    assertTrue(mirror.rumor(told.keptRumorId()).severity() >= heldSeverity,
+                            "tick " + told.tick() + ": a milder telling walked the claim back");
+                }
+            }
+            mirror.apply(event);
+        }
+        assertTrue(wouldHaveDowngraded > 0,
+                "the run should contain a milder telling for the rule to bite on");
+    }
+
+    @Test
     void beliefsFadeAndAreForgottenWhenNobodyRepeatsThem() {
         // One villager hears it, and by the end of day one still believes it.
         Simulation sim = new Simulation(SEED, Params.defaults(),

@@ -35,7 +35,7 @@ public record Run(long seed, Params params, List<Input> inputs, int ticks, List<
 
     /** Rebuilds the world by re-applying the log, without deciding anything again. */
     public WorldState finalState() {
-        return Simulation.replay(log, params);
+        return Simulation.replay(log);
     }
 
     /**

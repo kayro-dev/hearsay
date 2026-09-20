@@ -2,20 +2,19 @@ package hearsay;
 
 import java.util.Collections;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Everything the world is. The only place state changes is {@link #apply(Event)}, so a
  * fresh world replayed over the same event list is always identical to the original.
  *
- * <p>Holds the run's {@link Params} because one event, {@link DayEnded}, has consequences
- * that are calculated rather than stored. Replaying a log therefore needs the params it
- * was produced with, which is why the recipe for a run is seed + params + inputs.
+ * <p>Needs no {@link Params}. Every event carries the numbers its own consequences depend
+ * on, so a log replays to the same world whatever the knobs are set to today.
  */
 public final class WorldState {
-
-    private final Params params;
 
     private long tick = 0;
     private int diamondPrice = 100;
@@ -26,10 +25,6 @@ public final class WorldState {
 
     /** Rumor ids come from here, never from randomness. */
     private int nextRumorId = 0;
-
-    public WorldState(Params params) {
-        this.params = params;
-    }
 
     public void apply(Event event) {
         switch (event) {
@@ -52,8 +47,8 @@ public final class WorldState {
             case RumorPlanted e -> {
                 tick = e.tick();
                 addRumor(new Rumor(e.rumorId(), e.claim(), e.severity(), Rumor.NO_PARENT, e.tick()));
-                villager(e.villagerId()).believe(new Belief(
-                        e.claim(), params.plantedConfidence(), Belief.NO_SOURCE, e.tick(), e.rumorId()));
+                villager(e.villagerId()).believe(
+                        Belief.planted(e.claim(), e.confidence(), e.tick(), e.rumorId()));
             }
             case RumorMutated e -> {
                 tick = e.tick();
@@ -62,9 +57,9 @@ public final class WorldState {
             }
             case RumorTold e -> {
                 tick = e.tick();
-                Rumor rumor = rumor(e.rumorId());
-                villager(e.listenerId()).believe(new Belief(
-                        rumor.claim(), e.newConfidence(), e.tellerId(), e.tick(), e.rumorId()));
+                Rumor kept = rumor(e.keptRumorId());
+                villager(e.listenerId()).believe(new Belief(kept.claim(), e.newConfidence(),
+                        e.tellerId(), e.tick(), e.keptRumorId(), chainAfter(e, kept.claim())));
             }
             case DayEnded e -> {
                 tick = e.tick();
@@ -75,12 +70,26 @@ public final class WorldState {
         }
     }
 
+    /**
+     * The history the listener's belief now carries: everywhere the teller's belief had
+     * been, plus the teller. The listener is dropped, so nobody sits in their own chain.
+     */
+    private NavigableSet<Integer> chainAfter(RumorTold told, Claim claim) {
+        NavigableSet<Integer> chain = new TreeSet<>();
+        Belief tellerBelief = villager(told.tellerId()).belief(claim);
+        if (tellerBelief != null) {
+            chain.addAll(tellerBelief.chain());
+        }
+        chain.add(told.tellerId());
+        chain.remove(told.listenerId());
+        return chain;
+    }
+
     private void addRumor(Rumor rumor) {
         rumors.put(rumor.id(), rumor);
         nextRumorId = Math.max(nextRumorId, rumor.id() + 1);
     }
 
-    public Params params() { return params; }
     public long tick() { return tick; }
     public int diamondPrice() { return diamondPrice; }
     public int nextRumorId() { return nextRumorId; }

@@ -80,14 +80,17 @@ class RunTest {
     }
 
     @Test
-    void anOldLogReplaysTheSameEvenAfterTheDecayIsRetuned() {
+    void replayNeedsNothingButTheEventsHoweverTheKnobsAreRetunedToday() {
         Run run = aRun();
-        WorldState asRecorded = run.finalState();
 
-        // The knobs move, but the log already says what the decay was on the day.
-        Params retuned = new Params(0.3, 0.5, 0.5, 0.2, 0.4, 0.05, 1.0);
-        WorldState replayedWithNewParams = Simulation.replay(run.log(), retuned);
+        // Replay consults no params at all: every event carries the numbers its own
+        // consequences depend on.
+        assertEquals(run.finalState(), Simulation.replay(run.log()));
 
-        assertEquals(asRecorded, replayedWithNewParams);
+        // ...and the run really was sensitive to those knobs, so the line above is not
+        // passing because the params never mattered.
+        Params retuned = new Params(0.3, 0.5, 0.5, 0.2, 0.4, 0.05, 0.5);
+        Run underNewKnobs = Run.execute(run.seed(), retuned, run.inputs(), run.ticks());
+        assertNotEquals(run.log(), underNewKnobs.log());
     }
 }

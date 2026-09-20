@@ -26,19 +26,19 @@ public final class Narrator {
      */
     private String pendingMutation;
 
-    private Narrator(Params params, boolean narrateMeetings) {
-        this.mirror = new WorldState(params);
+    private Narrator(boolean narrateMeetings) {
+        this.mirror = new WorldState();
         this.narrateMeetings = narrateMeetings;
     }
 
     /** Narrates rumors: who told whom what, and where a rumor grew. */
-    public static Narrator of(Params params) {
-        return new Narrator(params, false);
+    public static Narrator of() {
+        return new Narrator(false);
     }
 
     /** Also narrates every meeting, which is a lot of lines once the village is busy. */
-    public static Narrator withMeetings(Params params) {
-        return new Narrator(params, true);
+    public static Narrator withMeetings() {
+        return new Narrator(true);
     }
 
     /** The lines this event produces: usually none or one, two when a rumor grew. */
@@ -60,9 +60,9 @@ public final class Narrator {
                         + phraseNow(mirror.rumor(e.rumorId())) + ".";
             }
             case RumorTold e -> {
-                Claim claim = mirror.rumor(e.rumorId()).claim();
+                Claim claim = mirror.rumor(e.toldRumorId()).claim();
                 double before = confidenceIn(e.listenerId(), claim);
-                String what = phrase(mirror.rumor(e.rumorId()));
+                String what = phrase(mirror.rumor(e.toldRumorId()));
                 mirror.apply(e);
 
                 lines.add(prefix(e.tick()) + name(e.tellerId()) + " tells " + name(e.listenerId())

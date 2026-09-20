@@ -57,7 +57,7 @@ class SimulationTest {
     void replayingTheLogRebuildsTheExactState() {
         Simulation sim = runWithRumor(42);
 
-        WorldState replayed = Simulation.replay(sim.log(), sim.params());
+        WorldState replayed = Simulation.replay(sim.log());
 
         // Check the world being compared is actually populated, so this cannot pass by
         // comparing two empty villages.
@@ -71,7 +71,7 @@ class SimulationTest {
     void replayRebuildsEveryVillagerDownToTheirTraitsSpotAndBeliefs() {
         Simulation sim = runWithRumor(42);
 
-        WorldState replayed = Simulation.replay(sim.log(), sim.params());
+        WorldState replayed = Simulation.replay(sim.log());
 
         for (int id = 0; id < Simulation.VILLAGER_COUNT; id++) {
             Villager original = sim.state().villager(id);
@@ -87,7 +87,7 @@ class SimulationTest {
     void replayRebuildsTheRumorFamilyTree() {
         Simulation sim = runWithRumor(42);
 
-        WorldState replayed = Simulation.replay(sim.log(), sim.params());
+        WorldState replayed = Simulation.replay(sim.log());
 
         assertEquals(sim.state().rumors(), replayed.rumors());
         assertEquals(sim.state().nextRumorId(), replayed.nextRumorId());
