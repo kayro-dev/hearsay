@@ -9,6 +9,11 @@ package hearsay;
  */
 public record Claim(String item, ClaimType type) implements Comparable<Claim> {
 
+    /** The same statement about the same item, turned on its head. */
+    public Claim opposite() {
+        return new Claim(item, type == ClaimType.SCARCE ? ClaimType.ABUNDANT : ClaimType.SCARCE);
+    }
+
     @Override
     public int compareTo(Claim other) {
         int byItem = item.compareTo(other.item);

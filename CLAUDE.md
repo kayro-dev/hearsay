@@ -12,6 +12,17 @@ logged so any crash can be replayed and compared against a counterfactual.
 - Event sourcing: the world changes only through events. Simulation decides and
   records events; WorldState.apply() is the only place state changes.
 - Replay must always reproduce the exact state (see the drift test).
+- Input events vs derived events. Input events come from outside the simulation
+  (RumorPlanted today, every player action later). Derived events are decided by
+  the simulation (moves, meetings, tellings, mutations). Replay re-applies the
+  whole log; a counterfactual re-runs from seed + params + input events with one
+  input removed and lets everything derived be decided again. The full recipe for
+  any run is seed + params + input events.
+- Separate random streams per subsystem: movement, gossip, mutation and price
+  each get their own Random derived from the seed. Never share one generator
+  across subsystems. If they shared, planting a rumor would shift every later
+  draw and villagers would walk somewhere else, so a counterfactual would differ
+  for reasons having nothing to do with the rumor.
 
 ## Workflow
 - I'm a Software Engineering student and this is my portfolio project.
