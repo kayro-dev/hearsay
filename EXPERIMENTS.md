@@ -936,3 +936,61 @@ and it was wrong. A villager's last visit to the market started at `Long.MIN_VAL
 every villager who had never once been to the market counted as permanently standing in it.
 Guarded now, with a test that a villager never seen anywhere is not in the market whatever
 the window.
+
+---
+
+## E12 — The rumor never leaves the people you told
+
+The first session recorded with sightings: 26 villagers, 617 ticks, three rumors planted,
+where every villager's position is reported every tick rather than inferred from who they
+were talking to. It settles what was still open in E11, and finds something worse.
+
+### Where villagers actually are
+
+| spot | villager-ticks | share |
+| --- | --- | --- |
+| the village at large | 9,889 | 62% |
+| home | 5,239 | 33% |
+| **at a workstation** | **888** | **5%** |
+
+Mean villagers in the market at any tick: **1.3 of 26**. The most ever there at once was 7,
+which is exactly the quorum, reached on 3 ticks out of 617. The price existed on 3 ticks and
+ranged 103 to 105.
+
+**So sightings did not open the market, and that answers E11's open question.** The market
+was not shut because we could not see who was in it. It was shut because almost nobody is in
+it: a Minecraft villager spends about a twentieth of their life within three blocks of their
+workstation, and two thirds of it walking about the village.
+
+### The rumor never gets past the first hop
+
+| | tellings by the villagers who were told | tellings by anyone else |
+| --- | --- | --- |
+| **played** | **31** | **0** |
+| headless model, same size and length | 20 | 137 (87%) |
+
+Every single telling in the played session came from one of the three villagers the player
+spoke to. Nobody who heard it second hand ever passed it on. In the model at the same size
+and length, 87% of telling is second hand — that is what spreading means.
+
+The chain is one thing causing the next. The market never opens, so the price never moves,
+so no villager ever reads anything into it: zero price observations in 617 ticks. Second-hand
+belief arrives at roughly credulity times one, decays 8% a day, and with nothing to reinforce
+it falls under the 0.4 telling threshold before its holder happens to be standing next to
+somebody. Belief reached 8 villagers and 3 believers, then went to nothing: holders on each
+of the last six days were 0, which is why no text was left above any head.
+
+**"Workers spread it better" is not what happened.** Time spent at a workstation correlates
+with meetings at r = 0.14, which is nothing, and the villager who told the most, at 12
+tellings, spent no ticks at a workstation at all. All three of the biggest tellers were
+simply the three the player told.
+
+**Conclusion.** Gossip is not the problem and never was: this village meets plenty. The
+market is the problem, and sightings have now ruled out the explanation that it was a
+measurement artefact. Three blocks from a workstation is not where Minecraft villagers
+spend their time, so a market defined that way is empty, and a market that is empty breaks
+the feedback loop that the whole model rests on.
+
+**Decision.** Nothing changed. The mapping from where a villager stands to what spot that
+makes them is the thing to fix, and it cannot be swept from these traces, because a trace
+records the spot that was decided and not the position it was decided from.
