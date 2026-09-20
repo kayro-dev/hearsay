@@ -102,8 +102,9 @@ public final class Simulation {
 
     public void step() {
         // The tick is read from the world rather than counted here, so this class keeps no
-        // running total of its own for a forked world to lose. Every tick records at least
-        // one event, so the world's tick is always the last one that happened.
+        // running total of its own for a forked world to lose. That works because every
+        // tick records at least one event, which the check at the end of this method holds
+        // to rather than trusting.
         long tick = state.tick() + 1;
         if (tick == 1) {
             createVillagers(tick);
@@ -118,6 +119,18 @@ public final class Simulation {
         observeTheMarket(tick);
         if (DayPart.of(tick) == DayPart.NIGHT) {
             record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
+        }
+
+        // Nothing here depends on anyone meeting anyone: a tick where nobody meets is
+        // ordinary, and most nights are one. What the clock does depend on is that
+        // something was written down, because the world's tick is where the next one
+        // starts from. If a tick ever records nothing, the clock stops and the next tick
+        // silently repeats this one, so it is caught here rather than left to be noticed
+        // in a counterfactual months later.
+        if (state.tick() != tick) {
+            throw new IllegalStateException("Tick " + tick + " recorded no events, so the "
+                    + "world's clock did not move. Every tick must write down at least one "
+                    + "thing, or the next tick will repeat this one.");
         }
     }
 
