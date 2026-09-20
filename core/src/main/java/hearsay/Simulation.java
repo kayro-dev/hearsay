@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -26,6 +27,12 @@ public final class Simulation {
 
     public static final int VILLAGER_COUNT = NAMES.size();
 
+    /** The one item that is traded, for now. */
+    public static final String DIAMOND = "diamond";
+
+    /** Fewer villagers than this at the market and there is no market to speak of. */
+    public static final int MARKET_QUORUM = 3;
+
     private final long seed;
     private final Params params;
 
@@ -33,7 +40,7 @@ public final class Simulation {
     private final Random movement;
     private final Random gossip;
     private final Random mutation;
-    private final Random price;
+    private final Random market;
 
     /** The inputs as given, kept so this run can describe itself. */
     private final List<Input> inputs;
@@ -56,7 +63,7 @@ public final class Simulation {
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
-        this.price = RandomStream.PRICE.from(seed);
+        this.market = RandomStream.MARKET.from(seed);
         for (Input input : this.inputs) {
             scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
         }
@@ -70,7 +77,10 @@ public final class Simulation {
         applyInputs();
         moveEveryone(DayPart.of(tick));
         holdMeetings();
-        record(new PriceChanged(tick, price.nextInt(-3, 4))); // placeholder until week 5
+        // Price first, then the people standing there read it: within a tick, belief
+        // moves the price and the price moves belief, in that order.
+        settleMarketPrice();
+        observeTheMarket();
         if (DayPart.of(tick) == DayPart.NIGHT) {
             record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
         }
@@ -269,6 +279,107 @@ public final class Simulation {
             return 0.0;
         }
         return held.cameThrough(tellerId) ? params.repeatWeight() : 1.0;
+    }
+
+    /**
+     * What one villager wants for a diamond. Belief in scarcity pushes the ask up, belief
+     * in plenty pushes it down.
+     *
+     * <p>The two beliefs are netted against each other, because a villager can hold both
+     * at once, and the result is clamped: confidence times the severity weighting reaches
+     * 2.0, and a conviction beyond total conviction should not exist. One consequence is
+     * that half-sure of the worst version and certain of the mildest saturate at the same
+     * ask.
+     */
+    double askingPrice(Villager villager) {
+        double scarcityBelief = strengthOf(villager, ClaimType.SCARCE)
+                - strengthOf(villager, ClaimType.ABUNDANT);
+        double clamped = Math.max(-1, Math.min(1, scarcityBelief));
+        return params.basePrice() * (1 + params.priceSensitivity() * clamped);
+    }
+
+    /** Confidence in one side of the claim, weighted by how bad the version they hold is. */
+    private double strengthOf(Villager villager, ClaimType type) {
+        Belief held = villager.belief(new Claim(DIAMOND, type));
+        if (held == null) {
+            return 0;
+        }
+        return held.confidence() * severityWeight(state.rumor(held.rumorId()).severity());
+    }
+
+    /** Severity 1, 2 and 3 count for 1x, 1.5x and 2x. */
+    private static double severityWeight(int severity) {
+        return 1 + (severity - 1) * 0.5;
+    }
+
+    /**
+     * The market price is the median ask of whoever is standing there, so one extreme
+     * villager cannot drag the whole market, while a real shift in belief can. Below a
+     * quorum there is no market and no price is set.
+     */
+    private void settleMarketPrice() {
+        List<Double> asks = new ArrayList<>();
+        for (Villager villager : state.villagers().values()) { // id order
+            if (villager.spot() == Spot.MARKET) {
+                asks.add(askingPrice(villager));
+            }
+        }
+        if (asks.size() < MARKET_QUORUM) {
+            return;
+        }
+        Collections.sort(asks);
+
+        int middle = asks.size() / 2;
+        double median = asks.size() % 2 == 1
+                ? asks.get(middle)
+                : (asks.get(middle - 1) + asks.get(middle)) / 2;
+
+        double wobble = 1 + params.marketNoise() * (market.nextDouble() * 2 - 1);
+        int price = Math.max(1, (int) Math.round(median * wobble));
+        record(new MarketPriceSet(tick, price, asks.size()));
+    }
+
+    /**
+     * Everyone at the market reads the price. Far enough above base and it is evidence
+     * that diamonds are scarce; far enough below, that they are plentiful. This is what
+     * closes the loop: belief moves the price, and the price moves belief.
+     */
+    private void observeTheMarket() {
+        OptionalInt settled = state.marketPrice();
+        if (settled.isEmpty() || state.tick() != tick) {
+            return;
+        }
+        int price = settled.getAsInt();
+        double deviation = (price - params.basePrice()) / (double) params.basePrice();
+        if (Math.abs(deviation) <= params.observationThreshold()) {
+            return;
+        }
+
+        Claim claim = new Claim(DIAMOND, deviation > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
+        double weight = params.observationWeight() * Math.min(1, Math.abs(deviation));
+
+        for (Villager villager : state.villagers().values()) { // id order
+            if (villager.spot() != Spot.MARKET) {
+                continue;
+            }
+            Belief held = villager.belief(claim);
+            double before = held == null ? 0 : held.confidence();
+            double after = Math.min(1.0, 1 - (1 - before) * (1 - weight));
+            // The rumor the belief ends up on: whatever they already held, or a fresh
+            // observation-born family if this conclusion is new to the village.
+            int rumorId = held != null ? held.rumorId() : observedRumorFor(claim);
+            record(new PriceObserved(tick, villager.id(), price, claim, rumorId, after));
+        }
+    }
+
+    /** The id of the observation-born family for this claim, existing or about to exist. */
+    private int observedRumorFor(Claim claim) {
+        for (Rumor rumor : state.rumors().values()) { // id order
+            if (rumor.isObserved() && rumor.claim().equals(claim)) {
+                return rumor.id();
+            }
+        }
+        return state.nextRumorId();
     }
 
     private void record(Event event) {

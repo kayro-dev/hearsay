@@ -109,3 +109,87 @@ behaviour than the rumor-only layer should produce on its own.
 
 **Decision.** Defaults set to `tellThreshold` 0.4 and `dailyDecay` 0.92. No seed in fifty
 overshoots at that setting, which leaves the headroom for week 5.
+
+---
+
+## E3 — Does a rumor make a bubble, and does the village stay calm without one
+
+The experiment the project rests on. Every combination runs twice over the same 50 seeds,
+once with a rumor planted in the gossipiest villager and once with nothing planted.
+Movement and gossip draw from streams that inputs never touch, so the two runs put the
+same villagers in the same places on the same ticks, and any difference between them is
+the rumor and nothing else.
+
+Target from the concept doc: a bubble in 60 to 80% of seeds with a rumor, and under 10%
+without. "Bubble" here is read as half the village believing diamonds are scarce, counted
+by `MarketStats`, which tracks a claim rather than a rumor family, because the no-rumor
+condition has no family to count.
+
+```
+./gradlew :experiments:bubble --args="--seeds 50 --ticks 200 \
+    --observation 0,0.1,0.15,0.2,0.3 --sensitivity 0.5,1.0,1.5 --csv build/bubble.csv"
+```
+
+```
+                    with a planted rumor              without any rumor
+   obs   sens   half  >120  peak$  days>120  believers |  half  >120  peak$  days>120  believers
+  0.00  0.5      6%   82%  131.9       6.2        4.7 |    0%    0%  103.0       0.0        0.0
+  0.00  1.0      6%  100%  163.2      15.3        4.7 |    0%    0%  103.0       0.0        0.0
+  0.00  1.5      6%  100%  194.4      20.4        4.7 |    0%    0%  103.0       0.0        0.0
+
+  0.10  0.5     24%   82%  135.1      18.2        5.6 |    0%    0%  103.0       0.0        0.0
+  0.10  1.0     72%  100%  188.5      39.6       13.4 |    0%    0%  103.0       0.0        0.0
+  0.10  1.5     90%  100%  246.7      46.3       16.7 |    0%    0%  103.0       0.0        0.0
+
+  0.15  0.5     44%   82%  138.5      24.5        7.7 |    0%    0%  103.0       0.0        0.0
+  0.15  1.0     90%  100%  198.5      44.0       17.9 |    0%    0%  103.0       0.0        0.0
+  0.15  1.5    100%  100%  257.0      47.4       20.0 |    0%    0%  103.0       0.0        0.0
+
+  0.20  0.5     64%   84%  143.5      30.8       12.7 |    0%    0%  103.0       0.0        0.0
+  0.20  1.0     98%  100%  204.7      45.8       19.6 |    0%    0%  103.0       0.0        0.0
+  0.20  1.5    100%  100%  257.0      47.5       20.0 |    0%    0%  103.0       0.0        0.0
+
+  0.30  0.5     80%   86%  147.3      35.9       16.6 |    0%    0%  103.0       0.0        0.0
+  0.30  1.0    100%  100%  206.0      47.0       20.0 |    0%    0%  103.0       0.0        0.0
+  0.30  1.5    100%  100%  257.0      47.6       20.0 |    0%    0%  103.0       0.0        0.0
+```
+
+**The loop closes.** At `observationWeight` 0, where the market cannot feed back into
+belief, a rumor convinces 4.7 villagers on average and half the village in 6% of seeds.
+Turning the feedback on takes the same rumor to 13.4 believers and 72% of seeds at 0.10
+with sensitivity 1.0. Nothing else changed, so the difference is the belief-price-belief
+loop and nothing else.
+
+**Three cells land in the 60-80% band:** observation 0.20 with sensitivity 0.5 at 64%,
+observation 0.10 with sensitivity 1.0 at 72%, and observation 0.30 with sensitivity 0.5 at
+80%. The current defaults, 0.15 and 1.0, give 90%, above the band.
+
+**The without-rumor zero is structural, not measured.** Market noise is plus or minus 3%,
+applied once to the median, and the observation threshold is 10%. A quiet village peaks at
+exactly 103 in all 50 seeds, so no villager can ever read anything into the price and no
+bubble can start on its own. The "under 10%" target is met, but by a mechanism that cannot
+fire rather than by one that rarely fires. Measuring spontaneous panics needs noise that
+accumulates, rather than a fresh draw around base each tick.
+
+**The bubbles do not burst.** One trajectory, seed 3 at the current defaults:
+
+```
+  day  1  high 101  heard  3  believe  1
+  day  7  high 132  heard 14  believe  3
+  day 13  high 180  heard 20  believe 11
+  day 19  high 205  heard 20  believe 17
+  day 25  high 205  heard 20  believe 20
+  day 50  high 200  heard 20  believe 20
+```
+
+The price climbs to roughly twice base and stays there for the last 30 days of the run.
+The arithmetic says it must: a villager who observes a saturated price once a day settles
+at a confidence of `d·w / (1 - d(1-w))`, which for decay 0.92 and weight 0.15 is 0.63,
+comfortably above the 0.5 believing threshold. Belief locks in, the asks stay high, and the
+price holds them there. For decay 0.92 the equilibrium only falls below 0.5 when
+`observationWeight` is under about 0.087, and villagers reach the market more than once a
+day, so the real figure is lower still. `days>120` of 30 to 47 out of 50 is describing a
+permanent change of regime, not a bubble.
+
+**Decision.** None yet: defaults are unchanged pending a decision on whether a bubble is
+supposed to deflate. The three cells above hit the stated target as written.

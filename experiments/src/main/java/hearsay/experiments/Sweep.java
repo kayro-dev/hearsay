@@ -85,9 +85,9 @@ public final class Sweep {
 
     private static SweepStats.SeedOutcome runOne(long seed, int planter, double decay,
                                                  double tellThreshold, int ticks) {
-        Params base = Params.defaults();
-        Params params = new Params(tellThreshold, base.repeatWeight(), base.contradictionFactor(),
-                decay, base.forgetThreshold(), base.mutationChance(), base.plantedConfidence());
+        Params params = Params.defaults()
+                .withTellThreshold(tellThreshold)
+                .withDailyDecay(decay);
 
         List<Input> inputs = List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, planter));
         Run run = Run.execute(seed, params, inputs, ticks);

@@ -80,10 +80,26 @@ public final class Narrator {
                             + " at " + e.spot().description() + ".");
                 }
             }
-            // Moves would be twenty lines a tick, the price walk means nothing until
-            // week 5, and the end of a day is bookkeeping rather than news.
+            // Moves would be twenty lines a tick, and the end of a day is bookkeeping
+            // rather than news.
+            case MarketPriceSet e -> {
+                int before = mirror.marketPrice().orElse(e.price());
+                mirror.apply(e);
+                if (e.price() != before) {
+                    lines.add(prefix(e.tick()) + "the market settles at " + e.price()
+                            + " (" + e.askingVillagers() + " selling).");
+                }
+            }
+            case PriceObserved e -> {
+                double before = confidenceIn(e.villagerId(), e.claim());
+                mirror.apply(e);
+                if (e.newConfidence() > before) {
+                    lines.add(prefix(e.tick()) + name(e.villagerId()) + " sees the price at "
+                            + e.price() + " and reckons " + phrase(mirror.rumor(e.rumorId()))
+                            + " (" + percent(before) + " \u2192 " + percent(e.newConfidence()) + ").");
+                }
+            }
             case VillagerMoved e -> mirror.apply(e);
-            case PriceChanged e -> mirror.apply(e);
             case DayEnded e -> mirror.apply(e);
         }
         return lines;

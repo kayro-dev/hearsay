@@ -124,7 +124,7 @@ class RumorTest {
     }
 
     @Test
-    void everyRumorLeadsBackToAPlantedOne() {
+    void everyRumorLeadsBackToAPlantedOrObservedRoot() {
         Simulation sim = runWithRumor();
         WorldState state = sim.state();
 
@@ -132,7 +132,7 @@ class RumorTest {
 
         // Only rumors that were actually planted may claim to be planted. Without this,
         // a rumor that grew in the telling could drop its parent and pass itself off as
-        // the origin, and every chain below would still lead somewhere "planted".
+        // the origin, and every chain below would still lead somewhere with a root.
         int plantedEvents = 0;
         for (Event event : sim.log()) {
             if (event instanceof RumorPlanted e) {
@@ -155,16 +155,20 @@ class RumorTest {
         for (Rumor rumor : state.rumors().values()) {
             Rumor current = rumor;
             int steps = 0;
-            while (!current.isPlanted()) {
+            while (!current.isRoot()) {
                 current = state.rumor(current.parentId());
                 assertTrue(++steps <= state.rumors().size(), "parent chain loops: " + rumor);
             }
+            // Every family starts somewhere real: somebody planted it, or somebody read
+            // it off the market price.
+            assertTrue(current.isPlanted() || current.isObserved(),
+                    "rumor " + rumor.id() + " descends from nowhere");
             assertEquals(rumor.claim(), current.claim(), "a rumor may grow, but not change subject");
         }
     }
 
     @Test
-    void nobodyInventsABeliefFromNothing() {
+    void everyBeliefTracesToAPlantedRumorOrAMarketObservation() {
         Simulation sim = runWithRumor();
         WorldState state = sim.state();
 
@@ -172,7 +176,12 @@ class RumorTest {
         for (Villager villager : state.villagers().values()) {
             for (Belief belief : villager.beliefs().values()) {
                 Rumor source = state.rumor(belief.rumorId()); // throws if it never existed
-                assertTrue(state.rootOf(source).isPlanted());
+                Rumor root = state.rootOf(source);
+                assertTrue(root.isPlanted() || root.isObserved(),
+                        villager.name() + " believes something that started nowhere");
+                assertTrue(!root.isObserved() || belief.cameFromTheMarket()
+                        || belief.sourceId() != Belief.NO_SOURCE,
+                        "an observed belief should carry the market or a teller as its source");
                 assertEquals(belief.claim(), source.claim());
                 checked++;
             }
@@ -186,7 +195,7 @@ class RumorTest {
         WorldState state = sim.state();
 
         for (Rumor rumor : state.rumors().values()) {
-            if (!rumor.isPlanted()) {
+            if (!rumor.isRoot()) {
                 Rumor parent = state.rumor(rumor.parentId());
                 assertTrue(rumor.severity() >= parent.severity(),
                         "rumor " + rumor.id() + " shrank in the telling");
@@ -198,7 +207,7 @@ class RumorTest {
     @Test
     void aRumorAtTheTopOfTheScaleStopsGrowing() {
         // Crank the mutation chance so severity 3 is reached quickly and often.
-        Params eager = new Params(0.3, 0.5, 0.5, 0.9, 0.05, 0.8, 1.0);
+        Params eager = Params.defaults().withMutationChance(0.8);
         Simulation sim = new Simulation(SEED, eager,
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, PLANTED_IN)));
         sim.run(TICKS);
@@ -207,7 +216,7 @@ class RumorTest {
         boolean reachedTheTop = false;
         for (Rumor rumor : state.rumors().values()) {
             reachedTheTop |= rumor.severity() == Rumor.MAX_SEVERITY;
-            if (!rumor.isPlanted()) {
+            if (!rumor.isRoot()) {
                 assertTrue(state.rumor(rumor.parentId()).severity() < Rumor.MAX_SEVERITY,
                         "rumor " + rumor.id() + " grew out of one that was already as bad as it gets");
             }
@@ -340,7 +349,7 @@ class RumorTest {
 
         // A run with a much harsher decay should end up with fewer believers than the
         // default one, all else being equal.
-        Params forgetful = new Params(0.3, 0.5, 0.5, 0.2, 0.05, 0.05, 1.0);
+        Params forgetful = Params.defaults().withDailyDecay(0.2);
         Simulation forgetfulSim = new Simulation(SEED, forgetful,
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, PLANTED_IN)));
         forgetfulSim.run(TICKS);

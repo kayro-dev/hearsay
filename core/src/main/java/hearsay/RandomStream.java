@@ -18,8 +18,12 @@ public enum RandomStream {
     GOSSIP,
     /** Whether a rumor grows in the telling. */
     MUTATION,
-    /** The placeholder price walk, until prices follow beliefs in week 5. */
-    PRICE;
+    /**
+     * The wobble on the settled market price. Without it a village with no rumors would
+     * hold a perfectly flat price forever, and a bubble arising on its own could not even
+     * be measured.
+     */
+    MARKET;
 
     /**
      * A generator for this stream. The seeds are spread apart by the SplitMix64 mixing

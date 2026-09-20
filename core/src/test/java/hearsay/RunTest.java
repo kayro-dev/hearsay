@@ -89,7 +89,7 @@ class RunTest {
 
         // ...and the run really was sensitive to those knobs, so the line above is not
         // passing because the params never mattered.
-        Params retuned = new Params(0.3, 0.5, 0.5, 0.2, 0.4, 0.05, 0.5);
+        Params retuned = Params.defaults().withDailyDecay(0.2).withForgetThreshold(0.4);
         Run underNewKnobs = Run.execute(run.seed(), retuned, run.inputs(), run.ticks());
         assertNotEquals(run.log(), underNewKnobs.log());
     }

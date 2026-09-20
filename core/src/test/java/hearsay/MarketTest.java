@@ -1,0 +1,161 @@
+package hearsay;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+/** Belief moves the price, and the price moves belief. */
+class MarketTest {
+
+    private static final int TICKS = 200;
+    private static final Claim DIAMONDS_SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
+
+    private static Run quietVillage(Params params) {
+        return Run.execute(42, params, List.of(), TICKS);
+    }
+
+    private static List<MarketPriceSet> prices(List<Event> log) {
+        List<MarketPriceSet> found = new ArrayList<>();
+        for (Event event : log) {
+            if (event instanceof MarketPriceSet e) {
+                found.add(e);
+            }
+        }
+        return found;
+    }
+
+    @Test
+    void withoutRumorsOrNoiseThePriceNeverLeavesBase() {
+        Params silent = Params.defaults().withMarketNoise(0);
+
+        Run run = quietVillage(silent);
+
+        List<MarketPriceSet> settled = prices(run.log());
+        assertFalse(settled.isEmpty(), "the market should have opened at least once");
+        for (MarketPriceSet price : settled) {
+            assertEquals(silent.basePrice(), price.price(),
+                    "tick " + price.tick() + ": nobody believes anything, so nothing moves");
+        }
+        // ...and with the price pinned at base, nobody can read anything into it.
+        for (Event event : run.log()) {
+            assertFalse(event instanceof PriceObserved, "there was nothing to observe");
+        }
+    }
+
+    @Test
+    void theMarketOnlyOpensWithAQuorum() {
+        Run run = quietVillage(Params.defaults());
+
+        for (MarketPriceSet price : prices(run.log())) {
+            assertTrue(price.askingVillagers() >= Simulation.MARKET_QUORUM,
+                    "tick " + price.tick() + " settled a price with " + price.askingVillagers());
+        }
+    }
+
+    @Test
+    void onlyVillagersStandingAtTheMarketReadThePrice() {
+        Run run = Run.execute(42, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 10)), TICKS);
+
+        WorldState mirror = new WorldState();
+        int observations = 0;
+        for (Event event : run.log()) {
+            if (event instanceof PriceObserved e) {
+                assertEquals(Spot.MARKET, mirror.villager(e.villagerId()).spot(),
+                        "tick " + e.tick() + ": " + e.villagerId() + " read the price from elsewhere");
+                observations++;
+            }
+            mirror.apply(event);
+        }
+        assertTrue(observations > 0, "somebody should have read the price by now");
+    }
+
+    @Test
+    void moreScarcityBeliefAlwaysMeansAHigherAsk() {
+        Params params = Params.defaults();
+        double[] confidences = {0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0};
+
+        // Along each axis separately: the two do not form a single order, since being
+        // half sure of the worst version outweighs being certain of the mildest.
+        for (int severity = 1; severity <= Rumor.MAX_SEVERITY; severity++) {
+            double previous = -1;
+            for (double confidence : confidences) {
+                double ask = askWith(params, confidence, severity);
+                assertTrue(ask >= previous - 1e-9,
+                        "ask fell as confidence rose at severity " + severity);
+                previous = ask;
+            }
+        }
+        for (double confidence : confidences) {
+            double previous = -1;
+            for (int severity = 1; severity <= Rumor.MAX_SEVERITY; severity++) {
+                double ask = askWith(params, confidence, severity);
+                assertTrue(ask >= previous - 1e-9,
+                        "ask fell as severity rose at confidence " + confidence);
+                previous = ask;
+            }
+        }
+        assertTrue(askWith(params, 0, 1) < askWith(params, 1, 1), "belief must move the ask");
+        assertEquals(params.basePrice(), askWith(params, 0, 1), 1e-9,
+                "believing nothing asks the base price");
+    }
+
+    /** The ask of a villager holding one scarcity belief at a given strength. */
+    private static double askWith(Params params, double confidence, int severity) {
+        Simulation sim = new Simulation(42, params, List.of());
+        sim.run(1);
+        Villager villager = sim.state().villager(0);
+        if (confidence > 0) {
+            sim.state().apply(new RumorPlanted(1, 900 + severity, DIAMONDS_SCARCE,
+                    severity, 0, confidence));
+        }
+        return sim.askingPrice(villager);
+    }
+
+    @Test
+    void anAbundantBeliefPullsTheAskBelowBase() {
+        Params params = Params.defaults();
+        Simulation sim = new Simulation(42, params, List.of());
+        sim.run(1);
+
+        sim.state().apply(new RumorPlanted(1, 900,
+                new Claim(Simulation.DIAMOND, ClaimType.ABUNDANT), 2, 0, 0.8));
+
+        assertTrue(sim.askingPrice(sim.state().villager(0)) < params.basePrice());
+    }
+
+    @Test
+    void replayRebuildsThePrice() {
+        Run run = Run.execute(42, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 10)), TICKS);
+
+        WorldState replayed = Simulation.replay(run.log());
+
+        assertTrue(replayed.marketPrice().isPresent(), "the market should have settled");
+        assertEquals(run.finalState(), replayed);
+        assertEquals(run.finalState().marketPrice(), replayed.marketPrice());
+    }
+
+    @Test
+    void plantingARumorStillChangesNothingAboutWhereAnyoneWalks() {
+        List<Event> withRumor = Run.execute(42, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 10)), TICKS).log();
+        List<Event> without = Run.execute(42, Params.defaults(), List.of(), TICKS).log();
+
+        assertEquals(physical(without), physical(withRumor),
+                "movement and meetings must survive the market loop");
+        assertNotEquals(without, withRumor, "but the rumor must still change what happens");
+    }
+
+    private static List<Event> physical(List<Event> log) {
+        List<Event> found = new ArrayList<>();
+        for (Event event : log) {
+            if (event instanceof VillagerMoved || event instanceof VillagersMet) {
+                found.add(event);
+            }
+        }
+        return found;
+    }
+}

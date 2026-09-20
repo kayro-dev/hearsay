@@ -26,6 +26,12 @@ public record Belief(Claim claim, double confidence, int sourceId, long sinceTic
     /** Source id for a belief that came from nobody: a planted rumor. */
     public static final int NO_SOURCE = -1;
 
+    /**
+     * Source id for a belief a villager drew from the market price. No villager has this
+     * id, so it sits harmlessly in a chain and simply never matches a teller.
+     */
+    public static final int MARKET = -2;
+
     public Belief {
         if (!(confidence >= 0 && confidence <= 1)) {
             throw new IllegalArgumentException("confidence must be between 0 and 1, was " + confidence);
@@ -41,6 +47,11 @@ public record Belief(Claim claim, double confidence, int sourceId, long sinceTic
     /** The same belief at a new strength, with its history intact. */
     public Belief withConfidence(double newConfidence) {
         return new Belief(claim, newConfidence, sourceId, sinceTick, rumorId, chain);
+    }
+
+    /** True if the holder worked this out from the price rather than being told. */
+    public boolean cameFromTheMarket() {
+        return chain.contains(MARKET);
     }
 
     /** True if this belief already passed through that villager on its way here. */

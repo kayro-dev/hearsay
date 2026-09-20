@@ -25,3 +25,11 @@ application {
 tasks.named<Test>("test") {
     useJUnitPlatform()
 }
+
+/** The with-and-without-a-rumor experiment: ./gradlew :experiments:bubble --args="..." */
+tasks.register<JavaExec>("bubble") {
+    group = "application"
+    description = "Sweeps market settings, running each seed with and without a planted rumor."
+    mainClass = "hearsay.experiments.Bubble"
+    classpath = sourceSets["main"].runtimeClasspath
+}

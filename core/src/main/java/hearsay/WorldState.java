@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -17,7 +18,10 @@ import java.util.TreeSet;
 public final class WorldState {
 
     private long tick = 0;
-    private int diamondPrice = 100;
+
+    /** Unset until the market first settles on a price. */
+    private int marketPrice = 0;
+    private boolean priceKnown = false;
 
     /** Keyed by id, so iteration order is id order rather than hash order. */
     private final NavigableMap<Integer, Villager> villagers = new TreeMap<>();
@@ -28,10 +32,6 @@ public final class WorldState {
 
     public void apply(Event event) {
         switch (event) {
-            case PriceChanged e -> {
-                tick = e.tick();
-                diamondPrice = Math.max(1, diamondPrice + e.delta());
-            }
             case VillagerCreated e -> {
                 tick = e.tick();
                 villagers.put(e.id(), new Villager(e.id(), e.name(), e.traits(), Spot.HOME));
@@ -46,20 +46,45 @@ public final class WorldState {
             }
             case RumorPlanted e -> {
                 tick = e.tick();
-                addRumor(new Rumor(e.rumorId(), e.claim(), e.severity(), Rumor.NO_PARENT, e.tick()));
+                addRumor(new Rumor(e.rumorId(), e.claim(), e.severity(), Rumor.NO_PARENT,
+                        e.tick(), RumorOrigin.PLANTED));
                 villager(e.villagerId()).believe(
                         Belief.planted(e.claim(), e.confidence(), e.tick(), e.rumorId()));
             }
             case RumorMutated e -> {
                 tick = e.tick();
                 Rumor parent = rumor(e.parentId());
-                addRumor(new Rumor(e.rumorId(), parent.claim(), e.severity(), e.parentId(), e.tick()));
+                addRumor(new Rumor(e.rumorId(), parent.claim(), e.severity(), e.parentId(),
+                        e.tick(), parent.origin()));
             }
             case RumorTold e -> {
                 tick = e.tick();
                 Rumor kept = rumor(e.keptRumorId());
                 villager(e.listenerId()).believe(new Belief(kept.claim(), e.newConfidence(),
                         e.tellerId(), e.tick(), e.keptRumorId(), chainAfter(e, kept.claim())));
+            }
+            case MarketPriceSet e -> {
+                tick = e.tick();
+                marketPrice = e.price();
+                priceKnown = true;
+            }
+            case PriceObserved e -> {
+                tick = e.tick();
+                // The first villager to read this conclusion out of the price starts a
+                // rumor family for it; everyone after joins the family already there.
+                if (!rumors.containsKey(e.rumorId())) {
+                    addRumor(new Rumor(e.rumorId(), e.claim(), Rumor.MIN_SEVERITY,
+                            Rumor.NO_PARENT, e.tick(), RumorOrigin.OBSERVED));
+                }
+                Rumor seen = rumor(e.rumorId());
+                Belief held = villager(e.villagerId()).belief(seen.claim());
+                NavigableSet<Integer> chain = new TreeSet<>();
+                if (held != null) {
+                    chain.addAll(held.chain());
+                }
+                chain.add(Belief.MARKET);
+                villager(e.villagerId()).believe(new Belief(seen.claim(), e.newConfidence(),
+                        Belief.MARKET, e.tick(), e.rumorId(), chain));
             }
             case DayEnded e -> {
                 tick = e.tick();
@@ -91,7 +116,11 @@ public final class WorldState {
     }
 
     public long tick() { return tick; }
-    public int diamondPrice() { return diamondPrice; }
+
+    /** The last price the market settled on, empty until it first does. */
+    public OptionalInt marketPrice() {
+        return priceKnown ? OptionalInt.of(marketPrice) : OptionalInt.empty();
+    }
     public int nextRumorId() { return nextRumorId; }
 
     public NavigableMap<Integer, Villager> villagers() {
@@ -118,10 +147,10 @@ public final class WorldState {
         return rumor;
     }
 
-    /** Walks a rumor's parents back to the planted rumor it descends from. */
+    /** Walks a rumor's parents back to the rumor its family started with. */
     public Rumor rootOf(Rumor rumor) {
         Rumor current = rumor;
-        while (!current.isPlanted()) {
+        while (!current.isRoot()) {
             current = rumor(current.parentId());
         }
         return current;
@@ -131,7 +160,8 @@ public final class WorldState {
     public boolean equals(Object o) {
         return o instanceof WorldState w
             && tick == w.tick
-            && diamondPrice == w.diamondPrice
+            && marketPrice == w.marketPrice
+            && priceKnown == w.priceKnown
             && nextRumorId == w.nextRumorId
             && villagers.equals(w.villagers)
             && rumors.equals(w.rumors);
@@ -139,12 +169,12 @@ public final class WorldState {
 
     @Override
     public int hashCode() {
-        return Objects.hash(tick, diamondPrice, nextRumorId, villagers, rumors);
+        return Objects.hash(tick, marketPrice, priceKnown, nextRumorId, villagers, rumors);
     }
 
     @Override
     public String toString() {
-        return "tick=" + tick + ", diamondPrice=" + diamondPrice
+        return "tick=" + tick + ", price=" + (priceKnown ? marketPrice : "unset")
                 + ", villagers=" + villagers.size() + ", rumors=" + rumors.size();
     }
 }
