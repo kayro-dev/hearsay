@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.nio.file.Path;
@@ -45,6 +46,13 @@ public final class HearsayPlugin extends JavaPlugin {
     private static final long SECONDS_PER_TICK = 10;
 
     private static final long GAME_TICKS_PER_SECOND = 20;
+
+    /** How far away a whisper still puts a line on your action bar. */
+    private static final double WHISPER_VISIBLE_RANGE = 48.0;
+
+    /** A whisper is drawn this many times, this many game ticks apart: about a second. */
+    private static final int WHISPER_FRAMES = 8;
+    private static final long WHISPER_FRAME_GAP = 3L;
 
     private VillageSession session;
     private Displays displays;
@@ -118,38 +126,67 @@ public final class HearsayPlugin extends JavaPlugin {
         if (session == null || world == null) {
             return;
         }
-        Map<Integer, Location> positions = whereEveryoneIs();
+        Map<Integer, Villager> bodies = whoIsAround();
+        Map<Integer, Location> positions = new LinkedHashMap<>();
+        bodies.forEach((id, body) -> positions.put(id, body.getLocation()));
+
         List<Telling> tellings = session.advance(positions);
 
-        displays.showBeliefs(world, positions, session.confidences());
+        displays.showBeliefs(world, bodies, session.confidences());
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
-        Player player = watcher == null ? null : getServer().getPlayer(watcher);
         for (Telling telling : tellings) {
-            Location teller = positions.get(telling.tellerId());
-            Location listener = positions.get(telling.listenerId());
+            Villager teller = bodies.get(telling.tellerId());
+            Villager listener = bodies.get(telling.listenerId());
             if (teller == null || listener == null) {
                 continue;
             }
-            displays.showTelling(world, teller, listener);
-            if (player != null && player.getLocation().distance(teller) < 24) {
-                displays.tell(player, Component.text(session.nameOf(telling.tellerId())
-                        + " whispers to " + session.nameOf(telling.listenerId()),
-                        NamedTextColor.GRAY));
-            }
+            announceWhisper(telling, teller, listener);
         }
     }
 
-    /** Where each bound villager is standing, skipping any that have died or unloaded. */
-    private Map<Integer, Location> whereEveryoneIs() {
-        Map<Integer, Location> positions = new LinkedHashMap<>();
+    /**
+     * Draws a whisper over about a second rather than for a single instant, and follows the
+     * two villagers while it does, so it can actually be seen ten seconds apart.
+     */
+    private void announceWhisper(Telling telling, Villager teller, Villager listener) {
+        String said = session.nameOf(telling.tellerId()) + " whispers to "
+                + session.nameOf(telling.listenerId());
+        getLogger().info(said + " (" + Math.round(telling.newConfidence() * 100) + "%)");
+
+        Player player = watcher == null ? null : getServer().getPlayer(watcher);
+        if (player != null && player.getWorld().equals(world)
+                && player.getLocation().distance(teller.getLocation()) < WHISPER_VISIBLE_RANGE) {
+            displays.tell(player, Component.text(said, NamedTextColor.GRAY));
+        }
+
+        new BukkitRunnable() {
+            private int frame = 0;
+
+            @Override
+            public void run() {
+                if (!teller.isValid() || !listener.isValid() || world == null) {
+                    cancel();
+                    return;
+                }
+                displays.showWhisperFrame(world, teller.getLocation(), listener.getLocation(),
+                        frame == 0);
+                if (++frame >= WHISPER_FRAMES) {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(this, 0L, WHISPER_FRAME_GAP);
+    }
+
+    /** The bound villagers that are still around, by simulation id. */
+    private Map<Integer, Villager> whoIsAround() {
+        Map<Integer, Villager> bodies = new LinkedHashMap<>();
         session.bodies().forEach((id, body) -> {
-            var entity = getServer().getEntity(body);
-            if (entity instanceof Villager villager && villager.isValid()) {
-                positions.put(id, villager.getLocation());
+            if (getServer().getEntity(body) instanceof Villager villager && villager.isValid()) {
+                bodies.put(id, villager);
             }
         });
-        return positions;
+        return bodies;
     }
 
     private void plant(Player player, String[] args) {
@@ -175,8 +212,8 @@ public final class HearsayPlugin extends JavaPlugin {
     private Integer nearestBoundVillager(Player player) {
         Integer nearest = null;
         double nearestDistance = WHISPERING_RANGE;
-        for (Map.Entry<Integer, Location> standing : whereEveryoneIs().entrySet()) {
-            double distance = standing.getValue().distance(player.getLocation());
+        for (Map.Entry<Integer, Villager> standing : whoIsAround().entrySet()) {
+            double distance = standing.getValue().getLocation().distance(player.getLocation());
             if (distance <= nearestDistance) {
                 nearest = standing.getKey();
                 nearestDistance = distance;

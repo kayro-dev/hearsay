@@ -24,16 +24,17 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 4 | `/hearsay start` again | Refuses, telling you to stop first |
 | 5 | Watch for a minute | A price bar at the top of the screen; no text above any head yet, because nobody has heard anything |
 | 6 | Stand next to a villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce" |
-| 7 | Wait one tick (10s) | Grey text above that villager: `Diamonds scarce? 100%` |
-| 8 | Watch the villagers mill about | Text appears above others as they stand near each other |
-| 9 | Watch a telling happen | A quiet trade sound, particles between the pair, and an action-bar line `X whispers to Y` when you are within 24 blocks |
-| 10 | Watch a villager's number climb past 50% | Their text turns from grey to gold |
-| 11 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
-| 12 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
-| 13 | Walk a villager out of the group | Their text follows them, and stops updating once nobody is near them |
-| 14 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears |
-| 15 | Check `plugins/Hearsay/sessions/` | The file is there and is readable plain text: a `seed` line, a `params` line, `input plant …` and many `input meet …` lines |
-| 16 | Stop the server | No errors on shutdown, and no floating text left behind when you restart |
+| 7 | Wait one tick (10s) | **Gold** text above that villager: `Diamonds scarce? 100%`. Gold because they are certain — you told them. Grey is for villagers who have merely heard it from someone else |
+| 8 | Watch that villager walk | The label stays over their head as they move, with no lag and without being left behind at a workstation |
+| 9 | Break their workstation so they wander | The label follows, and the villager still walks about normally — the label rides them, so watch that it has not affected their behaviour |
+| 10 | Watch the villagers mill about | Grey text appears above others as they stand near each other |
+| 11 | Watch a telling happen | A trade sound, a thread of particles between the pair lasting about a second, and an action-bar line `X whispers to Y` within 48 blocks. The server console logs every telling, so check there if you miss one |
+| 12 | Watch a grey villager's number climb past 50% | Their text turns from grey to gold |
+| 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
+| 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
+| 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears |
+| 16 | Check `plugins/Hearsay/sessions/` | The file is there and is readable plain text: a `seed` line, a `params` line, `input plant …` and many `input meet …` lines |
+| 17 | Stop the server | No errors on shutdown, and no floating text left behind when you restart |
 
 ## The bridge back to the headless tools
 
@@ -42,10 +43,10 @@ you actually played.
 
 | # | Step | What should happen |
 | --- | --- | --- |
-| 17 | Copy the saved file somewhere convenient | — |
-| 18 | Check it reruns identically | The recipe is the run: `RecipeFileTest` covers this headlessly, so a mismatch here means the session recorded something it should not have |
-| 19 | Remove the `input plant …` line, save as a second file | Both files load |
-| 20 | Compare the two | The timelines should be identical until the tick the rumor was planted, and differ after — every `input meet …` line is the same in both, because Minecraft decided those, not Hearsay |
+| 18 | Copy the saved file somewhere convenient | — |
+| 19 | Check it reruns identically | The recipe is the run: `RecipeFileTest` covers this headlessly, so a mismatch here means the session recorded something it should not have |
+| 20 | Remove the `input plant …` line, save as a second file | Both files load |
+| 21 | Compare the two | The timelines should be identical until the tick the rumor was planted, and differ after — every `input meet …` line is the same in both, because Minecraft decided those, not Hearsay |
 
 ## Known limits of the spike
 

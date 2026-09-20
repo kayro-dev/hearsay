@@ -12,6 +12,8 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.Villager;
+import org.bukkit.util.Transformation;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +28,9 @@ final class Displays {
 
     /** Confidence at or above which a villager is shown as believing rather than informed. */
     private static final double BELIEVES = 0.5;
+
+    /** How high above the villager's own position the label rides. */
+    private static final float LABEL_HEIGHT = 0.9f;
 
     private final Map<Integer, UUID> labels = new LinkedHashMap<>();
     private final BossBar priceBar = BossBar.bossBar(
@@ -53,36 +58,47 @@ final class Displays {
     }
 
     /**
-     * Writes what each villager believes above their head. A villager who has not heard
-     * anything is left alone: an empty label above every head would say nothing and hide
-     * the village.
+     * Writes what each villager believes above their head.
+     *
+     * <p>The label rides the villager as a passenger rather than being moved to where they
+     * were last seen. A simulation tick is ten seconds apart, so a label that was teleported
+     * each tick trailed well behind anyone walking, and stayed where a villager had been
+     * standing when they moved on.
+     *
+     * <p>A villager who has not heard anything is left alone: an empty label above every
+     * head would say nothing and hide the village.
      */
-    void showBeliefs(World world, Map<Integer, Location> positions, Map<Integer, Double> confidences) {
-        positions.forEach((id, where) -> {
+    void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, Double> confidences) {
+        bodies.forEach((id, body) -> {
             Double confidence = confidences.get(id);
-            if (confidence == null) {
+            if (confidence == null || !body.isValid()) {
                 removeLabel(world, id);
                 return;
             }
-            TextDisplay label = labelFor(world, id, where);
-            label.text(Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
-                    .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY));
-            label.teleport(where.clone().add(0, 2.2, 0));
+            labelFor(world, id, body).text(
+                    Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
+                            .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY));
         });
     }
 
-    /** A quiet sound and a thread of particles between two villagers who just spoke. */
-    void showTelling(World world, Location teller, Location listener) {
-        world.playSound(teller, Sound.ENTITY_VILLAGER_TRADE, 0.4f, 1.6f);
-
-        int steps = 8;
+    /**
+     * One frame of a whisper: a thread of particles between two villagers.
+     *
+     * <p>Drawn repeatedly over about a second by the caller. A single frame of a handful of
+     * particles, once every ten seconds, was there but almost impossible to catch.
+     */
+    void showWhisperFrame(World world, Location teller, Location listener, boolean first) {
+        if (first) {
+            world.playSound(teller, Sound.ENTITY_VILLAGER_TRADE, 1.2f, 1.6f);
+        }
+        int steps = 20;
         for (int step = 0; step <= steps; step++) {
             double along = step / (double) steps;
             Location point = teller.clone().add(
                     (listener.getX() - teller.getX()) * along,
-                    (listener.getY() - teller.getY()) * along + 1.2,
+                    (listener.getY() - teller.getY()) * along + 1.4,
                     (listener.getZ() - teller.getZ()) * along);
-            world.spawnParticle(Particle.HAPPY_VILLAGER, point, 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.HAPPY_VILLAGER, point, 2, 0.06, 0.06, 0.06, 0);
         }
     }
 
@@ -96,7 +112,7 @@ final class Displays {
         }
     }
 
-    private TextDisplay labelFor(World world, int villagerId, Location where) {
+    private TextDisplay labelFor(World world, int villagerId, Villager body) {
         UUID existing = labels.get(villagerId);
         if (existing != null) {
             Entity entity = world.getEntity(existing);
@@ -104,10 +120,14 @@ final class Displays {
                 return display;
             }
         }
-        TextDisplay created = world.spawn(where.clone().add(0, 2.2, 0), TextDisplay.class, display -> {
+        TextDisplay created = world.spawn(body.getLocation(), TextDisplay.class, display -> {
             display.setBillboard(Display.Billboard.CENTER);
             display.setSeeThrough(true);
+            Transformation raised = display.getTransformation();
+            raised.getTranslation().set(0f, LABEL_HEIGHT, 0f);
+            display.setTransformation(raised);
         });
+        body.addPassenger(created);
         labels.put(villagerId, created.getUniqueId());
         return created;
     }
