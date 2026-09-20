@@ -36,19 +36,18 @@ public final class PairedWorlds {
         }
 
         /** Whether the price ran up and came back down in the world where the lie was told. */
-        public boolean bubbledWithTheLie(Claim claim, int peakAbove, int backBelow) {
-            return bubbled(withLie, claim, peakAbove, backBelow);
+        public boolean bubbledWithTheLie(Claim claim) {
+            return bubbled(withLie, claim);
         }
 
         /** ...and whether it did so anyway in the world where it was not. */
-        public boolean bubbledWithoutIt(Claim claim, int peakAbove, int backBelow) {
-            return bubbled(withoutLie, claim, peakAbove, backBelow);
+        public boolean bubbledWithoutIt(Claim claim) {
+            return bubbled(withoutLie, claim);
         }
 
         /** Whether the lie made the difference in this pair. */
-        public boolean lieMadeTheDifference(Claim claim, int peakAbove, int backBelow) {
-            return bubbledWithTheLie(claim, peakAbove, backBelow)
-                    && !bubbledWithoutIt(claim, peakAbove, backBelow);
+        public boolean lieMadeTheDifference(Claim claim) {
+            return bubbledWithTheLie(claim) && !bubbledWithoutIt(claim);
         }
     }
 
@@ -119,10 +118,10 @@ public final class PairedWorlds {
      * In how many pairs the lie made the difference: the price bubbled and burst in the
      * world where it was told, and did not in the world where it was not.
      */
-    public int pairsWhereTheLieCausedABubble(Claim claim, int peakAbove, int backBelow) {
+    public int pairsWhereTheLieCausedABubble(Claim claim) {
         int caused = 0;
         for (Pair pair : pairs) {
-            if (pair.lieMadeTheDifference(claim, peakAbove, backBelow)) {
+            if (pair.lieMadeTheDifference(claim)) {
                 caused++;
             }
         }
@@ -130,28 +129,27 @@ public final class PairedWorlds {
     }
 
     /** How many worlds bubbled with the lie, ignoring what their partners did. */
-    public int worldsThatBubbledWithTheLie(Claim claim, int peakAbove, int backBelow) {
-        return countBubbles(true, claim, peakAbove, backBelow);
+    public int worldsThatBubbledWithTheLie(Claim claim) {
+        return countBubbles(true, claim);
     }
 
     /** ...and how many did so anyway, without it. */
-    public int worldsThatBubbledWithoutIt(Claim claim, int peakAbove, int backBelow) {
-        return countBubbles(false, claim, peakAbove, backBelow);
+    public int worldsThatBubbledWithoutIt(Claim claim) {
+        return countBubbles(false, claim);
     }
 
-    private int countBubbles(boolean withLie, Claim claim, int peakAbove, int backBelow) {
+    private int countBubbles(boolean withLie, Claim claim) {
         int count = 0;
         for (Pair pair : pairs) {
-            if (withLie ? pair.bubbledWithTheLie(claim, peakAbove, backBelow)
-                    : pair.bubbledWithoutIt(claim, peakAbove, backBelow)) {
+            if (withLie ? pair.bubbledWithTheLie(claim) : pair.bubbledWithoutIt(claim)) {
                 count++;
             }
         }
         return count;
     }
 
-    private static boolean bubbled(List<Event> log, Claim claim, int peakAbove, int backBelow) {
-        return MarketStats.of(log, claim).burst(peakAbove, backBelow).isPresent();
+    private static boolean bubbled(List<Event> log, Claim claim) {
+        return MarketStats.of(log, claim).bubble().isPresent();
     }
 
     /** The mean of the per-pair differences in peak price: the lie's effect on the price. */

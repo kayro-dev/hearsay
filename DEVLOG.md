@@ -4,6 +4,116 @@ Notes on building Hearsay — what I chose, why, and what I got wrong.
 
 ---
 
+## Week 6 — counterfactuals (2026-09-20)
+
+### What changed
+
+Two ways of asking what the lie did.
+
+**A single rerun** answers "what would this village have done without the lie":
+`Run.without(input)` re-runs from the same seed and params with one input removed. Because
+the streams are separate, everyone walks the same routes in both timelines.
+
+**Paired worlds** answer "how likely was the lie to cause this". The village runs to the
+tick before the lie, then carries on many times under different futures. The worlds are
+paired: world 7 with the lie and world 7 without it get the same branch seed, so they face
+identical future randomness and the only difference inside a pair is the lie. Branch seeds
+come from `Seeds.branch(seed, index)`, so naming the seed and the number of pairs reproduces
+exactly those worlds. The technique is common random numbers.
+
+`Simulation.resume(state, branchSeed, params, inputs)` carries a world on from a given
+state; `Simulation.fork(branchSeed, inputs)` does the same from a live one. `PairedWorlds`
+replays the shared history once per world so no two worlds share a state object.
+
+`Comparison` reads two logs and reports the divergence tick, both timelines day by day, peak
+prices, days elevated, and the extra cost of buying one diamond each market day.
+
+Two CLI commands, `counterfactual` and `worlds`, which state in words what kind of claim
+each figure is: a single run says "in this simulated village", many worlds say "in X of N
+paired worlds".
+
+New: `Comparison`, `PairedWorlds`, `Seeds`, `Bubble`, `MarketNoiseSet`, and the
+`hearsay.experiments.ManyWorlds` runner. `RandomStream` now derives its seeds through
+`Seeds`. Tests went from 70 to 89.
+
+### The resume test found state outside WorldState
+
+The market's wobble was a field on `Simulation`. It was recorded nowhere, so a world rebuilt
+from its log started from a calm market it never had. It is now recorded every tick as
+`MarketNoiseSet` and restored by `apply`.
+
+Recording it every tick rather than folding it onto `MarketPriceSet` keeps the process
+per-tick: the market only opens with a quorum, so a replayed state would otherwise lag
+between openings, and advancing the noise only on market days would change the process the
+calibration was fitted to. The log grew about 3%; `CalibrationTest` did not move.
+
+The test took two corrections before it could fail:
+
+1. The edit adding the state parameter to the constructor did not apply, so `resume` ignored
+   the state it was given. The test passed anyway, because both continuations started from
+   the same empty world.
+2. Once that was fixed, both continuations went through `resume`, which reset the wobble to
+   zero in both. The missing state was invisible because it was missing equally. The test
+   only fails when a `fork` carrying everything the simulation knows is compared against a
+   `resume` rebuilding from the log alone.
+
+### Then the reliance on that was removed
+
+`Simulation` no longer keeps a tick counter; the tick is read from the world, which always
+holds the last tick that happened, since every tick records at least one event. That leaves
+the recipe, the four generators, the world and the log, all final, so `fork` is a plain copy
+and nothing has to be carried across by hand.
+
+`SimulationStateTest` holds that in place: it asserts the exact set of instance fields and
+that every one of them is final. Adding a field makes it fail, which forces the question of
+whether the field belongs in `WorldState`.
+
+### One definition of a bubble
+
+A bubble is a run whose price went above 130 and later came back under 110. The thresholds
+had been written out separately in five places. They now live in `Bubble` and every command,
+experiment and test reads them from there. Two neighbouring measures were renamed to keep
+them apart: **elevated** is a price above 120 with no claim about coming back, and **peak
+price** says how far it went with no claim about coming back. The experiments runner
+`Bubble` was renamed `BubbleSweep` to free the name.
+
+### Numbers
+
+E6, over the hundred villages `CalibrationTest` uses, 10 pairs each, 220 ticks, the lie told
+on tick 41:
+
+| measure | value |
+| --- | --- |
+| pairs run | 1000 |
+| bubbled with the lie | 919 (91.9%) |
+| bubbled without it | 0 (0.0%) |
+| the lie made the difference in | 919 (91.9%) |
+| mean peak price effect | +51.8 |
+| mean extra cost of a diamond a day | +782.5 |
+| per-village share the lie caused | p10 70%, median 100%, p90 100% |
+
+Four deliberate breakages, to check the new tests can fail:
+
+| Mutation | Caught by |
+| --- | --- |
+| Every world gets the same branch seed | `differentPairsTellDifferentStories` |
+| The two worlds in a pair get different branch seeds | `insideAPairEveryoneWalksTheSameRoutesInBothWorlds` |
+| `apply` does not restore the wobble from the log | `theWobbleCarriesOverInsteadOfBeingDrawnFresh` |
+| A mutable field is added to `Simulation` | both `SimulationStateTest` cases |
+
+The second was not caught at first. The divergence-tick test could not see it: with the lie
+told on the first tick of the continuation, unpaired worlds diverge at that same tick anyway.
+The property that distinguishes them is that both worlds in a pair walk identical routes for
+the whole run, not only up to the lie. A test for that was added and the mutation re-run.
+
+Separately, the CLI's per-pair column and its own summary disagreed: the column tested
+whether the price peaked above 130, the summary tested the full bubble. Both now go through
+`Pair.lieMadeTheDifference`.
+
+**Next:** the dashboard, reading the CSVs the CLI writes.
+
+---
+
 ## Week 5 — prices, and the loop that closes (2026-09-20)
 
 ### What changed

@@ -78,7 +78,7 @@ public final class Noise {
                     if (stats.peakBelievers() > 0) {
                         anyBeliever++;
                     }
-                    if (stats.burst(130, 110).isPresent()) {
+                    if (stats.bubble().isPresent()) {
                         burst++;
                     }
                     totalPeak += stats.peakPrice();

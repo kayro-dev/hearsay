@@ -30,7 +30,7 @@ tasks.named<Test>("test") {
 tasks.register<JavaExec>("bubble") {
     group = "application"
     description = "Sweeps market settings, running each seed with and without a planted rumor."
-    mainClass = "hearsay.experiments.Bubble"
+    mainClass = "hearsay.experiments.BubbleSweep"
     classpath = sourceSets["main"].runtimeClasspath
 }
 

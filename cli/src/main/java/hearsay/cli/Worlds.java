@@ -21,9 +21,6 @@ import java.util.Map;
  */
 final class Worlds {
 
-    private static final int PEAK_ABOVE = 130;
-    private static final int BACK_BELOW = 110;
-
     private Worlds() {
     }
 
@@ -59,9 +56,9 @@ final class Worlds {
                     bubbled(pair, claim), comparison.extraCostOfADiamondEachMarketDay());
         }
 
-        int caused = worlds.pairsWhereTheLieCausedABubble(claim, PEAK_ABOVE, BACK_BELOW);
-        int withLie = worlds.worldsThatBubbledWithTheLie(claim, PEAK_ABOVE, BACK_BELOW);
-        int withoutLie = worlds.worldsThatBubbledWithoutIt(claim, PEAK_ABOVE, BACK_BELOW);
+        int caused = worlds.pairsWhereTheLieCausedABubble(claim);
+        int withLie = worlds.worldsThatBubbledWithTheLie(claim);
+        int withoutLie = worlds.worldsThatBubbledWithoutIt(claim);
 
         System.out.println();
         System.out.printf("  bubbled with the lie:     %d of %d worlds%n", withLie, pairs);
@@ -79,8 +76,8 @@ final class Worlds {
 
     /** Whether this pair's bubble can be laid at the lie's door. */
     private static String bubbled(PairedWorlds.Pair pair, Claim claim) {
-        boolean with = pair.bubbledWithTheLie(claim, PEAK_ABOVE, BACK_BELOW);
-        boolean without = pair.bubbledWithoutIt(claim, PEAK_ABOVE, BACK_BELOW);
+        boolean with = pair.bubbledWithTheLie(claim);
+        boolean without = pair.bubbledWithoutIt(claim);
         if (with && !without) {
             return "lie";
         }

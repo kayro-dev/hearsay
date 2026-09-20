@@ -64,7 +64,7 @@ class CalibrationTest {
     @Test
     void aVillageNobodyLiedToNeverBursts() {
         for (long seed = FIRST_SEED; seed < FIRST_SEED + SEEDS; seed++) {
-            assertTrue(runVillage(seed, List.of()).burst(130, 110).isEmpty(),
+            assertTrue(runVillage(seed, List.of()).bubble().isEmpty(),
                     "seed " + seed + " panicked on its own, with nothing planted");
         }
     }

@@ -32,8 +32,6 @@ import java.util.Map;
 public final class ManyWorlds {
 
     private static final Claim DIAMONDS_SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
-    private static final int PEAK_ABOVE = 130;
-    private static final int BACK_BELOW = 110;
 
     public static void main(String[] args) throws IOException {
         Map<String, String> options = Cli.parse(args);
@@ -68,9 +66,9 @@ public final class ManyWorlds {
             PairedWorlds worlds = PairedWorlds.run(seed, params,
                     new PlantRumor(toldAt, DIAMONDS_SCARCE, 1, planter), ticks, pairs);
 
-            int caused = worlds.pairsWhereTheLieCausedABubble(DIAMONDS_SCARCE, PEAK_ABOVE, BACK_BELOW);
-            int withLie = worlds.worldsThatBubbledWithTheLie(DIAMONDS_SCARCE, PEAK_ABOVE, BACK_BELOW);
-            int without = worlds.worldsThatBubbledWithoutIt(DIAMONDS_SCARCE, PEAK_ABOVE, BACK_BELOW);
+            int caused = worlds.pairsWhereTheLieCausedABubble(DIAMONDS_SCARCE);
+            int withLie = worlds.worldsThatBubbledWithTheLie(DIAMONDS_SCARCE);
+            int without = worlds.worldsThatBubbledWithoutIt(DIAMONDS_SCARCE);
             double meanPeak = worlds.meanPeakPriceDifference(DIAMONDS_SCARCE);
             double meanCost = worlds.meanExtraCost(DIAMONDS_SCARCE);
 

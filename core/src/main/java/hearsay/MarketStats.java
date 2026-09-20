@@ -18,16 +18,6 @@ import java.util.OptionalLong;
  */
 public final class MarketStats {
 
-    /**
-     * A bubble that burst: the price rose past one level and came back under another.
-     *
-     * @param peakTick     when the price was at its highest
-     * @param recoveryTick the first tick after the peak back under the lower level
-     * @param days         how long the fall took
-     */
-    public record Burst(int peakPrice, long peakTick, int recoveryPrice, long recoveryTick,
-                        double days) {}
-
     /** One day of the market, and of the claim being tracked. */
     public record DayOfTrading(int day, int highPrice, int lowPrice, int heard, int believers) {}
 
@@ -109,15 +99,25 @@ public final class MarketStats {
         return count;
     }
 
+    /** Whether this run bubbled, by the one definition in {@link Bubble}. */
+    public java.util.Optional<Bubble> bubble() {
+        return burst(Bubble.PEAK_ABOVE, Bubble.BACK_BELOW);
+    }
+
+    /** Days the price spent above {@link Bubble#ELEVATED}, which is not the same question. */
+    public int daysElevated() {
+        return daysAbove(Bubble.ELEVATED);
+    }
+
     /**
      * Whether the price ran up past {@code peakAbove} and then came back under
-     * {@code backBelow} before the run ended.
+     * {@code backBelow} before the run ended. Prefer {@link #bubble()} unless a run
+     * deliberately asks a different question of the same shape.
      *
-     * <p>A bubble that never deflates is not a bubble but a change of regime, so this is
-     * the measure that tells the two apart. Recovery is looked for after the highest price
-     * the run reached: an earlier dip does not count as the run-up coming undone.
+     * <p>Recovery is looked for after the highest price the run reached: an earlier dip
+     * does not count as the run-up coming undone.
      */
-    public java.util.Optional<Burst> burst(int peakAbove, int backBelow) {
+    public java.util.Optional<Bubble> burst(int peakAbove, int backBelow) {
         if (peakPrice <= peakAbove) {
             return java.util.Optional.empty();
         }
@@ -130,7 +130,7 @@ public final class MarketStats {
         }
         for (int[] point : priceSeries) {
             if (point[0] > peakTick && point[1] < backBelow) {
-                return java.util.Optional.of(new Burst(peakPrice, peakTick, point[1], point[0],
+                return java.util.Optional.of(new Bubble(peakPrice, peakTick, point[1], point[0],
                         (point[0] - peakTick) / (double) TICKS_PER_DAY));
             }
         }

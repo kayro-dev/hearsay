@@ -46,7 +46,6 @@ public final class Simulation {
 
     private final WorldState state;
     private final List<Event> log = new ArrayList<>();
-    private long tick = 0;
 
     public Simulation(long seed) {
         this(seed, Params.defaults(), List.of());
@@ -79,13 +78,11 @@ public final class Simulation {
      * replaying the prefix once per world instead, which gives each its own state through
      * the same apply() every other change goes through.
      *
-     * <p>Exists mostly so that a fork carrying everything can be compared against a
-     * {@link #resume} that rebuilds from the log alone. If the two ever disagree, the
-     * difference is state a decision depends on that the log does not record.
+     * <p>A plain copy: this class keeps no mutable state of its own beyond the world and
+     * the log it is writing, so there is nothing to carry across by hand. That property is
+     * held in place by SimulationStateTest rather than by anyone remembering it.
      */
     public Simulation fork(long branchSeed, List<Input> inputs) {
-        // Nothing to carry beyond the state itself today. Any field added to this class
-        // that a decision reads must be copied here, or the resume test stops biting.
         return new Simulation(branchSeed, params, inputs, state);
     }
 
@@ -94,7 +91,6 @@ public final class Simulation {
         this.params = params;
         this.inputs = List.copyOf(inputs);
         this.state = state;
-        this.tick = state.tick();
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
@@ -105,18 +101,21 @@ public final class Simulation {
     }
 
     public void step() {
-        tick++;
+        // The tick is read from the world rather than counted here, so this class keeps no
+        // running total of its own for a forked world to lose. Every tick records at least
+        // one event, so the world's tick is always the last one that happened.
+        long tick = state.tick() + 1;
         if (tick == 1) {
-            createVillagers();
+            createVillagers(tick);
         }
-        applyInputs();
-        moveEveryone(DayPart.of(tick));
-        holdMeetings();
+        applyInputs(tick);
+        moveEveryone(tick, DayPart.of(tick));
+        holdMeetings(tick);
         // Price first, then the people standing there read it: within a tick, belief
         // moves the price and the price moves belief, in that order.
-        advanceMarketNoise();
-        settleMarketPrice();
-        observeTheMarket();
+        advanceMarketNoise(tick);
+        settleMarketPrice(tick);
+        observeTheMarket(tick);
         if (DayPart.of(tick) == DayPart.NIGHT) {
             record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
         }
@@ -133,7 +132,7 @@ public final class Simulation {
      * constructor instead would put part of the world outside the log, and replay would
      * silently stop describing the whole world.
      */
-    private void createVillagers() {
+    private void createVillagers(long tick) {
         for (int id = 0; id < VILLAGER_COUNT; id++) {
             // The order of these three rolls is part of the seed contract: reordering
             // them gives every seed a different village.
@@ -143,7 +142,7 @@ public final class Simulation {
     }
 
     /** Turns any inputs scheduled for this tick into input events. */
-    private void applyInputs() {
+    private void applyInputs(long tick) {
         for (Input input : scheduled.getOrDefault(tick, List.of())) {
             switch (input) {
                 case PlantRumor p -> record(new RumorPlanted(tick, state.nextRumorId(),
@@ -153,7 +152,7 @@ public final class Simulation {
     }
 
     /** Every villager picks a spot for this part of the day, in id order. */
-    private void moveEveryone(DayPart part) {
+    private void moveEveryone(long tick, DayPart part) {
         for (Villager villager : state.villagers().values()) {
             record(new VillagerMoved(tick, villager.id(), pickSpot(part)));
         }
@@ -180,7 +179,7 @@ public final class Simulation {
      * out meets nobody this tick. Villagers only meet those standing next to them, which
      * is the brake that will make news spread in waves rather than all at once.
      */
-    private void holdMeetings() {
+    private void holdMeetings(long tick) {
         for (Spot spot : Spot.values()) {
             // HOME is not one place: it stands for twenty separate houses, so two
             // villagers being home at the same time are not in the same room. Pairing
@@ -202,20 +201,20 @@ public final class Simulation {
                 int a = present.get(i);
                 int b = present.get(i + 1);
                 record(new VillagersMet(tick, a, b, spot));
-                exchangeNews(a, b);
+                exchangeNews(tick, a, b);
             }
         }
     }
 
     /** Both villagers get a turn to speak, the lower id first so the order never varies. */
-    private void exchangeNews(int a, int b) {
+    private void exchangeNews(long tick, int a, int b) {
         int first = Math.min(a, b);
         int second = Math.max(a, b);
-        maybeTell(first, second);
-        maybeTell(second, first);
+        maybeTell(tick, first, second);
+        maybeTell(tick, second, first);
     }
 
-    private void maybeTell(int tellerId, int listenerId) {
+    private void maybeTell(long tick, int tellerId, int listenerId) {
         Villager teller = state.villager(tellerId);
         Belief toTell = teller.strongestBeliefWorthTelling(params.tellThreshold());
         if (toTell == null) {
@@ -226,7 +225,7 @@ public final class Simulation {
             return;
         }
 
-        int toldRumorId = growInTheTelling(toTell.rumorId());
+        int toldRumorId = growInTheTelling(tick, toTell.rumorId());
         Claim claim = state.rumor(toldRumorId).claim();
         Villager listener = state.villager(listenerId);
         Belief held = listener.belief(claim);
@@ -256,7 +255,7 @@ public final class Simulation {
      *
      * @return the rumor id the listener actually receives
      */
-    private int growInTheTelling(int rumorId) {
+    private int growInTheTelling(long tick, int rumorId) {
         Rumor told = state.rumor(rumorId);
         // "Gone" is as bad as it gets. Rolling here anyway would spawn a child identical
         // to its parent, cluttering the family tree with exaggerations that exaggerate
@@ -354,7 +353,7 @@ public final class Simulation {
      * every tick whether or not the market opens, since it is a property of the day
      * rather than of who turned up.
      */
-    private void advanceMarketNoise() {
+    private void advanceMarketNoise(long tick) {
         double step = params.marketNoise() * (market.nextDouble() * 2 - 1);
         record(new MarketNoiseSet(tick, params.noiseDecay() * state.marketNoiseLevel() + step));
     }
@@ -364,7 +363,7 @@ public final class Simulation {
      * villager cannot drag the whole market, while a real shift in belief can. Below a
      * quorum there is no market and no price is set.
      */
-    private void settleMarketPrice() {
+    private void settleMarketPrice(long tick) {
         List<Double> asks = new ArrayList<>();
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.spot() == Spot.MARKET) {
@@ -400,7 +399,7 @@ public final class Simulation {
      * the first move still registers as a level. Measuring the first one as a change would
      * leave nobody with anything to compare against, and the loop could never start.
      */
-    private void observeTheMarket() {
+    private void observeTheMarket(long tick) {
         OptionalInt settled = state.marketPrice();
         if (settled.isEmpty() || state.tick() != tick) {
             return;
@@ -485,6 +484,6 @@ public final class Simulation {
      * recipe and its result cannot be separated and later mismatched.
      */
     public Run toRun() {
-        return new Run(seed, params, inputs, (int) tick, log);
+        return new Run(seed, params, inputs, (int) state.tick(), log);
     }
 }

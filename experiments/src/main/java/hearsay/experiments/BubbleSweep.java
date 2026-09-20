@@ -1,5 +1,6 @@
 package hearsay.experiments;
 
+import hearsay.Bubble;
 import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.Input;
@@ -38,15 +39,9 @@ import java.util.Map;
  *     --noise 0.030 --decay 0.86 --csv bubble.csv"
  * </pre>
  */
-public final class Bubble {
+public final class BubbleSweep {
 
     private static final Claim DIAMONDS_SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
-
-    /** A bubble is one that ran up past this... */
-    private static final int BURST_PEAK_ABOVE = 130;
-
-    /** ...and then came back under this before the run ended. */
-    private static final int BURST_BACK_BELOW = 110;
 
     public static void main(String[] args) throws IOException {
         Map<String, String> options = Cli.parse(args);
@@ -70,7 +65,7 @@ public final class Bubble {
                 seeds, firstSeed, firstSeed + seeds - 1, ticks,
                 observation.size() * sensitivity.size());
         System.out.printf("Market noise %.3f carried at %.2f. A bubble peaks above %d "
-                + "and comes back under %d.%n", noise, noiseDecay, BURST_PEAK_ABOVE, BURST_BACK_BELOW);
+                + "and comes back under %d.%n", noise, noiseDecay, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW);
         System.out.println();
 
         Map<Long, Integer> planters = new HashMap<>();
@@ -128,7 +123,7 @@ public final class Bubble {
             if (stats.peakHolders() > 0) {
                 anyHolder++;
             }
-            stats.burst(BURST_PEAK_ABOVE, BURST_BACK_BELOW).ifPresent(b -> {
+            stats.bubble().ifPresent(b -> {
                 burst++;
                 totalBurstDays += b.days();
             });
@@ -199,7 +194,7 @@ public final class Bubble {
                 out.printf("%.2f,%.2f,%d,%d,%d,%.3f,%.2f,%d,%d,"
                                 + "%.3f,%.2f,%.3f,%.2f,%.3f,%.2f,%.3f,%.2f,%.3f,%.3f,%.2f,%.3f%n",
                         row.observationWeight(), row.priceSensitivity(), seeds, firstSeed, ticks,
-                        noise, noiseDecay, BURST_PEAK_ABOVE, BURST_BACK_BELOW,
+                        noise, noiseDecay, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW,
                         row.rumorAndFeedback().shareHalfBelieving(),
                         row.rumorAndFeedback().meanPeakPrice(),
                         row.rumorAndFeedback().shareBurst(),

@@ -10,6 +10,24 @@ written to `experiments/build/` and are not committed — re-run the command ins
 Unless stated otherwise, every run plants one `("diamond", SCARCE)` rumor at severity 1 on
 tick 1, in the seed's gossipiest villager, and runs 200 ticks (50 days) over seeds 1-50.
 
+### What "bubble" means
+
+A **bubble** is a run where the price went above **130** and later came back under **110**.
+Both halves matter: a price that runs up and stays up is a change of regime, not a bubble,
+and counting one as the other would overstate the case. The definition lives in one place in
+the code, `Bubble`, and every command, experiment and test reads it from there.
+
+Two neighbouring measures are named differently on purpose:
+
+| measure | meaning |
+| --- | --- |
+| **bubble** | went above 130, came back under 110 |
+| **elevated** | the price was above 120, saying nothing about whether it came back |
+| **peak price** | how far it went, saying nothing about whether it came back |
+
+Entries before E6 use the word "burst" in their column headings for what is now called a
+bubble; the thresholds were the same 130 and 110 throughout, so the figures are comparable.
+
 ### What the columns mean
 
 | column | meaning |

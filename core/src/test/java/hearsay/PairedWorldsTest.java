@@ -104,9 +104,9 @@ class PairedWorldsTest {
     void theLieCausesBubblesInSomeWorldsButNotNecessarilyAll() {
         PairedWorlds worlds = worlds();
 
-        int caused = worlds.pairsWhereTheLieCausedABubble(DIAMONDS_SCARCE, 130, 110);
-        int withLie = worlds.worldsThatBubbledWithTheLie(DIAMONDS_SCARCE, 130, 110);
-        int withoutLie = worlds.worldsThatBubbledWithoutIt(DIAMONDS_SCARCE, 130, 110);
+        int caused = worlds.pairsWhereTheLieCausedABubble(DIAMONDS_SCARCE);
+        int withLie = worlds.worldsThatBubbledWithTheLie(DIAMONDS_SCARCE);
+        int withoutLie = worlds.worldsThatBubbledWithoutIt(DIAMONDS_SCARCE);
 
         assertTrue(caused <= withLie, "it cannot have caused more bubbles than there were");
         assertTrue(withLie >= withoutLie, "the lie should not make bubbles rarer");

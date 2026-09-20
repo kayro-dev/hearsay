@@ -1,5 +1,6 @@
 package hearsay.cli;
 
+import hearsay.Bubble;
 import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.Comparison;
@@ -64,8 +65,9 @@ final class Counterfactual {
                 + " (the lie was told on tick " + toldAt + ")");
         System.out.printf("  peak price:        %d with the lie, %d without%n",
                 comparison.peakPriceWith(), comparison.peakPriceWithout());
-        System.out.printf("  days above 120:    %d with the lie, %d without%n",
-                comparison.daysAboveWith(120), comparison.daysAboveWithout(120));
+        System.out.printf("  days above %d:     %d with the lie, %d without%n",
+                Bubble.ELEVATED, comparison.daysAboveWith(Bubble.ELEVATED),
+                comparison.daysAboveWithout(Bubble.ELEVATED));
         System.out.printf("  peak believers:    %d with the lie, %d without%n",
                 comparison.peakBelieversWith(), comparison.peakBelieversWithout());
         System.out.println();
