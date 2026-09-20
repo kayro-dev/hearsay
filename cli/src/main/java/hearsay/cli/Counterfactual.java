@@ -7,9 +7,12 @@ import hearsay.Comparison;
 import hearsay.Input;
 import hearsay.Params;
 import hearsay.PlantRumor;
+import hearsay.PlantRumor;
+import hearsay.RecipeFile;
 import hearsay.Run;
 import hearsay.Simulation;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -27,26 +30,42 @@ final class Counterfactual {
 
     static void print(String[] args) {
         Map<String, String> options = Options.parse(args);
-        long seed = Options.longOption(options, "seed", 42);
-        int ticks = Options.intOption(options, "ticks", 160);
-        long toldAt = Options.longOption(options, "told-at", 41);
-        Params params = Params.defaults();
         Claim claim = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
-        int planter = Run.execute(seed, params, List.of(), 1)
-                .finalState().gossipiestVillager().id();
-        Input lie = new PlantRumor(toldAt, claim, 1, planter);
+        Run withLie;
+        Input lie;
+        String preamble;
 
-        Run withLie = Run.execute(seed, params, List.of(lie), ticks);
+        if (options.containsKey("file")) {
+            // A session played in Minecraft. Its meetings were observed rather than
+            // decided, and they are in the recipe, so both timelines get the same ones.
+            Path file = Path.of(options.get("file"));
+            withLie = RecipeFile.read(file);
+            lie = firstLieIn(withLie);
+            preamble = "Counterfactual: " + file.getFileName() + ", " + withLie.ticks()
+                    + " ticks played in Minecraft.";
+        } else {
+            long seed = Options.longOption(options, "seed", 42);
+            int ticks = Options.intOption(options, "ticks", 160);
+            long toldAt = Options.longOption(options, "told-at", 41);
+            int planter = Run.execute(seed, Params.defaults(), List.of(), 1)
+                    .finalState().gossipiestVillager().id();
+            lie = new PlantRumor(toldAt, claim, 1, planter);
+            withLie = Run.execute(seed, Params.defaults(), List.of(lie), ticks);
+            preamble = "Counterfactual: seed " + seed + ", " + ticks + " ticks.";
+        }
+
+        boolean played = options.containsKey("file");
         Run withoutLie = withLie.without(lie);
         Comparison comparison = Comparison.of(withLie.log(), withoutLie.log(), claim);
 
-        String planterName = withLie.finalState().villager(planter).name();
-        System.out.printf("Counterfactual: seed %d, %d ticks. %s is told on tick %d that "
-                + "diamonds are scarce.%n", seed, ticks, planterName, toldAt);
-        System.out.println("Both timelines share the same seed and the same params, so "
-                + "everyone walks the same");
-        System.out.println("routes in both. The only difference is the lie.");
+        int told = ((PlantRumor) lie).villagerId();
+        System.out.println(preamble);
+        System.out.printf("%s is told on tick %d that diamonds are scarce.%n",
+                withLie.finalState().villager(told).name(), lie.tick());
+        System.out.println("Both timelines share the same seed, params and inputs, so "
+                + "everyone is in the same");
+        System.out.println("place at the same time in both. The only difference is the lie.");
         System.out.println();
         System.out.println("                 with the lie          without it");
         System.out.println("  day    price  heard  believe |  price  heard  believe   price diff");
@@ -62,7 +81,7 @@ final class Counterfactual {
         System.out.println();
         System.out.println("  timelines diverge at tick "
                 + comparison.divergenceTick().orElse(-1)
-                + " (the lie was told on tick " + toldAt + ")");
+                + " (the lie was told on tick " + lie.tick() + ")");
         System.out.printf("  peak price:        %d with the lie, %d without%n",
                 comparison.peakPriceWith(), comparison.peakPriceWithout());
         System.out.printf("  days above %d:     %d with the lie, %d without%n",
@@ -73,9 +92,31 @@ final class Counterfactual {
         System.out.println();
         System.out.printf("  In this simulated village, the lie added %d to the cost of buying "
                 + "one diamond%n", comparison.extraCostOfADiamondEachMarketDay());
-        System.out.println("  each market day. That is one village and one roll of the dice: "
-                + "for how likely");
-        System.out.println("  the lie was to cause it, run the worlds command.");
+        System.out.println("  each market day.");
+        System.out.println();
+        if (played) {
+            System.out.println("  That is what happened in the village you played, and it is "
+                    + "the only answer");
+            System.out.println("  a played session can give. Minecraft decided where everybody "
+                    + "walked, so there");
+            System.out.println("  is no second future to roll: the many-worlds question needs "
+                    + "a headless run.");
+        } else {
+            System.out.println("  That is one village and one roll of the dice: for how likely "
+                    + "the lie was to");
+            System.out.println("  cause it, run the worlds command.");
+        }
+    }
+
+    /** The rumor a counterfactual removes. A session with none has nothing to ask about. */
+    private static Input firstLieIn(Run run) {
+        for (Input input : run.inputs()) {
+            if (input instanceof PlantRumor plant) {
+                return plant;
+            }
+        }
+        throw new IllegalArgumentException("No rumor was ever planted in that session, so "
+                + "there is no lie to take away. Use /hearsay rumor while playing.");
     }
 
     private static String price(int price) {

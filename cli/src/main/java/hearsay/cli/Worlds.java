@@ -26,6 +26,18 @@ final class Worlds {
 
     static void print(String[] args) {
         Map<String, String> options = Options.parse(args);
+        if (options.containsKey("file")) {
+            // Worth saying plainly rather than producing an empty answer: forking needs
+            // futures, and a played session has only the one that happened. Minecraft
+            // decided where everybody walked, and it will not decide it again fifty times.
+            System.out.println("Many worlds needs futures to run, and a session played in");
+            System.out.println("Minecraft has only the one that happened: its meetings were");
+            System.out.println("observed, not decided, so there is nothing to roll again.");
+            System.out.println();
+            System.out.println("Ask a played session the single question instead:");
+            System.out.println("  ./gradlew :cli:run --args=\"counterfactual --file <path>\"");
+            return;
+        }
         long seed = Options.longOption(options, "seed", 42);
         int pairs = Options.intOption(options, "pairs", 50);
         int ticks = Options.intOption(options, "ticks", 160);

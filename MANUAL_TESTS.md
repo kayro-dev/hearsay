@@ -43,10 +43,10 @@ you actually played.
 
 | # | Step | What should happen |
 | --- | --- | --- |
-| 18 | Copy the saved file somewhere convenient | — |
-| 19 | Check it reruns identically | The recipe is the run: `RecipeFileTest` covers this headlessly, so a mismatch here means the session recorded something it should not have |
-| 20 | Remove the `input plant …` line, save as a second file | Both files load |
-| 21 | Compare the two | The timelines should be identical until the tick the rumor was planted, and differ after — every `input meet …` line is the same in both, because Minecraft decided those, not Hearsay |
+| 18 | Find the file | It is in `<server>/plugins/Hearsay/sessions/`, named `session-<seed>-<time>.hearsay`. Note the capital H: the folder is named after the plugin |
+| 19 | Run the counterfactual on it | `./gradlew :cli:run --args="counterfactual --file <path>"` prints both timelines day by day, diverging at the tick you planted the rumor |
+| 20 | Check the divergence tick | It equals the tick in the file's `input plant …` line. Anything earlier means the two timelines differ for some reason other than your lie |
+| 21 | Try `worlds --file <path>` | It refuses and explains why: a played session has only the future that happened |
 
 ## Known limits of the spike
 
@@ -61,3 +61,7 @@ These are deliberate, not bugs to report:
   are reported.
 - **One village at a time**, and the binding is lost if the server restarts mid-session.
 - **A tick is 10 real seconds**, not tied to Minecraft's clock.
+- **Many worlds cannot be asked of a played session.** Forking needs futures to roll, and
+  Minecraft decided where everybody walked exactly once. A played session answers "what
+  would have happened without my lie"; it cannot answer "how likely was that".
+- **The session saves on `/hearsay stop` and on server shutdown**, but a crash loses it.

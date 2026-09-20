@@ -7,6 +7,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -87,10 +88,7 @@ final class Displays {
      * <p>Drawn repeatedly over about a second by the caller. A single frame of a handful of
      * particles, once every ten seconds, was there but almost impossible to catch.
      */
-    void showWhisperFrame(World world, Location teller, Location listener, boolean first) {
-        if (first) {
-            world.playSound(teller, Sound.ENTITY_VILLAGER_TRADE, 1.2f, 1.6f);
-        }
+    void showWhisperFrame(World world, Location teller, Location listener) {
         int steps = 20;
         for (int step = 0; step <= steps; step++) {
             double along = step / (double) steps;
@@ -104,6 +102,18 @@ final class Displays {
 
     void tell(Player player, Component message) {
         player.sendActionBar(message);
+    }
+
+    /**
+     * The sound of a whisper, played to the listening player rather than into the world.
+     *
+     * <p>A sound played into the world goes out under the category of whatever made it, so
+     * anyone with friendly creatures turned down hears nothing, and villager chatter covers
+     * what is left. Sent to the player under the master category it still comes from the
+     * right direction but cannot be turned off by accident.
+     */
+    void playWhisper(Player player, Location where) {
+        player.playSound(where, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0f, 1.4f);
     }
 
     void removeEverything(World world) {

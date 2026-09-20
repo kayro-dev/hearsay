@@ -68,6 +68,12 @@ public final class HearsayPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // A session that is only saved by /hearsay stop is a session lost to every server
+        // restart, and the recipe is the whole point of playing one.
+        if (session != null) {
+            Path saved = session.save(getDataFolder().toPath().resolve("sessions"));
+            getLogger().info("Saved the running session to " + saved.getFileName());
+        }
         stop();
     }
 
@@ -158,6 +164,7 @@ public final class HearsayPlugin extends JavaPlugin {
         if (player != null && player.getWorld().equals(world)
                 && player.getLocation().distance(teller.getLocation()) < WHISPER_VISIBLE_RANGE) {
             displays.tell(player, Component.text(said, NamedTextColor.GRAY));
+            displays.playWhisper(player, teller.getLocation());
         }
 
         new BukkitRunnable() {
@@ -169,8 +176,7 @@ public final class HearsayPlugin extends JavaPlugin {
                     cancel();
                     return;
                 }
-                displays.showWhisperFrame(world, teller.getLocation(), listener.getLocation(),
-                        frame == 0);
+                displays.showWhisperFrame(world, teller.getLocation(), listener.getLocation());
                 if (++frame >= WHISPER_FRAMES) {
                     cancel();
                 }

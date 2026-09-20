@@ -49,6 +49,7 @@ public final class Main {
 
               demo [seed] [ticks] [planter]   narrate one village
               counterfactual --seed N         one village, with and without the lie
+              counterfactual --file PATH      a session you played, with and without it
               worlds --seed N --pairs M       many paired worlds, with and without the lie
             """;
 
