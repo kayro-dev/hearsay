@@ -32,9 +32,12 @@ logged so any crash can be replayed and compared against a counterfactual.
   Villagers, traits, belief structures, movement, meetings, narrator (week 3).
   Rumors, input vs derived events, separate random streams (week 4).
   Prices from belief, market observation, the feedback loop (week 5).
+  Counterfactual replay and paired worlds (week 6).
 - Tuning is decided by seed sweeps in the experiments module, not by hand. Every
   decision is recorded in EXPERIMENTS.md with its command and table. CalibrationTest
   holds the defaults to the behaviour they were chosen for; if it fails, the model
   has been retuned, deliberately or otherwise.
-- Current milestone: counterfactual replay (week 6) - what the price would have
-  been without the lie.
+- State must be complete: anything a decision reads lives in WorldState, or a forked
+  world silently loses it. ResumeTest is what catches that; Simulation.fork carries
+  simulation-local state and must be updated if any is ever added.
+- Current milestone: the dashboard (week 7), reading the CSVs the CLI writes.

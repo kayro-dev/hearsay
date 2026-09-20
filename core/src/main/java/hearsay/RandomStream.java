@@ -31,14 +31,6 @@ public enum RandomStream {
      * produce streams that move in step with each other.
      */
     public Random from(long seed) {
-        return new Random(mix(seed + GOLDEN_GAMMA * (ordinal() + 1)));
-    }
-
-    private static final long GOLDEN_GAMMA = 0x9E3779B97F4A7C15L;
-
-    private static long mix(long z) {
-        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
-        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
-        return z ^ (z >>> 31);
+        return new Random(Seeds.branch(seed, ordinal()));
     }
 }

@@ -44,13 +44,6 @@ public final class Simulation {
     /** The same inputs, bucketed by the tick they are due. */
     private final NavigableMap<Long, List<Input>> scheduled = new TreeMap<>();
 
-    /**
-     * Today's market wobble. Part of the random process, like the generators themselves:
-     * reproducible from the seed, and never consulted by apply(), because every event
-     * already carries the price it produced.
-     */
-    private double noiseLevel = 0;
-
     private final WorldState state;
     private final List<Event> log = new ArrayList<>();
     private long tick = 0;
@@ -60,10 +53,48 @@ public final class Simulation {
     }
 
     public Simulation(long seed, Params params, List<Input> inputs) {
+        this(seed, params, inputs, new WorldState());
+    }
+
+    /**
+     * Carries on from a world that already exists, with fresh randomness. This is how a
+     * counterfactual forks: take the state just before the lie and run it forward again
+     * under a different roll of the dice.
+     *
+     * <p>Takes ownership of the state it is given. To fork many worlds from one moment,
+     * replay the same prefix once per world so each gets its own.
+     */
+    public static Simulation resume(WorldState state, long branchSeed, Params params,
+                                    List<Input> inputs) {
+        return new Simulation(branchSeed, params, inputs, state);
+    }
+
+    /**
+     * A new world carrying on from this one's exact moment under fresh randomness, taking
+     * with it everything this simulation knows, including anything not written into
+     * {@link WorldState}.
+     *
+     * <p>Takes over this simulation's state rather than copying it, so the parent should
+     * not be run again afterwards. Forking many worlds from one moment is done by
+     * replaying the prefix once per world instead, which gives each its own state through
+     * the same apply() every other change goes through.
+     *
+     * <p>Exists mostly so that a fork carrying everything can be compared against a
+     * {@link #resume} that rebuilds from the log alone. If the two ever disagree, the
+     * difference is state a decision depends on that the log does not record.
+     */
+    public Simulation fork(long branchSeed, List<Input> inputs) {
+        // Nothing to carry beyond the state itself today. Any field added to this class
+        // that a decision reads must be copied here, or the resume test stops biting.
+        return new Simulation(branchSeed, params, inputs, state);
+    }
+
+    private Simulation(long seed, Params params, List<Input> inputs, WorldState state) {
         this.seed = seed;
         this.params = params;
         this.inputs = List.copyOf(inputs);
-        this.state = new WorldState();
+        this.state = state;
+        this.tick = state.tick();
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
@@ -325,7 +356,7 @@ public final class Simulation {
      */
     private void advanceMarketNoise() {
         double step = params.marketNoise() * (market.nextDouble() * 2 - 1);
-        noiseLevel = params.noiseDecay() * noiseLevel + step;
+        record(new MarketNoiseSet(tick, params.noiseDecay() * state.marketNoiseLevel() + step));
     }
 
     /**
@@ -350,7 +381,7 @@ public final class Simulation {
                 ? asks.get(middle)
                 : (asks.get(middle - 1) + asks.get(middle)) / 2;
 
-        int price = Math.max(1, (int) Math.round(median * (1 + noiseLevel)));
+        int price = Math.max(1, (int) Math.round(median * (1 + state.marketNoiseLevel())));
         record(new MarketPriceSet(tick, price, asks.size()));
     }
 

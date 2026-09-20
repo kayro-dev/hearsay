@@ -1,6 +1,8 @@
 package hearsay.cli;
 
 import hearsay.Claim;
+import hearsay.Comparison;
+import hearsay.PairedWorlds;
 import hearsay.ClaimType;
 import hearsay.Input;
 import hearsay.Narrator;
@@ -28,6 +30,29 @@ public final class Main {
     private static final Claim DIAMONDS_SCARCE = new Claim("diamond", ClaimType.SCARCE);
 
     public static void main(String[] args) {
+        String command = args.length > 0 && !args[0].startsWith("--") ? args[0] : "demo";
+        String[] rest = command.equals("demo") ? args
+                : java.util.Arrays.copyOfRange(args, 1, args.length);
+        switch (command) {
+            case "counterfactual" -> Counterfactual.print(rest);
+            case "worlds" -> Worlds.print(rest);
+            case "demo" -> demo(rest);
+            default -> {
+                System.out.println("Unknown command: " + command);
+                System.out.println(USAGE);
+            }
+        }
+    }
+
+    private static final String USAGE = """
+            ./gradlew :cli:run --args="<command> [options]"
+
+              demo [seed] [ticks] [planter]   narrate one village
+              counterfactual --seed N         one village, with and without the lie
+              worlds --seed N --pairs M       many paired worlds, with and without the lie
+            """;
+
+    private static void demo(String[] args) {
         long seed = args.length > 0 ? Long.parseLong(args[0]) : DEFAULT_SEED;
         int ticks = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_TICKS;
         Params params = Params.defaults();

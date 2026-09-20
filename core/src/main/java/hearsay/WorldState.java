@@ -23,6 +23,9 @@ public final class WorldState {
     private int marketPrice = 0;
     private boolean priceKnown = false;
 
+    /** How far the market's wobble currently stands from nothing. */
+    private double marketNoiseLevel = 0;
+
     /** Keyed by id, so iteration order is id order rather than hash order. */
     private final NavigableMap<Integer, Villager> villagers = new TreeMap<>();
     private final NavigableMap<Integer, Rumor> rumors = new TreeMap<>();
@@ -62,6 +65,10 @@ public final class WorldState {
                 Rumor kept = rumor(e.keptRumorId());
                 villager(e.listenerId()).believe(new Belief(kept.claim(), e.newConfidence(),
                         e.tellerId(), e.tick(), e.keptRumorId(), chainAfter(e, kept.claim())));
+            }
+            case MarketNoiseSet e -> {
+                tick = e.tick();
+                marketNoiseLevel = e.level();
             }
             case MarketPriceSet e -> {
                 tick = e.tick();
@@ -118,6 +125,9 @@ public final class WorldState {
     }
 
     public long tick() { return tick; }
+
+    /** Where the market's wobble stands, which a forked world has to carry with it. */
+    public double marketNoiseLevel() { return marketNoiseLevel; }
 
     /** The last price the market settled on, empty until it first does. */
     public OptionalInt marketPrice() {
@@ -185,6 +195,7 @@ public final class WorldState {
             && tick == w.tick
             && marketPrice == w.marketPrice
             && priceKnown == w.priceKnown
+            && Double.compare(marketNoiseLevel, w.marketNoiseLevel) == 0
             && nextRumorId == w.nextRumorId
             && villagers.equals(w.villagers)
             && rumors.equals(w.rumors);
@@ -192,7 +203,8 @@ public final class WorldState {
 
     @Override
     public int hashCode() {
-        return Objects.hash(tick, marketPrice, priceKnown, nextRumorId, villagers, rumors);
+        return Objects.hash(tick, marketPrice, priceKnown, marketNoiseLevel,
+                nextRumorId, villagers, rumors);
     }
 
     @Override

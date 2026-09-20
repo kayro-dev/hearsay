@@ -100,6 +100,7 @@ public final class Narrator {
                 }
             }
             case VillagerMoved e -> mirror.apply(e);
+            case MarketNoiseSet e -> mirror.apply(e);
             case DayEnded e -> mirror.apply(e);
         }
         return lines;

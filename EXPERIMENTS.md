@@ -455,3 +455,53 @@ than nudging. That is what `CalibrationTest` is for: it runs seeds 1001-1100 on 
 and fails if the with-rumor half-believing rate leaves 50-85% or any quiet village bursts.
 The band is deliberately wider than the measured 65%, because a band tight enough to pin
 today's figure would break on any deliberate retune while catching nothing extra.
+
+---
+
+## E6 — In how many worlds did the lie make the difference
+
+A single counterfactual answers "what would this village have done without the lie". It
+cannot answer "how likely was the lie to cause this", because one village is one roll of the
+dice. So each village is run up to the tick before the lie, and then carried on many times
+under different futures, in **pairs**: world 7 with the lie and world 7 without it are given
+the same branch seed, so they face identical future randomness and the only difference
+inside a pair is the lie.
+
+Run over the hundred villages `CalibrationTest` uses, which no tuning sweep has touched.
+
+```
+./gradlew :experiments:worlds --args="--seeds 100 --first-seed 1001 --pairs 10 \
+    --ticks 220 --told-at 41 --csv build/e6.csv"
+```
+
+```
+Paired worlds over 100 villages (seeds 1001..1100), 10 pairs each, 220 ticks,
+lie told on tick 41. That is 2000 worlds, run as 1000 pairs.
+
+  pairs run:                          1000
+  bubbled with the lie:               919 (91.9%)
+  bubbled without it:                 0 (0.0%)
+  the lie made the difference in:     919 (91.9%)
+  mean peak price effect:             +51.8
+  mean extra cost of a diamond a day: +782.5
+  per-village share the lie caused:   p10 70%, median 100%, p90 100%
+```
+
+**The answer is 919 of 1000 paired worlds.** In each of those the price ran past 130 and
+came back under 110 in the world where the lie was told, and did not in the world where it
+was not. No world bubbled without the lie, which matches `CalibrationTest`: the wobble alone
+produces a believer in about 5% of villages and has never produced a burst.
+
+The per-village spread matters as much as the total. The median village is one where the lie
+caused a bubble in every one of its ten worlds, but the bottom tenth are villages where it
+worked only 70% of the time or less. The population answer is not the answer for any
+particular village, which is the reason for running pairs rather than reporting one number.
+
+**Why pairing, in one figure.** The mean peak price effect is +51.8 measured within pairs.
+Measured between two unrelated piles of worlds the same effect would be buried under the
+spread of peak prices across worlds, which runs from about 104 to 183 in the eight-pair
+sample printed by the CLI. The differences are small next to the spread, so pairing is what
+makes a thousand worlds enough instead of needing far more.
+
+**Decision.** No parameters changed. This experiment measures the model rather than tuning
+it. The figure to quote is "in 919 of 1000 paired worlds", not "the lie caused the crash".

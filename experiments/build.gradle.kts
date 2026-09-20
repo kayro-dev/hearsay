@@ -41,3 +41,11 @@ tasks.register<JavaExec>("noise") {
     mainClass = "hearsay.experiments.Noise"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Paired-worlds comparison over many villages: ./gradlew :experiments:worlds --args="..." */
+tasks.register<JavaExec>("worlds") {
+    group = "application"
+    description = "Runs the paired-worlds counterfactual over many parent seeds."
+    mainClass = "hearsay.experiments.ManyWorlds"
+    classpath = sourceSets["main"].runtimeClasspath
+}
