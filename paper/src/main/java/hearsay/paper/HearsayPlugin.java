@@ -5,6 +5,7 @@ import hearsay.ClaimType;
 import hearsay.Params;
 import hearsay.RecipeFile;
 import hearsay.Simulation;
+import hearsay.Spot;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -63,6 +64,7 @@ public final class HearsayPlugin extends JavaPlugin {
     private BukkitTask ticking;
     private UUID watcher;
     private World world;
+    private boolean showingSpots;
 
     @Override
     public void onEnable() {
@@ -116,6 +118,7 @@ public final class HearsayPlugin extends JavaPlugin {
             case "start" -> start(player, args);
             case "rumor", "rumour" -> plant(player, args);
             case "status" -> status(player);
+            case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
                     "/hearsay start [seed] | rumor diamonds scarce | status | stop"));
@@ -173,11 +176,16 @@ public final class HearsayPlugin extends JavaPlugin {
         }
         Map<Integer, Villager> bodies = whoIsAround();
         Map<Integer, Location> positions = new LinkedHashMap<>();
-        bodies.forEach((id, body) -> positions.put(id, body.getLocation()));
+        Map<Integer, Spot> spots = new LinkedHashMap<>();
+        bodies.forEach((id, body) -> {
+            positions.put(id, body.getLocation());
+            spots.put(id, Whereabouts.spotOf(body));
+        });
 
-        List<Telling> tellings = session.advance(positions);
+        List<Telling> tellings = session.advance(positions, spots);
 
-        displays.showBeliefs(world, bodies, session.confidences());
+        displays.showBeliefs(world, bodies, session.confidences(),
+                showingSpots ? spots : Map.of());
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
         for (Telling telling : tellings) {
@@ -265,6 +273,22 @@ public final class HearsayPlugin extends JavaPlugin {
             }
         }
         return nearest;
+    }
+
+    /**
+     * Writes each villager's spot above their head, so the mapping can be checked by
+     * walking about rather than trusted. A villager at their workstation should read
+     * MARKET or FIELDS, one in bed HOME, and one wandering WELL.
+     */
+    private void toggleSpots(Player player) {
+        showingSpots = !showingSpots;
+        player.sendMessage(Component.text(showingSpots
+                ? "Showing each villager's spot. Workstation reads MARKET or FIELDS, bed "
+                        + "reads HOME, anywhere else reads WELL."
+                : "Spots hidden.", NamedTextColor.AQUA));
+        if (session != null && world != null && !showingSpots) {
+            displays.removeEverything(world);
+        }
     }
 
     private void status(Player player) {

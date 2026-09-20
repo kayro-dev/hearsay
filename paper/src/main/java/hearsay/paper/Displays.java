@@ -13,6 +13,8 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import hearsay.Spot;
+
 import org.bukkit.entity.Villager;
 import org.bukkit.util.Transformation;
 
@@ -75,17 +77,29 @@ final class Displays {
      * <p>A villager who has not heard anything is left alone: an empty label above every
      * head would say nothing and hide the village.
      */
-    void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, Double> confidences) {
+    void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, Double> confidences,
+                     Map<Integer, Spot> spotsToShow) {
         bodies.forEach((id, body) -> {
             Double confidence = confidences.get(id);
-            if (confidence == null || !body.isValid()) {
+            Spot spot = spotsToShow.get(id);
+            if ((confidence == null && spot == null) || !body.isValid()) {
                 removeLabel(world, id);
                 return;
             }
-            labelFor(world, id, body).text(
-                    Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
-                            .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY));
+            labelFor(world, id, body).text(labelText(confidence, spot));
         });
+    }
+
+    /** The spot when it was asked for, the belief when there is one, or both. */
+    private static Component labelText(Double confidence, Spot spot) {
+        Component belief = confidence == null ? Component.empty()
+                : Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
+                        .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY);
+        if (spot == null) {
+            return belief;
+        }
+        Component where = Component.text(spot.name(), NamedTextColor.AQUA);
+        return confidence == null ? where : where.append(Component.newline()).append(belief);
     }
 
     /**

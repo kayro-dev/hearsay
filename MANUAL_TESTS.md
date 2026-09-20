@@ -37,6 +37,9 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 10 | Watch the villagers mill about | Grey text appears above others as they stand near each other |
 | 11 | Watch a telling happen | A trade sound, a thread of particles between the pair lasting about a second, and an action-bar line `X whispers to Y` within 48 blocks. The server console logs every telling, so check there if you miss one |
 | 12 | Watch a grey villager's number climb past 50% | Their text turns from grey to gold |
+| 12b | `/hearsay debug` | Every villager gets an aqua label with their spot. Walk round and check it: one at a workstation reads MARKET, a farmer at a composter reads FIELDS, one asleep reads HOME, one wandering reads WELL |
+| 12c | Watch a villager walk from bed to work | The label changes HOME → WELL → MARKET as they go |
+| 12d | `/hearsay debug` again | Labels go back to beliefs only |
 | 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
 | 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
 | 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears. If it cannot save it says so and keeps the session running rather than losing it; `/hearsay stop force` ends it anyway |
@@ -73,12 +76,10 @@ These are deliberate, not bugs to report:
   where people are, and a pair on its own does not say. Mapping real locations to spots is
   the next piece of work.
 - **A villager standing alone at the market is invisible to the price**, because only pairs
-  are reported.
-- **The market never closes once it has opened.** A villager's spot only changes when
-  another meeting moves them, and every meeting is reported as being at the market, so after
-  the first few ticks the whole village is standing in the marketplace for good. The quorum
-  stops mattering: sweeping it from 3 to 6 changes neither when the first price appears nor
-  how many ticks have one. This goes away once locations are mapped to spots properly.
+  are reported. Spots now come from beds and workstations, so a pair's spot is real, but a
+  villager nobody is standing near still tells the simulation nothing.
+- **Two villagers both in bed do not meet.** Two beds are two rooms, which is the same rule
+  the headless model uses for home. Expect quiet nights.
 - **One village at a time**, and the binding is lost if the server restarts mid-session.
 - **Many worlds cannot be asked of a played session.** Forking needs futures to roll, and
   Minecraft decided where everybody walked exactly once. A played session answers "what

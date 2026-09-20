@@ -11,6 +11,7 @@ import hearsay.RecipeFile;
 import hearsay.Run;
 import hearsay.Simulation;
 import hearsay.Spot;
+import hearsay.SpotMapper;
 import hearsay.Villager;
 
 import org.bukkit.Location;
@@ -40,14 +41,6 @@ final class VillageSession {
 
     /** How close two villagers must be to be counted as talking. */
     static final double TALKING_RANGE = 6.0;
-
-    /**
-     * Every reported meeting is placed at the market for now, which treats the whole bound
-     * village as its marketplace. The price needs to know where people are, and a pair on
-     * its own does not say. Mapping real locations to spots — the bell, the workstations —
-     * is the next step, and wants doing against a real village rather than guessed at here.
-     */
-    private static final Spot SPIKE_SPOT = Spot.MARKET;
 
     private final long seed;
     private final Simulation simulation;
@@ -116,7 +109,7 @@ final class VillageSession {
      * @param positions where each bound villager is, by simulation id
      * @return the tellings that happened, for showing on the screen
      */
-    List<Telling> advance(Map<Integer, Location> positions) {
+    List<Telling> advance(Map<Integer, Location> positions, Map<Integer, Spot> spots) {
         long nextTick = simulation.state().tick() + 1;
 
         List<ProximityPairing.Position> standing = new ArrayList<>();
@@ -124,7 +117,18 @@ final class VillageSession {
                 new ProximityPairing.Position(id, where.getX(), where.getY(), where.getZ())));
 
         for (ProximityPairing.Encounter encounter : ProximityPairing.pairsWithin(standing, TALKING_RANGE)) {
-            simulation.schedule(new ObservedMeeting(nextTick, encounter.a(), encounter.b(), SPIKE_SPOT));
+            Spot a = spots.getOrDefault(encounter.a(), SpotMapper.ANYWHERE_ELSE);
+            Spot b = spots.getOrDefault(encounter.b(), SpotMapper.ANYWHERE_ELSE);
+            // Two villagers in bed are in two beds, not one room. The headless model skips
+            // meetings at home for the same reason, and a night where nobody gossips is a
+            // night, not a fault.
+            if (a == Spot.HOME && b == Spot.HOME) {
+                continue;
+            }
+            // Where they met is where the one who is somewhere definite is standing; a tie
+            // goes to the lower id, which the pairing already put first.
+            simulation.schedule(new ObservedMeeting(nextTick, encounter.a(), encounter.b(),
+                    a == SpotMapper.ANYWHERE_ELSE ? b : a));
         }
 
         int eventsBefore = simulation.log().size();
