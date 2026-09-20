@@ -779,3 +779,75 @@ quiet session: whether the market quorum should be lower again for villages that
 loosely as this one, and whether `FIELDS` and the village at large should count toward the
 market at all, given that a real villager standing on a path is not at home and not trading.
 Both want a session with a rumor in it before being decided.
+
+---
+
+## E10 — A big village, six lies, and no bubble at all
+
+Thirty-one villagers, 663 ticks, six rumors planted, spots mapped from beds and
+workstations. The largest session recorded, and the one that shows what is now holding the
+model back in a real village.
+
+| | E9, quiet village of 10 | **E10, village of 31, six lies** | headless model |
+| --- | --- | --- | --- |
+| meetings per villager per tick | 0.208 | **0.655** | 0.520 |
+| ticks with a price | 9% | **1%** | 41% |
+| most villagers at the market at once | 3 | **8 of 31** | — |
+| price range over the run | 99–104 | **97–103** | — |
+| peak holders | 0 | **8 of 31 (26%)** | — |
+| peak believers | 0 | **4 of 31 (13%)** | — |
+| bubbles | 0 | **0** | — |
+| price observations | 0 | **0** | — |
+
+**Gossip is healthy. Better than the model, in fact.** At 0.655 meetings per villager per
+tick this village talks 26% more than the headless movement model does, and a quarter of it
+came to hold the claim. E9's worry that real villages gossip too little is answered: a
+village of thirty-one, densely packed, out-talks the model comfortably.
+
+**The market is where it fails.** The quorum at this size is eight, and eight is exactly the
+most villagers ever standing in the market at one moment, reached on 5 ticks out of 663. The
+price existed on 1% of ticks and never left the range 97 to 103.
+
+**So the feedback loop never ran once.** Zero price observations in 663 ticks. A price has to
+move more than 10% from what a villager last read into it before it is evidence of anything,
+and this price never moved at all. Belief spread to eight villagers through gossip alone,
+had nothing to feed it, and decayed away. That is the "it just faded" seen while playing,
+and it is the model behaving exactly as written.
+
+**The counterfactual is empty, and correctly so.** Removing all six lies gives a peak price
+of 103 against 103, and an extra cost of 0. The lies changed what villagers believed and
+changed nothing about the market, because the market was hardly there.
+
+### What would open the market
+
+Two candidate fixes, measured against this session's own trace.
+
+Lowering the quorum, leaving market membership as it is — whoever was in the last meeting at
+a market spot:
+
+| quorum | ticks priced |
+| --- | --- |
+| 8 (today) | 1% |
+| 6 | 11% |
+| 5 | 17% |
+| 4 | 24% |
+| 3 | 26% |
+| 2 | 30% |
+
+A rolling window instead, where the market is everyone seen at a market spot in the last N
+ticks, keeping the quorum at eight:
+
+| window | ticks priced |
+| --- | --- |
+| 1 tick | 0% |
+| 4 ticks (1 day) | 2% |
+| 8 ticks (2 days) | 8% |
+| 16 ticks (4 days) | 17% |
+| 32 ticks (8 days) | 31% |
+
+Under an eight-tick window the market averages 5.9 sellers whenever it has any.
+
+**Decision.** Nothing changed. The argument between the two is recorded with the proposal
+rather than here; what this entry establishes is that market attendance, not gossip, is what
+stops a real village from bubbling, and that either fix has to lift the priced share from 1%
+to something in the twenties before the loop can run at all.
