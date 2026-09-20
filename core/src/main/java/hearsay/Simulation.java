@@ -85,12 +85,21 @@ public final class Simulation {
     }
 
     /**
-     * At every spot, whoever is there is shuffled and paired off. An odd villager out
-     * meets nobody this tick. Villagers only meet those standing next to them, which is
-     * the brake that will make news spread in waves rather than all at once.
+     * At every public spot, whoever is there is shuffled and paired off. An odd villager
+     * out meets nobody this tick. Villagers only meet those standing next to them, which
+     * is the brake that will make news spread in waves rather than all at once.
      */
     private void holdMeetings() {
         for (Spot spot : Spot.values()) {
+            // HOME is not one place: it stands for twenty separate houses, so two
+            // villagers being home at the same time are not in the same room. Pairing
+            // here would turn every night into a village-wide mixing round, because the
+            // night weights put nearly everyone home at once, and that would undo the
+            // locality brake the rest of this method exists to create.
+            if (spot == Spot.HOME) {
+                continue;
+            }
+
             List<Integer> present = new ArrayList<>();
             for (Villager villager : state.villagers().values()) {
                 if (villager.spot() == spot) {

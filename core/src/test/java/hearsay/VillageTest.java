@@ -103,6 +103,37 @@ class VillageTest {
     }
 
     @Test
+    void nobodyMeetsAtHomeBecauseHomeIsTwentySeparateHouses() {
+        Simulation sim = runVillage();
+
+        for (Event event : sim.log()) {
+            if (event instanceof VillagersMet e) {
+                assertNotEquals(Spot.HOME, e.spot(),
+                        "being home at the same time is not being in the same room");
+            }
+        }
+    }
+
+    @Test
+    void nightIsQuietButTheVillageStillMeetsThatDay() {
+        Simulation sim = runVillage();
+
+        int nightMeetings = 0;
+        int dayMeetings = 0;
+        for (Event event : sim.log()) {
+            if (event instanceof VillagersMet e) {
+                if (DayPart.of(e.tick()) == DayPart.NIGHT) nightMeetings++; else dayMeetings++;
+            }
+        }
+
+        // Nights are near-empty now that home does not pair, but the odd villager still
+        // out at the well can meet someone, so this is a ceiling rather than zero.
+        assertTrue(nightMeetings < dayMeetings / 10,
+                "nights should be quiet, was " + nightMeetings + " vs " + dayMeetings);
+        assertTrue(dayMeetings > 0);
+    }
+
+    @Test
     void nobodyMeetsTwiceInTheSameTick() {
         Simulation sim = runVillage();
 

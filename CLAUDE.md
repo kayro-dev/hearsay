@@ -18,4 +18,5 @@ logged so any crash can be replayed and compared against a counterfactual.
   Explain design decisions briefly so I understand and can defend them.
 - Make small, reviewable changes. Run ./gradlew test after every change.
 - Done: deterministic loop, event log, replay, drift test, CI (weeks 1-2).
-- Current milestone: villagers, traits, beliefs, and meetings (week 3).
+  Villagers, traits, belief structures, movement, meetings, narrator (week 3).
+- Current milestone: rumors (week 4) - gossip at meetings, beliefs that change.
