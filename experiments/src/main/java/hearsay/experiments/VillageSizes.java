@@ -59,8 +59,10 @@ public final class VillageSizes {
                     trace.ticks(), trace.villagersSeen());
         }
         System.out.println();
-        System.out.println("  movement     size  active   bubbled   peak believers   "
-                + "panics/100d   peak$");
+        System.out.println("                            with the lie        "
+                + "   quiet village, per 100 days");
+        System.out.println("  movement     size   bubbled   peak believers   "
+                + "bubbles   belief onsets   peak$");
 
         List<Row> table = new ArrayList<>();
         for (double size : sizes) {
@@ -68,12 +70,25 @@ public final class VillageSizes {
                     toldAt, window, null));
         }
         if (trace != null) {
-            for (double size : sizes) {
-                table.add(measure("played", (int) size, trace.activeVillagers((int) size),
-                        seeds, firstSeed, ticks, toldAt, window, trace));
-            }
+            // Only at the size the trace itself has. Running it at any other size either
+            // leaves villagers with nobody to meet or throws away meetings, and neither
+            // tells you anything about the village that was played.
+            int size = trace.villagersSeen();
+            table.add(measure("simulated", size, size, seeds, firstSeed, ticks, toldAt,
+                    window, null));
+            table.add(measure("played", size, size, seeds, firstSeed, ticks, toldAt,
+                    window, trace));
         }
         table.forEach(VillageSizes::print);
+        if (trace != null) {
+            System.out.println();
+            System.out.printf("  The played row rests on one recorded session of %d villagers, "
+                    + "replayed under %d seeds.%n", trace.villagersSeen(), seeds);
+            System.out.println("  Different seeds give those same bodies different "
+                    + "personalities, but the meetings");
+            System.out.println("  are the one village that was played, so this is a single "
+                    + "village's evidence.");
+        }
         writeCsv(csv, table, seeds, firstSeed, ticks, toldAt, window);
         System.out.println();
         System.out.println("Wrote " + csv.toAbsolutePath());
@@ -83,7 +98,8 @@ public final class VillageSizes {
                                int ticks, long toldAt, int window, MeetingTrace trace) {
         int bubbled = 0;
         double totalBelieverShare = 0;
-        double totalPanics = 0;
+        double totalBubbleRate = 0;
+        double totalOnsets = 0;
         double totalPeakPrice = 0;
         int runs = 0;
 
@@ -110,23 +126,26 @@ public final class VillageSizes {
                 bubbled++;
             }
             totalBelieverShare += told.peakBelieversFraction();
-            totalPanics += untold.panicsPerHundredDays();
+            totalBubbleRate += untold.bubblesPerHundredDays();
+            totalOnsets += untold.beliefOnsetsPerHundredDays();
             totalPeakPrice += told.peakPrice();
             runs++;
         }
         return new Row(movement, size, active, bubbled / (double) runs,
-                totalBelieverShare / runs, totalPanics / runs, totalPeakPrice / runs);
+                totalBelieverShare / runs, totalBubbleRate / runs, totalOnsets / runs,
+                totalPeakPrice / runs);
     }
 
     private record Row(String movement, int size, int active, double bubbled,
-                       double peakBelieverShare, double panicsPerHundredDays, double peakPrice) {}
+                       double peakBelieverShare, double bubblesPerHundredDays,
+                       double beliefOnsetsPerHundredDays, double peakPrice) {}
 
     private static void print(Row row) {
-        System.out.printf("  %-11s %4d %7s %9s %16s %13.1f %7.1f%n",
+        System.out.printf("  %-11s %4d %9s %16s %9.2f %15.2f %7.1f%n",
                 row.movement(), row.size(),
-                row.active() == row.size() ? "all" : String.valueOf(row.active()),
                 percent(row.bubbled()), percent(row.peakBelieverShare()),
-                row.panicsPerHundredDays(), row.peakPrice());
+                row.bubblesPerHundredDays(), row.beliefOnsetsPerHundredDays(),
+                row.peakPrice());
     }
 
     private static String percent(double share) {
@@ -141,12 +160,14 @@ public final class VillageSizes {
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(csv))) {
             out.println("movement,villagers,activeVillagers,seeds,firstSeed,ticks,toldAt,"
                     + "windowDays,bubblePeakAbove,bubbleBackBelow,shareBubbled,"
-                    + "meanPeakBelieverShare,meanPanicsPerHundredDays,meanPeakPrice");
+                    + "meanPeakBelieverShare,quietBubblesPerHundredDays,"
+                    + "quietBeliefOnsetsPerHundredDays,meanPeakPrice");
             for (Row row : table) {
-                out.printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%.3f,%.2f%n",
+                out.printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%.3f,%.3f,%.2f%n",
                         row.movement(), row.size(), row.active(), seeds, firstSeed, ticks,
                         toldAt, window, Bubble.PEAK_ABOVE, Bubble.BACK_BELOW,
-                        row.bubbled(), row.peakBelieverShare(), row.panicsPerHundredDays(),
+                        row.bubbled(), row.peakBelieverShare(),
+                        row.bubblesPerHundredDays(), row.beliefOnsetsPerHundredDays(),
                         row.peakPrice());
             }
         }

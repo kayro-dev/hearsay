@@ -156,13 +156,56 @@ public final class MarketStats {
     }
 
     /**
-     * How often a village nobody lied to talks itself into something, per hundred days.
+     * Every bubble the run went through, not just the biggest.
      *
-     * <p>Counted as onsets: a day when somebody holds the claim after a day when nobody
-     * did. A run-level yes or no cannot be compared between a fifty-day run and a
-     * three-hundred-day one, and the longer run will always look more excitable.
+     * <p>{@link #bubble()} answers whether the run's highest price came back down, which is
+     * one question about one moment. This finds each separate excursion past
+     * {@link Bubble#PEAK_ABOVE} that later came back under {@link Bubble#BACK_BELOW}, so a
+     * long run that bubbled three times says so.
      */
-    public double panicsPerHundredDays() {
+    public List<Bubble> bubbles() {
+        List<Bubble> found = new ArrayList<>();
+        boolean climbing = false;
+        int peak = 0;
+        long peakAt = 0;
+
+        for (int[] point : priceSeries) {
+            long tick = point[0];
+            int price = point[1];
+            if (price > Bubble.PEAK_ABOVE) {
+                if (!climbing || price > peak) {
+                    peak = price;
+                    peakAt = tick;
+                }
+                climbing = true;
+            } else if (climbing && price < Bubble.BACK_BELOW) {
+                found.add(new Bubble(peak, peakAt, price, tick,
+                        (tick - peakAt) / (double) TICKS_PER_DAY));
+                climbing = false;
+            }
+        }
+        return found;
+    }
+
+    /**
+     * How often a village bubbles, per hundred days, by the one definition in
+     * {@link Bubble}. For a village nobody lied to, this is the rate of bubbles that
+     * started on their own.
+     */
+    public double bubblesPerHundredDays() {
+        return daily.isEmpty() ? 0 : bubbles().size() * 100.0 / daily.size();
+    }
+
+    /**
+     * How often somebody starts holding the claim in a village where nobody held it the day
+     * before, per hundred days.
+     *
+     * <p>A diagnostic, not a bubble. It catches the mechanism firing — a villager reading
+     * something into the price — long before anyone is convinced enough to move a market,
+     * and most onsets come to nothing. Quote {@link #bubblesPerHundredDays()} for how often
+     * a village talks itself into a bubble; quote this for how often it starts to.
+     */
+    public double beliefOnsetsPerHundredDays() {
         if (daily.isEmpty()) {
             return 0;
         }

@@ -120,17 +120,62 @@ class MarketStatsTest {
     }
 
     @Test
-    void panicsAreCountedPerHundredDaysSoRunsOfDifferentLengthsCompare() {
+    void ratesAreCountedPerHundredDaysSoRunsOfDifferentLengthsCompare() {
         // The same quiet village, measured over two lengths. A rate should not climb
         // simply because the run went on longer, the way a yes-or-no answer does.
         Params quiet = Params.defaults();
         double shortRun = MarketStats.of(Run.execute(7, quiet, List.of(), 200).log(),
-                DIAMONDS_SCARCE).panicsPerHundredDays();
+                DIAMONDS_SCARCE).beliefOnsetsPerHundredDays();
         double longRun = MarketStats.of(Run.execute(7, quiet, List.of(), 800).log(),
-                DIAMONDS_SCARCE).panicsPerHundredDays();
+                DIAMONDS_SCARCE).beliefOnsetsPerHundredDays();
 
         assertTrue(shortRun >= 0 && longRun >= 0);
-        assertTrue(longRun < 25, "a quiet village should not be panicking constantly");
+        assertTrue(longRun < 25, "a quiet village should not be starting beliefs constantly");
+    }
+
+    @Test
+    void aBubbleCannotHappenWithoutABeliefHavingStarted() {
+        // The sound relationship between the two, which is not an ordering: one unbroken
+        // spell of belief can carry the price up and down several times, so bubbles can
+        // outnumber onsets. What cannot happen is a bubble in a village where nobody ever
+        // came to believe anything.
+        MarketStats stats = afterARumor();
+
+        if (!stats.bubbles().isEmpty()) {
+            assertTrue(stats.beliefOnsetsPerHundredDays() > 0,
+                    "the price bubbled in a village where no belief ever started");
+        }
+    }
+
+    @Test
+    void everyCountedBubbleRanUpAndCameBackDown() {
+        MarketStats stats = afterARumor();
+
+        assertFalse(stats.bubbles().isEmpty(), "this run should bubble");
+        for (Bubble bubble : stats.bubbles()) {
+            assertTrue(bubble.peakPrice() > Bubble.PEAK_ABOVE, "did not run up: " + bubble);
+            assertTrue(bubble.recoveryPrice() < Bubble.BACK_BELOW, "did not come back: " + bubble);
+            assertTrue(bubble.recoveryTick() > bubble.peakTick(), "came back before it peaked");
+        }
+        // The single-bubble view reports the highest peak, so it cannot exceed the list.
+        assertTrue(stats.bubbles().size() >= 1);
+        assertEquals(stats.peakPrice(), stats.bubble().orElseThrow().peakPrice());
+    }
+
+    @Test
+    void aVillageNobodyLiedToRarelyBubblesOnItsOwn() {
+        // The figure worth quoting about a quiet village, and the reason the two measures
+        // are kept apart: beliefs start reasonably often and almost never amount to a
+        // bubble.
+        double bubbles = 0;
+        int seeds = 20;
+        for (long seed = 1; seed <= seeds; seed++) {
+            bubbles += MarketStats.of(
+                    Run.execute(seed, Params.defaults(), List.of(), 400).log(), DIAMONDS_SCARCE)
+                    .bubblesPerHundredDays();
+        }
+        assertTrue(bubbles / seeds < 1.0,
+                "a quiet village should not bubble on its own once every hundred days");
     }
 
     @Test

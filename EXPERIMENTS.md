@@ -539,12 +539,28 @@ village of eight and one of thirty can be read side by side. And the experiment 
 replay the `ObservedMeeting` inputs out of a saved session as its meeting schedule, so a
 sweep can run against a real village's traces rather than the model's idea of one.
 
-Two measures changed shape as well. A **bubble** is now counted only if it began within 30
-days of the lie: a long enough run wanders into one eventually whether or not anybody lied,
-so "did one ever happen" says more about the length of the run than about the lie. And a
-**spontaneous panic** is a rate per 100 days, counted as onsets — a day when somebody holds
-the claim after a day when nobody did — because a run-level yes or no cannot be compared
-between a 50-day run and a 350-day one.
+A trace is only ever run at its own size. Asking for a bigger village leaves the extra
+villagers with nobody to meet; asking for a smaller one throws meetings away. Neither tells
+you anything about the village that was played.
+
+### Two rates, kept apart
+
+A **bubble** is counted only if it began within 30 days of the lie: a long enough run
+wanders into one eventually whether or not anybody lied, so "did one ever happen" says more
+about the length of the run than about the lie.
+
+For a quiet village, two separate rates per 100 days, because conflating them overstates the
+case:
+
+| measure | what it counts |
+| --- | --- |
+| **bubbles** | excursions past 130 that came back under 110, by the `Bubble` definition |
+| **belief onsets** | a day when somebody holds the claim after a day when nobody did |
+
+An onset is the mechanism firing, not a panic. Most come to nothing. One unbroken spell of
+belief can also carry the price up and down more than once, so bubbles are not a subset of
+onsets and the two cannot be ordered — what cannot happen is a bubble in a village where no
+belief ever started.
 
 ```
 ./gradlew :experiments:sizes --args="--seeds 50 --sizes 8,12,20,30 --ticks 400 \
@@ -554,32 +570,33 @@ between a 50-day run and a 350-day one.
 Replaying a session of 1499 meetings over 1413 ticks, naming 9 villagers.
 
 ```
-  movement     size  active   bubbled   peak believers   panics/100d   peak$
-  simulated      8     all       56%              41%           0.0   132.9
-  simulated     12     all       68%              37%           0.1   139.8
-  simulated     20     all       62%              32%           0.1   142.2
-  simulated     30     all       50%              32%           0.2   143.9
-  played         8     all       56%              40%           0.3   135.5
-  played        12       9       48%              27%           0.3   131.7
-  played        20       9       48%              16%           0.3   131.7
-  played        30       9       48%              11%           0.3   131.7
+                            with the lie           quiet village, per 100 days
+  movement     size   bubbled   peak believers   bubbles   belief onsets   peak$
+  simulated      8       56%              41%      0.00            0.02   132.9
+  simulated     12       68%              37%      0.00            0.12   139.8
+  simulated     20       62%              32%      0.00            0.12   142.2
+  simulated     30       50%              32%      0.00            0.16   143.9
+  simulated      9       62%              37%      0.00            0.06   135.2
+  played         9       48%              36%      0.04            0.28   131.7
 ```
 
-**The model transfers to a real village better than expected.** At the size where the two are
-properly comparable — eight villagers, all of them active in both — simulated and played
-movement agree almost exactly: 56% bubbled either way, 41% against 40% peak believers, 133
-against 136 peak price. The worry that tuning on simulated movement meant tuning against the
-wrong village looks largely unfounded, at least for whether a rumor turns into a bubble.
+**The played row rests on one recorded session of 9 villagers, replayed under 50 seeds.**
+Different seeds give those same bodies different personalities, but the meetings are the one
+village that was played. This is a single village's evidence, not a sample of villages.
 
-**Where they differ is panics.** The played village talks itself into something at 0.3 per
-100 days at every size, against 0.0 to 0.2 simulated. Real villagers cluster, so the same
-few see each other repeatedly, and a belief that forms has a smaller pool to die out in.
+**At the size where the two are comparable, they are consistent but not identical.** Nine
+villagers, simulated against played: peak believers 37% against 36%, peak price 135 against
+132, but bubbles within 30 days of the lie 62% against 48%. Belief spreads about as far in
+the recorded village; it turns into a bubble less often. That is consistent with one
+recorded village, and no more than that — a second and a third session might move it either
+way.
 
-**The played rows above 9 are the distortion, now measured.** Sizes 12, 20 and 30 give
-identical bubble rates and identical peak prices, because only 9 villagers ever meet anybody
-and the rest change nothing but the denominator. Peak believers falls 27%, 16%, 11% across
-those rows while the actual number of believers does not move at all. That is precisely the
-error in the earlier in-game reading: 3 believers reported as "3 of 20" was really 3 of 9.
+**The quiet village differs more clearly.** Beliefs start about four times as often on the
+recorded trace, 0.28 onsets per 100 days against 0.06, and it is the only row that ever
+bubbles on its own at all, at 0.04 per 100 days — roughly one unprompted bubble every 2,500
+days. Real villagers cluster, so the same few keep meeting and a belief that forms has a
+smaller pool to die out in. The simulated model never produced an unprompted bubble in any
+of these runs.
 
 **Bubbles get harder as a village grows**, on the simulated model: 68% at twelve down to 50%
 at thirty, with peak believer share falling from 37% to 32%. A rumor has further to travel
@@ -587,5 +604,6 @@ and the median ask has more sellers to move.
 
 **Decision.** No defaults changed. The 20-villager calibration still sits inside its target
 band on this stricter measure — 62% bubbling within 30 days of the lie, against the 60-80%
-target — so there is nothing forcing a retune. The in-game session now sizes itself to the
-village it bound, which is a correctness fix rather than a tuning one.
+target. The in-game session now sizes itself to the village it bound, which is a correctness
+fix rather than a tuning one. Whether the model should be tuned against recorded villages
+rather than simulated movement is not answerable from one session.
