@@ -7,6 +7,7 @@ import hearsay.Narrator;
 import hearsay.Params;
 import hearsay.PlantRumor;
 import hearsay.RumorStats;
+import hearsay.Run;
 import hearsay.Simulation;
 
 import java.util.List;
@@ -32,19 +33,18 @@ public final class Main {
         Params params = Params.defaults();
         List<Input> inputs = List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, plantedIn));
 
-        Simulation sim = new Simulation(seed, params, inputs);
-        sim.run(ticks);
+        Run run = Run.execute(seed, params, inputs, ticks);
 
-        var planter = sim.state().villager(plantedIn);
+        var planter = run.finalState().villager(plantedIn);
         System.out.println("Hearsay: seed " + seed + ", " + ticks + " ticks");
         System.out.printf("Planted in %s (gossip %.2f, credulity %.2f)%n",
                 planter.name(), planter.traits().gossip(), planter.traits().credulity());
         System.out.println();
-        for (String line : Narrator.of(params).narrate(sim.log())) {
+        for (String line : Narrator.of(params).narrate(run.log())) {
             System.out.println(line);
         }
 
-        RumorStats stats = RumorStats.of(sim.log(), params);
+        RumorStats stats = RumorStats.of(run.log(), params);
         for (int family : stats.families()) {
             System.out.println();
             System.out.println("-- " + stats.claimOf(family).item() + " "
@@ -66,7 +66,8 @@ public final class Main {
         }
 
         System.out.println();
-        System.out.println(sim.state() + ", events=" + sim.log().size());
+        System.out.println(run.finalState() + ", events=" + run.log().size()
+                + ", inputs=" + run.inputs().size());
     }
 
     private static String bar(int believers) {

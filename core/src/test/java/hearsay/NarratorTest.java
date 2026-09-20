@@ -72,7 +72,7 @@ class NarratorTest {
         Narrator narrator = primed();
         assertEquals(List.of(), narrator.narrate(new VillagerMoved(1, 0, Spot.WELL)));
         assertEquals(List.of(), narrator.narrate(new PriceChanged(1, 3)));
-        assertEquals(List.of(), narrator.narrate(new DayEnded(4)));
+        assertEquals(List.of(), narrator.narrate(new DayEnded(4, 0.9, 0.05)));
     }
 
     @Test

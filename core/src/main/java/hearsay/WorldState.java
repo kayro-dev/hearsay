@@ -69,7 +69,7 @@ public final class WorldState {
             case DayEnded e -> {
                 tick = e.tick();
                 for (Villager villager : villagers.values()) { // id order
-                    villager.fade(params.dailyDecay(), params.forgetThreshold());
+                    villager.fade(e.decay(), e.forgetThreshold());
                 }
             }
         }

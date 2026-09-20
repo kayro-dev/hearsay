@@ -184,6 +184,26 @@ class RumorTest {
     }
 
     @Test
+    void aRumorAtTheTopOfTheScaleStopsGrowing() {
+        // Crank the mutation chance so severity 3 is reached quickly and often.
+        Params eager = new Params(0.3, 0.5, 0.5, 0.9, 0.05, 0.8, 1.0);
+        Simulation sim = new Simulation(SEED, eager,
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, PLANTED_IN)));
+        sim.run(TICKS);
+        WorldState state = sim.state();
+
+        boolean reachedTheTop = false;
+        for (Rumor rumor : state.rumors().values()) {
+            reachedTheTop |= rumor.severity() == Rumor.MAX_SEVERITY;
+            if (!rumor.isPlanted()) {
+                assertTrue(state.rumor(rumor.parentId()).severity() < Rumor.MAX_SEVERITY,
+                        "rumor " + rumor.id() + " grew out of one that was already as bad as it gets");
+            }
+        }
+        assertTrue(reachedTheTop, "the run should have produced a severity 3 rumor");
+    }
+
+    @Test
     void beliefsFadeAndAreForgottenWhenNobodyRepeatsThem() {
         // One villager hears it, and by the end of day one still believes it.
         Simulation sim = new Simulation(SEED, Params.defaults(),

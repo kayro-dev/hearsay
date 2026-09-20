@@ -3,7 +3,6 @@ package hearsay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
@@ -27,6 +26,7 @@ public final class Simulation {
 
     public static final int VILLAGER_COUNT = NAMES.size();
 
+    private final long seed;
     private final Params params;
 
     // One generator per subsystem. See RandomStream for why they must not be shared.
@@ -35,8 +35,10 @@ public final class Simulation {
     private final Random mutation;
     private final Random price;
 
-    /** Inputs waiting for their tick, in the order they were given. */
-    private final NavigableMap<Long, List<Input>> inputs = new TreeMap<>();
+    /** The inputs as given, kept so this run can describe itself. */
+    private final List<Input> inputs;
+    /** The same inputs, bucketed by the tick they are due. */
+    private final NavigableMap<Long, List<Input>> scheduled = new TreeMap<>();
 
     private final WorldState state;
     private final List<Event> log = new ArrayList<>();
@@ -47,14 +49,16 @@ public final class Simulation {
     }
 
     public Simulation(long seed, Params params, List<Input> inputs) {
+        this.seed = seed;
         this.params = params;
+        this.inputs = List.copyOf(inputs);
         this.state = new WorldState(params);
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
         this.price = RandomStream.PRICE.from(seed);
-        for (Input input : inputs) {
-            this.inputs.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
+        for (Input input : this.inputs) {
+            scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
         }
     }
 
@@ -68,7 +72,7 @@ public final class Simulation {
         holdMeetings();
         record(new PriceChanged(tick, price.nextInt(-3, 4))); // placeholder until week 5
         if (DayPart.of(tick) == DayPart.NIGHT) {
-            record(new DayEnded(tick));
+            record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
         }
     }
 
@@ -94,7 +98,7 @@ public final class Simulation {
 
     /** Turns any inputs scheduled for this tick into input events. */
     private void applyInputs() {
-        for (Input input : inputs.getOrDefault(tick, List.of())) {
+        for (Input input : scheduled.getOrDefault(tick, List.of())) {
             switch (input) {
                 case PlantRumor p -> record(new RumorPlanted(
                         tick, state.nextRumorId(), p.claim(), p.severity(), p.villagerId()));
@@ -189,11 +193,17 @@ public final class Simulation {
      * @return the rumor id the listener actually receives
      */
     private int growInTheTelling(int rumorId) {
+        Rumor told = state.rumor(rumorId);
+        // "Gone" is as bad as it gets. Rolling here anyway would spawn a child identical
+        // to its parent, cluttering the family tree with exaggerations that exaggerate
+        // nothing.
+        if (told.severity() >= Rumor.MAX_SEVERITY) {
+            return rumorId;
+        }
         if (mutation.nextDouble() >= params.mutationChance()) {
             return rumorId;
         }
-        Rumor told = state.rumor(rumorId);
-        int grown = Math.min(Rumor.MAX_SEVERITY, told.severity() + 1);
+        int grown = told.severity() + 1;
         int childId = state.nextRumorId();
         record(new RumorMutated(tick, childId, rumorId, grown));
         return childId;
@@ -251,8 +261,16 @@ public final class Simulation {
         return fresh;
     }
 
-    /** The inputs this simulation was given, by tick. */
-    public Map<Long, List<Input>> inputs() {
-        return Collections.unmodifiableMap(inputs);
+    public long seed() { return seed; }
+
+    /** The inputs this simulation was given, in the order they were given. */
+    public List<Input> inputs() { return inputs; }
+
+    /**
+     * Everything needed to reproduce this run, bundled with the log it produced, so the
+     * recipe and its result cannot be separated and later mismatched.
+     */
+    public Run toRun() {
+        return new Run(seed, params, inputs, (int) tick, log);
     }
 }

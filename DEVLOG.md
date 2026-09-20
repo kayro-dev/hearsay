@@ -4,6 +4,122 @@ Notes on building Hearsay — what I chose, why, and what I got wrong.
 
 ---
 
+## Week 4 — rumors (2026-09-20)
+
+### What changed
+
+Rumors are their own records, separate from beliefs. A `Rumor` has a claim, a severity of
+1 to 3, and a `parentId` linking it to the rumor it grew from, so rumors form a family
+tree. Ids come from a counter in `WorldState`, never from randomness. A `Belief` gained a
+`rumorId`, so any belief traces to the exact version of the rumor it came from.
+
+**Input events vs derived events.** `RumorPlanted` is the first event that comes from
+outside the simulation; moves, meetings, tellings and mutations are decided by it. Inputs
+are scheduled as `Input` values (`PlantRumor`) rather than events: an input is a request
+with no id, and the simulation turns it into an event when the tick arrives.
+`Event.isInput()` separates the two in a log.
+
+**Separate random streams.** `RandomStream` derives one `Random` per subsystem — movement,
+gossip, mutation, price — from the run seed, using a SplitMix64 mix rather than adding
+small offsets.
+
+Telling happens at meetings: both villagers get a turn, lower id first, each offering
+their strongest belief above the 0.3 threshold with probability `gossip × confidence`.
+Listeners update by `credulity × tellerConfidence` on first hearing, and close half the
+remaining gap on a repeat; believing the opposite claim halves the effect. Beliefs fade
+daily through one `DayEnded` event. A telling has a 5% chance of growing the rumor by one
+severity.
+
+New types: `Params` (all tuning knobs), `Rumor`, `Input`, `PlantRumor`, `RandomStream`,
+`Run`, `RumorStats`, and events `RumorPlanted`, `RumorMutated`, `RumorTold`, `DayEnded`.
+`Narrator` now keeps its own `WorldState` and applies events to it, so the "before" figure
+in `0% → 42%` comes from the same `apply()` the simulation uses.
+
+Tests went from 15 to 33: `SimulationTest` 5, `VillageTest` 7, `NarratorTest` 8,
+`RumorTest` 8, `RunTest` 5.
+
+### Four follow-up changes
+
+- `DayEnded` now carries `decay` and `forgetThreshold` as fields, read by `apply()`
+  instead of the run's `Params`.
+- A rumor already at severity 3 no longer mutates. Previously it produced a child
+  identical to its parent. The mutation roll is skipped entirely rather than rolled and
+  discarded.
+- `Run` bundles seed, params, inputs, tick count and log in one record. `Run.rerun()`
+  decides the whole run again from the recipe; `Run.without(input)` drops one input, which
+  is the starting point for week 6's counterfactual.
+- The CLI takes an optional third argument: which villager to plant the rumor in.
+
+### Numbers
+
+Planting in each villager in turn, seed 42, 200 ticks:
+
+| planted in | gossip | tellings | peak believers |
+| --- | --- | --- | --- |
+| 0 (Mira) | 0.05 | 0 | 1 |
+| 9 | 0.14 | 1 | 2 |
+| 15 | 0.10 | 0 | 1 |
+| 17 | 0.07 | 0 | 1 |
+| 18 (Pim) | 0.93 | 30 | 11 |
+| 10 | 0.97 | 22 | 10 |
+| 1 | 0.65 | 26 | 12 |
+
+Three of twenty villagers never pass the rumor on at all: their confidence decays below
+the 0.3 telling threshold before they mention it. Villager 0, the design's default
+planter, is one of them on seed 42. Across seeds 1-30 planting in villager 0, the rumor
+was told at least once in 28.
+
+Planted in villager 18, seed 42: 30 tellings, 3 rumors, peak 11/20 believers, half the
+village at tick 23, reproduction number 1.24. Beliefs have faded from everyone by tick
+200.
+
+Four deliberate breakages, to check the new tests can fail:
+
+| Mutation | Caught by |
+| --- | --- |
+| Point gossip and mutation at the movement generator | the stream separation test, and nothing else |
+| Tell someone who was not at the meeting | `rumorsOnlyTravelThroughMeetings` |
+| A grown rumor records `NO_PARENT` | `apply()` throws on the missing parent |
+| `apply()` silently stores a grown rumor as planted | `everyRumorLeadsBackToAPlantedOne`, after it was strengthened |
+
+The fourth mutation was not caught by the original lineage test, which only checked that
+every chain ended somewhere planted. It now cross-checks the log: planted rumors in state
+must equal `RumorPlanted` events, and each `RumorMutated` event's parent must match what
+was stored.
+
+### Which params still leak into replay
+
+Replaying one log under retuned params, checking whether the rebuilt state is unchanged.
+Run of 20 ticks, so beliefs are still alive at the end:
+
+| knob | replay unchanged |
+| --- | --- |
+| tellThreshold, repeatFactor, contradictionFactor, mutationChance | yes (they only affect deciding) |
+| dailyDecay 0.9 → 0.2 | yes, since the move onto `DayEnded` |
+| forgetThreshold 0.05 → 0.4 | yes, since the move onto `DayEnded` |
+| plantedConfidence 1.0 → 0.5 | **no** |
+
+`plantedConfidence` is still read from `Params` inside `apply(RumorPlanted)`, so it is the
+one knob whose retuning changes what an old log replays to. Moving it onto the
+`RumorPlanted` event would close it and leave `WorldState` needing no params at all.
+
+### Deviations from the week 4 design
+
+- Inputs are `Input` values, not events. Ids come from the state counter, so an input
+  carrying one could collide with an id the simulation assigns to a mutation.
+- `Params` gained `plantedConfidence`; the design did not say how sure a villager is when
+  a rumor is planted in them.
+- `WorldState` takes `Params` and `Simulation.replay` requires them.
+- `Narrator` keeps a mirror `WorldState`, and defers the mutation line until after the
+  telling it happened during, to match the design's example output.
+- `Narrator.of` vs `Narrator.withMeetings`: meetings are not narrated by default.
+- `ClaimType.ABUNDANT` severity words are plentiful / everywhere / worthless.
+- Tests plant in villager 18, not 0, for the reason in the table above.
+
+**Next:** prices that follow beliefs.
+
+---
+
 ## Week 3 — villagers, movement and meetings (2026-09-20)
 
 ### What changed
