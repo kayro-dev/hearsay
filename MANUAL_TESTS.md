@@ -8,8 +8,9 @@ Run through it after any change to the `paper` module, and before recording anyt
 ## Setup
 
 1. Copy `local.properties.example` to `local.properties` and point `server.plugins.dir` at
-   your server's `plugins` folder. The file is gitignored: it is specific to your machine.
-2. `./gradlew :paper:deploy`
+   your server's `plugins` folder — the folder itself, not the server folder above it. The
+   file is gitignored: it is specific to your machine.
+2. `./gradlew :paper:deploy`, which copies `Hearsay.jar` into that folder.
 3. **Restart the server.** Do not use `/reload` — it is known to leave plugins in a broken
    state, and a plugin that half-reloaded will waste an hour of your evening.
 

@@ -26,6 +26,8 @@ java {
 
 // The server has no idea what Hearsay's core is, so it travels inside the plugin jar.
 tasks.jar {
+    archiveBaseName = "Hearsay"
+    archiveVersion = ""
     from(project(":core").sourceSets["main"].output)
 }
 
@@ -44,22 +46,25 @@ tasks.register<Copy>("deploy") {
     description = "Builds the plugin and copies it into the server's plugins folder."
     dependsOn(tasks.jar)
 
-    doFirst {
-        if (serverPluginsDirectory.isNullOrBlank()) {
-            throw GradleException(
-                "No server path. Create local.properties in the project root with:\n" +
-                    "  server.plugins.dir=/path/to/your/server/plugins\n" +
-                    "It is gitignored, since it is specific to your machine."
-            )
-        }
+    // Held as a plain string local to this block. A task action that reached back out to
+    // the script itself would be something the configuration cache cannot store.
+    val destination = serverPluginsDirectory
+
+    if (destination.isNullOrBlank()) {
+        throw GradleException(
+            "No server path. Create local.properties in the project root with:\n" +
+                "  server.plugins.dir=/path/to/your/server/plugins\n" +
+                "and point it at the plugins folder, not the server folder. It is\n" +
+                "gitignored, since the path is yours rather than the project's."
+        )
     }
 
     from(tasks.jar)
-    into(serverPluginsDirectory ?: "build/unset")
+    into(destination)
 
     doLast {
-        logger.lifecycle("Copied to $serverPluginsDirectory.")
-        logger.lifecycle("Restart the server to load it. Do not use /reload: it is known")
-        logger.lifecycle("to leave plugins in a broken state.")
+        logger.lifecycle("Copied to $destination")
+        logger.lifecycle("Restart the server to load it. Not /reload: that is known to")
+        logger.lifecycle("leave plugins in a broken state.")
     }
 }
