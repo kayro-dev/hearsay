@@ -8,8 +8,6 @@ import hearsay.Params;
 import hearsay.PlantRumor;
 import hearsay.Run;
 import hearsay.Simulation;
-import hearsay.Villager;
-import hearsay.WorldState;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -148,14 +146,8 @@ public final class Bubble {
                        Condition rumorAndFeedback, Condition rumorOnly, Condition quiet) {}
 
     private static int gossipiestVillager(long seed) {
-        WorldState village = Run.execute(seed, Params.defaults(), List.of(), 1).finalState();
-        int gossipiest = 0;
-        for (Villager villager : village.villagers().values()) {
-            if (villager.traits().gossip() > village.villager(gossipiest).traits().gossip()) {
-                gossipiest = villager.id();
-            }
-        }
-        return gossipiest;
+        return Run.execute(seed, Params.defaults(), List.of(), 1).finalState()
+                .gossipiestVillager().id();
     }
 
     private static void print(List<Row> table) {

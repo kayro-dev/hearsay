@@ -191,8 +191,9 @@ price holds them there. For decay 0.92 the equilibrium only falls below 0.5 when
 day, so the real figure is lower still. `days>120` of 30 to 47 out of 50 is describing a
 permanent change of regime, not a bubble.
 
-**Decision.** None yet: defaults are unchanged pending a decision on whether a bubble is
-supposed to deflate. The three cells above hit the stated target as written.
+**Decision.** None applied here: defaults unchanged pending a decision on whether a bubble
+is supposed to deflate. The three cells above hit the stated target as written. Resolved in
+E4, where bubbles were made to deflate and these settings were superseded.
 
 ---
 
@@ -284,10 +285,11 @@ panics. Making spontaneous panics rare-but-possible rather than impossible needs
 `marketNoise` or a `noiseDecay` nearer 0.9; at the current 0.03 and 0.8 the stationary
 spread is about 0.029, which puts the threshold three and a half standard deviations away.
 
-**Decision.** None yet: defaults unchanged pending a choice between the two cells, and a
-decision on whether the weight formula should be rescaled against the threshold rather than
-the raw move, which would put the useful range of `observationWeight` back near its old
-values instead of near 1.
+**Decision.** None applied here: defaults unchanged pending a choice between the two cells,
+and a decision on whether the weight formula should be rescaled against the threshold rather
+than the raw move, which would put the useful range of `observationWeight` back near its old
+values instead of near 1. Resolved in E5: the rescaling was adopted as `fullMoveSize`, which
+made both cells here obsolete, and the settings were chosen again on the rescaled grid.
 
 ---
 
@@ -331,9 +333,10 @@ The rate is far more sensitive to how long the wobble carries than to how big ea
 holding the step at 0.030 and moving the carry from 0.82 to 0.88 takes the rate from 0.7%
 to 15.7%.
 
-**Decision.** `marketNoise` 0.030 with `noiseDecay` 0.86, giving 5.7%, in the middle of the
-2-8% target. A quiet village still averages a peak of 107.7 and never bursts, so the
-mechanism can fire without the village being permanently jumpy.
+**Decision.** Adopted as defaults: `marketNoise` 0.030 with `noiseDecay` 0.86, giving 5.7%,
+in the middle of the 2-8% target. A quiet village still averages a peak of 107.7 and never
+bursts, so the mechanism can fire without the village being permanently jumpy. Held in
+place by `CalibrationTest`, which fails if any quiet village in seeds 1001-1100 bursts.
 
 ---
 
@@ -440,6 +443,15 @@ The neighbourhood is wider out of sample than in: 38% and 87% either side on the
 `observationWeight` axis rather than 52% and 86%. The cell is centred but the gradient along
 that axis is steep, so this is a setting to re-validate rather than to treat as settled.
 
-**Decision.** None applied: defaults unchanged. The candidate for week 5's settings is
-`observationWeight` 0.25, `priceSensitivity` 0.75, `marketNoise` 0.030, `noiseDecay` 0.86,
-`fullMoveSize` 0.20.
+**Decision.** Adopted as defaults: `observationWeight` 0.25, `priceSensitivity` 0.75,
+`fullMoveSize` 0.20, alongside E5a's `marketNoise` 0.030 and `noiseDecay` 0.86.
+
+Adopted with a caveat that belongs on the record. The `observationWeight` axis is steep:
+0.05 either way moves the half-believing rate by twenty points or more, and the
+out-of-sample neighbourhood is wider than the in-sample one, 38% and 87% either side rather
+than 52% and 86%. The setting is centred in the target band but not comfortably inside it,
+so it wants re-validating after any change that touches how evidence is weighed, rather
+than nudging. That is what `CalibrationTest` is for: it runs seeds 1001-1100 on every push
+and fails if the with-rumor half-believing rate leaves 50-85% or any quiet village bursts.
+The band is deliberately wider than the measured 65%, because a band tight enough to pin
+today's figure would break on any deliberate retune while catching nothing extra.

@@ -4,6 +4,122 @@ Notes on building Hearsay — what I chose, why, and what I got wrong.
 
 ---
 
+## Week 5 — prices, and the loop that closes (2026-09-20)
+
+### What changed
+
+The random-walk `PriceChanged` scaffolding is gone. Prices are decisions the simulation
+makes and records.
+
+Each villager has an asking price driven by belief:
+`ask = basePrice × (1 + priceSensitivity × scarcityBelief)`, where `scarcityBelief` nets
+scarce against abundant, weights confidence by severity at 1x, 1.5x and 2x, and is clamped
+to the range -1 to 1. The market price is the median ask of the villagers at `MARKET`,
+needing a quorum of 5, nudged by noise, recorded as `MarketPriceSet`.
+
+Villagers at the market read the price and take it as evidence, recorded as
+`PriceObserved`. Evidence is the **move since the price that villager last drew a
+conclusion from**, not the level: a steady price is no evidence however high it is. A
+villager who has concluded nothing measures against base, so a first move still registers.
+Weight is `observationWeight × min(1, |move| / fullMoveSize)`, combined through the same
+rule as rumors.
+
+Market noise carries over: `noise(t) = noiseDecay × noise(t-1) + step`.
+
+Belief can now start without anybody speaking, so rumors gained a `RumorOrigin`: a family
+is `PLANTED` or `OBSERVED`, and the invariant became that every belief traces to one or the
+other. An observation-born rumor is told and exaggerated like any other.
+
+New: `MarketPriceSet`, `PriceObserved`, `RumorOrigin`, `MarketStats`, and `Params` gained
+`basePrice`, `priceSensitivity`, `observationWeight`, `observationThreshold`,
+`fullMoveSize`, `marketNoise`, `noiseDecay`, `marketQuorum`. `Params` gained withers, since
+twelve positional fields make every call site fragile. `WorldState.gossipiestVillager()`
+replaced three copies of the same helper.
+
+Two experiment runners: `:experiments:bubble` runs each setting three ways over the same
+seeds (rumor with feedback, the same rumor without it, a quiet village), and
+`:experiments:noise` tunes the wobble on quiet villages alone.
+
+Tests went from 63 to 70.
+
+### Numbers
+
+Defaults adopted from E5: `priceSensitivity` 0.75, `observationWeight` 0.25,
+`fullMoveSize` 0.20, `marketNoise` 0.030, `noiseDecay` 0.86, `marketQuorum` 5.
+
+The loop's effect, holding everything else fixed and switching only the feedback on, at
+sensitivity 0.75 over 50 seeds:
+
+| | mean peak price | burst rate | fall, days |
+| --- | --- | --- | --- |
+| rumor, no feedback | 139.0 | 66% | 10.5 |
+| rumor + feedback | 162.9 | 88% | 12.9 |
+
+On seeds 1001-1100, which no sweep had touched:
+
+| condition | half believing | burst | quiet holders |
+| --- | --- | --- | --- |
+| rumor + feedback | 65% | 94% | - |
+| quiet village | - | 0% | 5% |
+
+Three stages the numbers went through, each recorded in EXPERIMENTS.md:
+
+| stage | half believing, with a rumor | bursts | quiet villages |
+| --- | --- | --- | --- |
+| E3, evidence from the price level | 90% | never deflated | 0%, structurally impossible |
+| E4, evidence from the move | 18% | 92% | 0%, structurally impossible |
+| E5, move scaled by `fullMoveSize` | 72% (65% out of sample) | 88% | 5% hold a belief, 0% burst |
+
+E3's bubbles could not deflate. A villager observing a saturated price once a day settles
+at `d·w / (1 - d(1-w))`, which for decay 0.92 and weight 0.15 is 0.63, above the 0.5
+believing threshold, so belief locked in and held the price up. E4 fixed that by measuring
+moves rather than levels, which also shrank every observation's weight by about eight times,
+because `min(1, |move|)` had been calibrated against levels. E5's `fullMoveSize` separated
+the two: the threshold decides what is noticed, `fullMoveSize` decides what a noticed move
+is worth.
+
+Noise tuning, 300 quiet villages per cell: the panic rate is far more sensitive to how long
+the wobble carries than to how big each step is. Holding the step at 0.030 and moving the
+carry from 0.82 to 0.88 takes the rate from 0.7% to 15.7%. Chosen: 0.030 at 0.86, giving
+5.7%.
+
+Seven deliberate breakages, to check the new tests can fail:
+
+| Mutation | Caught by |
+| --- | --- |
+| The whole village reads the price, not just those at the market | `onlyVillagersStandingAtTheMarketReadThePrice` |
+| The market opens with one seller | `theMarketOnlyOpensWithAQuorum` |
+| Scarcity lowers the ask | `moreScarcityBeliefAlwaysMeansAHigherAsk`, `anAbundantBeliefPullsTheAskBelowBase` |
+| Noise ignores its parameter | `withoutRumorsOrNoiseThePriceNeverLeavesBase` |
+| Evidence read from the level, not the move | `aSteadyPriceIsNoEvidenceHoweverHighItIs` |
+| A falling price still means scarcity | `aRisingPriceMeansScarcityAndAFallingOneMeansPlenty` |
+| Noise drawn fresh instead of carried over | `theWobbleCarriesOverInsteadOfBeingDrawnFresh` |
+
+The last one was not caught at first: the carry-over had no test at all. One was added and
+the mutation re-run to confirm it fails.
+
+`CalibrationTest` runs seeds 1001-1100 on every push and fails if the with-rumor
+half-believing rate leaves 50-85% or any quiet village bursts. It takes about two seconds.
+Verified against three mutations: `observationWeight` at 0.05 trips the lower bound, at 0.50
+the upper, and noise at 0.080 carried at 0.95 trips both tests.
+
+### Choices made along the way
+
+- `scarcityBelief` is clamped, so half sure of the worst version and certain of the mildest
+  saturate at the same ask.
+- Observation weight is not subject to `repeatWeight`; the design gives `w` explicitly and
+  it has no source term.
+- Noise state lives in `Simulation`, not `WorldState`: it is part of the random process,
+  and no event carries it.
+- A villager who forgets a claim entirely loses their price anchor with it.
+- `RumorStats` counts one rumor family; `MarketStats` counts a claim however it was reached,
+  because a run with no rumor planted has no family to count and would read zero by
+  construction.
+
+**Next:** counterfactual replay — what the price would have been without the lie.
+
+---
+
 ## Week 4, part 2 — measuring belief (2026-09-20)
 
 ### What changed

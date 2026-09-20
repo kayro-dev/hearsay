@@ -85,14 +85,7 @@ public final class Main {
      * villagers talk so rarely that the rumor dies with them.
      */
     private static int gossipiestVillager(long seed, Params params) {
-        WorldState village = Run.execute(seed, params, List.of(), 1).finalState();
-        int gossipiest = 0;
-        for (Villager villager : village.villagers().values()) { // id order: ties go to the lower id
-            if (villager.traits().gossip() > village.villager(gossipiest).traits().gossip()) {
-                gossipiest = villager.id();
-            }
-        }
-        return gossipiest;
+        return Run.execute(seed, params, List.of(), 1).finalState().gossipiestVillager().id();
     }
 
     private static String bar(RumorStats.DayStats day) {

@@ -141,6 +141,27 @@ public final class WorldState {
         return villager;
     }
 
+    /**
+     * The villager most likely to pass a rumor on. Ties go to the lower id, so the answer
+     * never depends on iteration order.
+     *
+     * <p>Lives here so that everything choosing a planter — the demo, the sweeps, and the
+     * calibration test — picks the same one. If they chose differently, the test would
+     * stop checking the setting the sweeps actually validated.
+     */
+    public Villager gossipiestVillager() {
+        Villager gossipiest = null;
+        for (Villager villager : villagers.values()) { // id order
+            if (gossipiest == null || villager.traits().gossip() > gossipiest.traits().gossip()) {
+                gossipiest = villager;
+            }
+        }
+        if (gossipiest == null) {
+            throw new IllegalStateException("There are no villagers yet");
+        }
+        return gossipiest;
+    }
+
     public Rumor rumor(int id) {
         Rumor rumor = rumors.get(id);
         if (rumor == null) {

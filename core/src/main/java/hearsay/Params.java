@@ -73,16 +73,25 @@ public record Params(
     }
 
     /**
-     * The rumor knobs were chosen from a seed sweep rather than by hand: see
-     * EXPERIMENTS.md. A decay of 0.92 with a telling threshold of 0.4 gives a mean peak of
-     * 4.7 believers out of 20, a grip lasting about eight days, and no seed in fifty
-     * running away to convince the village. Deliberately modest, because the market
-     * feedback loop is meant to do the work of turning a rumor into a bubble. The market
-     * knobs are the design's starting values and have not been swept yet.
+     * Every value here was chosen from a seed sweep rather than by hand: see
+     * EXPERIMENTS.md.
+     *
+     * <p>The rumor knobs are deliberately modest, since the market loop is meant to do the
+     * work of turning a rumor into a bubble: a decay of 0.92 with a telling threshold of
+     * 0.4 gives a mean peak of 4.7 believers out of 20 and a grip lasting about eight days.
+     *
+     * <p>The market knobs come from E5. On a hundred seeds the sweep never saw, a planted
+     * rumor convinces half the village in 65% of them and the price bursts in 94%, while a
+     * village nobody lied to produces a believer in 5% and never bursts. CalibrationTest
+     * holds those figures in place.
+     *
+     * <p>{@code observationWeight} is the touchy one: a change of 0.05 either way moves the
+     * half-believing rate by twenty points or more, so it wants re-validating rather than
+     * nudging.
      */
     public static Params defaults() {
         return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
-                100, 1.0, 0.15, 0.10, 0.20, 0.03, 0.8, 5);
+                100, 0.75, 0.25, 0.10, 0.20, 0.030, 0.86, 5);
     }
 
     // Tuning one knob should not mean restating the other eleven, and a sweep that did

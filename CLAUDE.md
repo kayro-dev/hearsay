@@ -30,4 +30,11 @@ logged so any crash can be replayed and compared against a counterfactual.
 - Make small, reviewable changes. Run ./gradlew test after every change.
 - Done: deterministic loop, event log, replay, drift test, CI (weeks 1-2).
   Villagers, traits, belief structures, movement, meetings, narrator (week 3).
-- Current milestone: rumors (week 4) - gossip at meetings, beliefs that change.
+  Rumors, input vs derived events, separate random streams (week 4).
+  Prices from belief, market observation, the feedback loop (week 5).
+- Tuning is decided by seed sweeps in the experiments module, not by hand. Every
+  decision is recorded in EXPERIMENTS.md with its command and table. CalibrationTest
+  holds the defaults to the behaviour they were chosen for; if it fails, the model
+  has been retuned, deliberately or otherwise.
+- Current milestone: counterfactual replay (week 6) - what the price would have
+  been without the lie.
