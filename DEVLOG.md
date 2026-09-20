@@ -4,6 +4,108 @@ Notes on building Hearsay — what I chose, why, and what I got wrong.
 
 ---
 
+## Week 4, part 2 — measuring belief (2026-09-20)
+
+### What changed
+
+`plantedConfidence` moved onto the `RumorPlanted` event. `WorldState` now consults no
+`Params` at all, and `Simulation.replay(log)` takes only the events: a log rebuilds the
+same world whatever the knobs are set to today.
+
+`RumorStats` separates **heard** (holds the claim at any strength) from **believes**
+(confidence at or above 0.5). The threshold lives in `RumorStats`, not `Params`, because
+it changes nothing about the run. Added cumulative `everHeard`, the severity spread per
+day, and `ticksUntilHalfHeard` / `ticksUntilHalfBelieves` in place of one combined figure.
+The reproduction number is defined on heard, not believes.
+
+`Belief` gained `chain`, a sorted set of every villager the belief passed through, with
+the holder excluded. A telling whose claim already came through the listener is an echo
+and changes nothing. A belief now keeps the most severe version its holder has heard,
+recorded on `RumorTold` as `keptRumorId` next to `toldRumorId`. `sourceId` continues to
+mean "who last told me".
+
+The CLI picks the gossipiest villager as the default planter, found by running one tick
+with no inputs. Traits come from the movement stream, which inputs never touch, so the
+probe sees the same village the real run gets.
+
+Tests went from 33 to 42, with `RumorStatsTest` added.
+
+### Numbers
+
+Seed 42, planting in the gossipiest villager, 20 days:
+
+```
+day  2   4 heard /  3 believe   severity 4x1
+day  6   6 heard /  1 believe   severity 5x1 1x2
+day  7   8 heard /  0 believe   severity 6x1 2x2
+day 20   9 heard /  0 believe   severity 7x1 2x2
+ever heard 16/20   peak believes 3/20
+half heard tick 42   half believes never reached
+```
+
+Across seven seeds, `half believes` was never reached on any of them, and peak believers
+ran 1 to 5 out of 20.
+
+Before and after the echo and severity rules, 200 ticks, planting in the gossipiest
+villager:
+
+| seed | ever heard | peak believes | days with a believer | echoes | severity kept |
+| --- | --- | --- | --- | --- | --- |
+| 42 | 16 → 16 | 3 → 3 | 6 → 6 | 0 | 0 |
+| 7 | 19 → 16 | 5 → 5 | 7 → 6 | 2 | 0 |
+| 1 | 17 → 17 | 2 → 2 | 6 → 6 | 1 | 0 |
+| 99 | 15 → 14 | 2 → 2 | 6 → 6 | 3 | 0 |
+| 2024 | 18 → 19 | 3 → 3 | 6 → 6 | 4 | 3 |
+| 3 | 19 → 18 | 1 → 1 | 7 → 6 | 1 | 0 |
+| 11 | 20 → 20 | 5 → 5 | 16 → 9 | 14 | 9 |
+
+Peak believers is unchanged on every seed. Echoes number 0 to 14 per 200-tick run. Seed 11
+is the outlier: 14 echoes had been sustaining a believer for seven extra days.
+
+Confidence on first hearing by distance from the planted source, seven seeds:
+
+| hop | mean confidence | n |
+| --- | --- | --- |
+| 1 | 0.348 | 68 |
+| 2 | 0.227 | 49 |
+| 3 | 0.184 | 11 |
+
+It does not reach 0.5 even at hop 1, before any decay.
+
+All tellings, seven seeds, under the formula in force at the time:
+
+| kind | tellings | mean confidence gain |
+| --- | --- | --- |
+| first hearing | 128 | 0.288 |
+| new source, claim already held | 131 | 0.073 |
+| repeat from the same source | 62 | 0.068 |
+
+Distinct sources a villager ever hears a claim from: 56 villagers heard from one source,
+27 from two, 19 from three, 12 from four, 7 from five, 1 from six.
+
+Two deliberate breakages, to check the new tests can fail:
+
+| Mutation | Caught by |
+| --- | --- |
+| Ignore the chain, so echoes convince | `hearingItBackFromSomeoneItPassedThroughConvincesNobody` |
+| Always keep the version just told | `aBeliefNeverWalksBackToAMilderVersionOfTheClaim` |
+
+Both tests assert their fixture actually contains an echo and a milder telling, so neither
+can pass by finding nothing to check.
+
+### Choices made along the way
+
+- Echo detection requires the listener to still hold the claim. A villager who forgot it
+  entirely loses the history with it, and hearing it again is new.
+- A tie on severity goes to what was just said.
+- `RumorStats` attributes a telling to the family of `keptRumorId`, not `toldRumorId`,
+  since that is what a later snapshot finds in the listener's head.
+- Echo tellings are still recorded in the log with the confidence unchanged.
+
+**Next:** one evidence-combining rule in place of the first-hearing and repeat branches.
+
+---
+
 ## Week 4 — rumors (2026-09-20)
 
 ### What changed

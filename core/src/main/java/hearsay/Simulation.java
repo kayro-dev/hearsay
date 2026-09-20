@@ -184,15 +184,7 @@ public final class Simulation {
         Claim claim = state.rumor(toldRumorId).claim();
         Villager listener = state.villager(listenerId);
         Belief held = listener.belief(claim);
-
-        // An echo: what the teller is passing on came through the listener in the first
-        // place, so it tells them nothing they did not already put into circulation. If
-        // the listener has since forgotten the claim entirely, the history goes with it
-        // and hearing it again is genuinely new.
-        boolean echo = held != null && toTell.cameThrough(listenerId);
-        double heard = echo
-                ? held.confidence()
-                : confidenceAfterHearing(listener, claim, toTell.confidence());
+        double heard = confidenceAfterHearing(listener, claim, toTell, tellerId);
 
         record(new RumorTold(tick, tellerId, listenerId, toldRumorId,
                 worseOf(held, toldRumorId), heard));
@@ -236,23 +228,47 @@ public final class Simulation {
     }
 
     /**
-     * How sure the listener ends up. Hearing something new lands at credulity times the
-     * teller's own confidence; hearing it again closes part of the remaining gap, so
-     * repetition strengthens a belief with diminishing returns and never passes 1.
-     * Already believing the opposite makes the news less convincing.
+     * How sure the listener ends up, as one rule for every telling: a piece of evidence of
+     * weight w combines with what is already held by
+     * {@code new = 1 - (1 - old) * (1 - w)}. Two independent halves leave a quarter of the
+     * doubt rather than none of it, so confidence climbs with corroboration and never
+     * passes 1. A first hearing is the same rule with nothing held, which lands exactly at
+     * credulity times the teller's confidence.
      */
-    private double confidenceAfterHearing(Villager listener, Claim claim, double tellerConfidence) {
+    private double confidenceAfterHearing(Villager listener, Claim claim, Belief toTell,
+                                          int tellerId) {
         Belief held = listener.belief(claim);
-        double credulity = listener.traits().credulity();
         double before = held == null ? 0 : held.confidence();
 
-        double gain = held == null
-                ? credulity * tellerConfidence
-                : (1 - before) * credulity * tellerConfidence * params.repeatFactor();
+        double weight = listener.traits().credulity() * toTell.confidence()
+                * sourceWeight(held, toTell, tellerId, listener.id());
         if (listener.belief(claim.opposite()) != null) {
-            gain *= params.contradictionFactor();
+            weight *= params.contradictionFactor();
         }
-        return Math.min(1.0, before + gain);
+        return Math.min(1.0, 1 - (1 - before) * (1 - weight));
+    }
+
+    /**
+     * How much the listener should count this teller as evidence.
+     *
+     * <p>A source the belief has not already come through is independent corroboration and
+     * counts in full. A source already in the listener's chain is the same news arriving by
+     * a route they have already counted, so it is worth only {@code repeatWeight}: that
+     * covers the direct teller repeating themselves and anyone further back that the claim
+     * reached them through. An echo, where what the teller is passing on came through the
+     * listener in the first place, is worth nothing at all.
+     *
+     * <p>A villager who has forgotten the claim entirely has lost the history with it, so
+     * hearing it again is genuinely new.
+     */
+    private double sourceWeight(Belief held, Belief toTell, int tellerId, int listenerId) {
+        if (held == null) {
+            return 1.0;
+        }
+        if (toTell.cameThrough(listenerId)) {
+            return 0.0;
+        }
+        return held.cameThrough(tellerId) ? params.repeatWeight() : 1.0;
     }
 
     private void record(Event event) {

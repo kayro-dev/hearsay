@@ -34,6 +34,18 @@ class RumorTest {
         return run(List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, PLANTED_IN)));
     }
 
+    /**
+     * A busier village. Seed 42 spreads its rumor too cleanly to exercise the rules about
+     * hearing something twice: on this seed the claim loops back on people and arrives in
+     * milder versions, which is what those two tests need to have anything to check.
+     */
+    private static Simulation runWithEchoesAndBacktracking() {
+        Simulation sim = new Simulation(11, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 10)));
+        sim.run(TICKS);
+        return sim;
+    }
+
     /** The events that say where people are, as opposed to what they said. */
     private static List<Event> whereEveryoneWent(List<Event> log) {
         List<Event> physical = new ArrayList<>();
@@ -205,7 +217,7 @@ class RumorTest {
 
     @Test
     void hearingItBackFromSomeoneItPassedThroughConvincesNobody() {
-        Simulation sim = runWithRumor();
+        Simulation sim = runWithEchoesAndBacktracking();
 
         WorldState mirror = new WorldState();
         int echoes = 0;
@@ -223,6 +235,41 @@ class RumorTest {
             mirror.apply(event);
         }
         assertTrue(echoes > 0, "the run should contain at least one echo to check");
+    }
+
+    @Test
+    void independentCorroborationOutweighsTheSameNewsComingBackAround() {
+        Simulation sim = runWithEchoesAndBacktracking();
+
+        WorldState mirror = new WorldState();
+        double independentGain = 0;
+        double repeatGain = 0;
+        int independent = 0;
+        int repeats = 0;
+
+        for (Event event : sim.log()) {
+            if (event instanceof RumorTold told) {
+                Claim claim = mirror.rumor(told.toldRumorId()).claim();
+                Belief held = mirror.villager(told.listenerId()).belief(claim);
+                Belief tellerBelief = mirror.villager(told.tellerId()).belief(claim);
+                if (held != null && tellerBelief != null && !tellerBelief.cameThrough(told.listenerId())) {
+                    double gain = told.newConfidence() - held.confidence();
+                    if (held.cameThrough(told.tellerId())) {
+                        repeats++;
+                        repeatGain += gain;
+                    } else {
+                        independent++;
+                        independentGain += gain;
+                    }
+                }
+            }
+            mirror.apply(event);
+        }
+
+        assertTrue(independent > 0 && repeats > 0,
+                "need both kinds of telling to compare: " + independent + " vs " + repeats);
+        assertTrue(independentGain / independent > repeatGain / repeats,
+                "a fresh source should count for more than one already in the chain");
     }
 
     @Test
@@ -259,7 +306,7 @@ class RumorTest {
 
     @Test
     void aBeliefNeverWalksBackToAMilderVersionOfTheClaim() {
-        Simulation sim = runWithRumor();
+        Simulation sim = runWithEchoesAndBacktracking();
 
         WorldState mirror = new WorldState();
         int wouldHaveDowngraded = 0;

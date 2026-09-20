@@ -5,7 +5,8 @@ package hearsay;
  * value is the full recipe for a run: save those three and the run can be reproduced.
  *
  * @param tellThreshold       a belief weaker than this is not worth mentioning
- * @param repeatFactor        how much of the remaining room a repeat telling closes
+ * @param repeatWeight        how much evidence a source already in the listener's chain
+ *                            carries, next to 1.0 for an independent one
  * @param contradictionFactor multiplier when the listener believes the opposite claim
  * @param dailyDecay          confidence is multiplied by this at the end of each day
  * @param forgetThreshold     a belief weaker than this is dropped entirely
@@ -14,7 +15,7 @@ package hearsay;
  */
 public record Params(
         double tellThreshold,
-        double repeatFactor,
+        double repeatWeight,
         double contradictionFactor,
         double dailyDecay,
         double forgetThreshold,
@@ -23,7 +24,7 @@ public record Params(
 
     public Params {
         requireFraction(tellThreshold, "tellThreshold");
-        requireFraction(repeatFactor, "repeatFactor");
+        requireFraction(repeatWeight, "repeatWeight");
         requireFraction(contradictionFactor, "contradictionFactor");
         requireFraction(dailyDecay, "dailyDecay");
         requireFraction(forgetThreshold, "forgetThreshold");
@@ -32,7 +33,7 @@ public record Params(
     }
 
     public static Params defaults() {
-        return new Params(0.3, 0.5, 0.5, 0.9, 0.05, 0.05, 1.0);
+        return new Params(0.3, 0.25, 0.5, 0.9, 0.05, 0.05, 1.0);
     }
 
     private static void requireFraction(double value, String name) {
