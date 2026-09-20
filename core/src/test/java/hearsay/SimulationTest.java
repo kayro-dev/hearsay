@@ -14,12 +14,14 @@ class SimulationTest {
     }
 
     @Test
-    void differentSeedsGiveDifferentStates() {
+    void differentSeedsGiveDifferentEventLogs() {
         Simulation a = new Simulation(42);
         Simulation b = new Simulation(7);
         a.run(10_000);
         b.run(10_000);
-        assertNotEquals(a.state(), b.state());
+        // Compare the logs, not the final state: two different walks can land on
+        // the same price by chance, but they cannot produce the same 10,000 events.
+        assertNotEquals(a.log(), b.log());
     }
 
     @Test
