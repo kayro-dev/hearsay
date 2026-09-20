@@ -26,16 +26,19 @@ public final class MarketStats {
     private final List<DayOfTrading> daily;
     private final int peakPrice;
     private final Long halfBelievingAt;
+    private final int villagers;
     private final List<int[]> priceSeries; // {tick, price}, in order
 
     private MarketStats(Claim claim, double believeThreshold, List<DayOfTrading> daily,
-                        int peakPrice, Long halfBelievingAt, List<int[]> priceSeries) {
+                        int peakPrice, Long halfBelievingAt, List<int[]> priceSeries,
+                        int villagers) {
         this.claim = claim;
         this.believeThreshold = believeThreshold;
         this.daily = daily;
         this.peakPrice = peakPrice;
         this.halfBelievingAt = halfBelievingAt;
         this.priceSeries = priceSeries;
+        this.villagers = villagers;
     }
 
     public static MarketStats of(List<Event> log, Claim claim) {
@@ -62,8 +65,8 @@ public final class MarketStats {
                 dayHigh = Math.max(dayHigh, priced.price());
                 dayLow = Math.min(dayLow, priced.price());
             }
-            if (halfBelievingAt == null
-                    && believers(mirror, claim, believeThreshold) * 2 >= Simulation.VILLAGER_COUNT) {
+            if (halfBelievingAt == null && mirror.villagers().size() > 0
+                    && believers(mirror, claim, believeThreshold) * 2 >= mirror.villagers().size()) {
                 halfBelievingAt = event.tick();
             }
             if (event instanceof DayEnded) {
@@ -75,7 +78,7 @@ public final class MarketStats {
             }
         }
         return new MarketStats(claim, believeThreshold, daily, peakPrice, halfBelievingAt,
-                priceSeries);
+                priceSeries, mirror.villagers().size());
     }
 
     private static int holders(WorldState state, Claim claim) {
@@ -138,6 +141,60 @@ public final class MarketStats {
     }
 
     private static final int TICKS_PER_DAY = 4;
+
+    /** How many villagers the log says there were. Read from the log, never assumed. */
+    public int villagers() { return villagers; }
+
+    /** The most villagers believing at once, as a share of the village. */
+    public double peakBelieversFraction() {
+        return villagers == 0 ? 0 : peakBelievers() / (double) villagers;
+    }
+
+    /** The most villagers holding the claim at once, as a share of the village. */
+    public double peakHoldersFraction() {
+        return villagers == 0 ? 0 : peakHolders() / (double) villagers;
+    }
+
+    /**
+     * How often a village nobody lied to talks itself into something, per hundred days.
+     *
+     * <p>Counted as onsets: a day when somebody holds the claim after a day when nobody
+     * did. A run-level yes or no cannot be compared between a fifty-day run and a
+     * three-hundred-day one, and the longer run will always look more excitable.
+     */
+    public double panicsPerHundredDays() {
+        if (daily.isEmpty()) {
+            return 0;
+        }
+        int onsets = 0;
+        int previousHolders = 0;
+        for (DayOfTrading day : daily) {
+            if (day.heard() > 0 && previousHolders == 0) {
+                onsets++;
+            }
+            previousHolders = day.heard();
+        }
+        return onsets * 100.0 / daily.size();
+    }
+
+    /**
+     * Whether a bubble began within the given number of days after a moment.
+     *
+     * <p>A run long enough will wander into a bubble eventually whether or not anybody
+     * lied, so asking whether one ever happened says more about the length of the run than
+     * about the lie. This asks whether one happened while the lie was still fresh.
+     */
+    public java.util.Optional<Bubble> bubbleWithin(long afterTick, int days) {
+        java.util.Optional<Bubble> found = bubble();
+        if (found.isEmpty()) {
+            return found;
+        }
+        long deadline = afterTick + (long) days * TICKS_PER_DAY;
+        Bubble bubble = found.get();
+        return bubble.peakTick() >= afterTick && bubble.peakTick() <= deadline
+                ? found
+                : java.util.Optional.empty();
+    }
 
     public Claim claim() { return claim; }
     public double believeThreshold() { return believeThreshold; }

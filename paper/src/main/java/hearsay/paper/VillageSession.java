@@ -73,11 +73,16 @@ final class VillageSession {
         inOrder.sort(Comparator.comparing(UUID::toString));
 
         Map<Integer, UUID> bodies = new LinkedHashMap<>();
-        for (int id = 0; id < inOrder.size() && id < Simulation.VILLAGER_COUNT; id++) {
+        for (int id = 0; id < inOrder.size() && id < Simulation.MOST_VILLAGERS; id++) {
             bodies.put(id, inOrder.get(id));
         }
 
-        Params params = Params.defaults().withMeetingSource(MeetingSource.EXTERNAL);
+        // The village is however big it is. Simulating twenty minds for nine bodies left
+        // eleven villagers at home forever and made every figure counted out of twenty
+        // read low, with half the village unreachable.
+        Params params = Params.defaults()
+                .withMeetingSource(MeetingSource.EXTERNAL)
+                .withVillagers(bodies.size());
         return new VillageSession(seed, new Simulation(seed, params, List.of()), bodies);
     }
 

@@ -23,9 +23,18 @@ public final class Simulation {
      */
     private static final List<String> NAMES = List.of(
             "Mira", "Bo", "Ada", "Finn", "Nell", "Otto", "Ivy", "Rook", "Sela", "Tam",
-            "Vero", "Wynn", "Gil", "Hana", "Jory", "Kit", "Lark", "Nix", "Pim", "Quill");
+            "Vero", "Wynn", "Gil", "Hana", "Jory", "Kit", "Lark", "Nix", "Pim", "Quill",
+            "Rue", "Sten", "Tibb", "Ulla", "Vance", "Wren", "Yara", "Zeb", "Alder", "Bree",
+            "Cass", "Dov", "Esk", "Fen", "Gwyn", "Hal", "Ines", "Joss", "Kell", "Lior");
 
-    public static final int VILLAGER_COUNT = NAMES.size();
+    /** The most villagers a village can have, being how many names there are. */
+    public static final int MOST_VILLAGERS = NAMES.size();
+
+    /**
+     * The village size everything was calibrated at. Ids 0 to 19 keep the names they have
+     * always had, so every seed and every recorded experiment still means what it did.
+     */
+    public static final int VILLAGER_COUNT = 20;
 
     /** The one item that is traded, for now. */
     public static final String DIAMOND = "diamond";
@@ -160,7 +169,7 @@ public final class Simulation {
      * silently stop describing the whole world.
      */
     private void createVillagers(long tick) {
-        for (int id = 0; id < VILLAGER_COUNT; id++) {
+        for (int id = 0; id < params.villagers(); id++) {
             // The order of these three rolls is part of the seed contract: reordering
             // them gives every seed a different village.
             Traits traits = new Traits(movement.nextDouble(), movement.nextDouble(), movement.nextDouble());

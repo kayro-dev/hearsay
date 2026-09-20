@@ -137,9 +137,10 @@ public final class HearsayPlugin extends JavaPlugin {
                 Villager.class, player.getLocation(), BINDING_RANGE)) {
             nearby.add(villager.getUniqueId());
         }
-        if (nearby.isEmpty()) {
-            player.sendMessage(Component.text("No villagers within " + (int) BINDING_RANGE
-                    + " blocks.", NamedTextColor.RED));
+        if (nearby.size() < 2) {
+            player.sendMessage(Component.text("Found " + nearby.size() + " villagers within "
+                    + (int) BINDING_RANGE + " blocks. A village needs at least two to gossip.",
+                    NamedTextColor.RED));
             return;
         }
 
@@ -152,16 +153,13 @@ public final class HearsayPlugin extends JavaPlugin {
                 + seed + ". A tick every " + SECONDS_PER_TICK + "s of game time.",
                 NamedTextColor.GREEN));
 
-        // The model was tuned on a village of twenty. A smaller one is not wrong, but the
-        // figures that count out of twenty stop meaning what they say: half the village is
-        // ten, which a village of nine can never reach.
-        if (session.boundCount() < Simulation.VILLAGER_COUNT) {
-            player.sendMessage(Component.text("Only " + session.boundCount() + " of "
-                    + Simulation.VILLAGER_COUNT + " simulated villagers have bodies. The rest "
-                    + "stay home and never meet anyone.", NamedTextColor.YELLOW));
-            player.sendMessage(Component.text("Anything measured against "
-                    + Simulation.VILLAGER_COUNT + " will read low, and \"half the village\" "
-                    + "cannot be reached at all.", NamedTextColor.YELLOW));
+        // Every mind here has a body now. Still worth saying when the village is not the
+        // size the model was tuned at, because that is a thing to weigh when reading it.
+        if (session.boundCount() != Simulation.VILLAGER_COUNT) {
+            player.sendMessage(Component.text("This village has " + session.boundCount()
+                    + " villagers; the model was tuned on " + Simulation.VILLAGER_COUNT
+                    + ". Figures are shares of " + session.boundCount() + ".",
+                    NamedTextColor.YELLOW));
         }
 
         long period = SECONDS_PER_TICK * GAME_TICKS_PER_SECOND;

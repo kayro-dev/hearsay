@@ -25,7 +25,10 @@ import java.util.Map;
  */
 public final class RecipeFile {
 
-    private static final String HEADER = "hearsay-recipe 1";
+    /** What this writes today. Version 1 had no village size, because it was always 20. */
+    private static final String HEADER = "hearsay-recipe 2";
+
+    private static final String OLDEST_HEADER = "hearsay-recipe 1";
 
     private RecipeFile() {
     }
@@ -57,7 +60,8 @@ public final class RecipeFile {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read a recipe from " + path, e);
         }
-        if (lines.isEmpty() || !lines.get(0).trim().equals(HEADER)) {
+        String header = lines.isEmpty() ? "" : lines.get(0).trim();
+        if (!header.equals(HEADER) && !header.equals(OLDEST_HEADER)) {
             throw new IllegalArgumentException(path + " is not a Hearsay recipe");
         }
 
@@ -99,7 +103,8 @@ public final class RecipeFile {
                 + " marketNoise=" + p.marketNoise()
                 + " noiseDecay=" + p.noiseDecay()
                 + " marketQuorum=" + p.marketQuorum()
-                + " meetingSource=" + p.meetingSource();
+                + " meetingSource=" + p.meetingSource()
+                + " villagers=" + p.villagers();
     }
 
     private static Params readParams(String text) {
@@ -120,7 +125,13 @@ public final class RecipeFile {
                 number(values, "observationThreshold"), number(values, "fullMoveSize"),
                 number(values, "marketNoise"), number(values, "noiseDecay"),
                 (int) number(values, "marketQuorum"),
-                MeetingSource.valueOf(required(values, "meetingSource")));
+                MeetingSource.valueOf(required(values, "meetingSource")),
+                // Written by a version that had no village size, from when it was always
+                // twenty. Sessions saved then really did simulate twenty villagers, so
+                // this reproduces them exactly rather than guessing.
+                values.containsKey("villagers")
+                        ? (int) number(values, "villagers")
+                        : Simulation.VILLAGER_COUNT);
     }
 
     private static double number(Map<String, String> values, String name) {

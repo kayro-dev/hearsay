@@ -81,6 +81,59 @@ class MarketStatsTest {
     }
 
     @Test
+    void aSmallerVillageIsCountedOutOfItsOwnSize() {
+        Params nine = Params.defaults().withVillagers(9);
+        MarketStats stats = MarketStats.of(Run.execute(3, nine,
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 2)), 200).log(), DIAMONDS_SCARCE);
+
+        assertEquals(9, stats.villagers(), "the size comes from the log, not from a default");
+        for (MarketStats.DayOfTrading day : stats.daily()) {
+            assertTrue(day.heard() <= 9, "day " + day.day() + " had more holders than villagers");
+        }
+        assertTrue(stats.peakBelieversFraction() <= 1.0);
+        assertEquals(stats.peakBelievers() / 9.0, stats.peakBelieversFraction(), 1e-9);
+    }
+
+    @Test
+    void halfTheVillageIsHalfOfWhateverSizeItIs() {
+        // Five of nine is past half; it would not be past half of twenty.
+        Params nine = Params.defaults().withVillagers(9);
+        MarketStats stats = MarketStats.of(Run.execute(3, nine,
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 2)), 200).log(), DIAMONDS_SCARCE);
+
+        if (stats.peakBelievers() * 2 >= 9) {
+            assertTrue(stats.reachedHalfBelieving(),
+                    "peaked at " + stats.peakBelievers() + " of 9, which is half or more");
+        }
+    }
+
+    @Test
+    void aBubbleCountsOnlyWhileTheLieIsStillFresh() {
+        MarketStats stats = afterARumor();
+        assertTrue(stats.bubble().isPresent(), "this run should bubble at some point");
+
+        long peak = stats.bubble().orElseThrow().peakTick();
+        // A window ending before the peak cannot contain it; one containing it must.
+        assertTrue(stats.bubbleWithin(1, (int) (peak / 4) + 1).isPresent());
+        assertTrue(stats.bubbleWithin(peak + 40, 30).isEmpty(),
+                "a window starting after the peak should not claim it");
+    }
+
+    @Test
+    void panicsAreCountedPerHundredDaysSoRunsOfDifferentLengthsCompare() {
+        // The same quiet village, measured over two lengths. A rate should not climb
+        // simply because the run went on longer, the way a yes-or-no answer does.
+        Params quiet = Params.defaults();
+        double shortRun = MarketStats.of(Run.execute(7, quiet, List.of(), 200).log(),
+                DIAMONDS_SCARCE).panicsPerHundredDays();
+        double longRun = MarketStats.of(Run.execute(7, quiet, List.of(), 800).log(),
+                DIAMONDS_SCARCE).panicsPerHundredDays();
+
+        assertTrue(shortRun >= 0 && longRun >= 0);
+        assertTrue(longRun < 25, "a quiet village should not be panicking constantly");
+    }
+
+    @Test
     void peakPriceIsTheHighestAnyDayReached() {
         MarketStats stats = afterARumor();
 

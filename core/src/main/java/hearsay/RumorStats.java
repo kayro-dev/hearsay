@@ -190,10 +190,14 @@ public final class RumorStats {
                                     double threshold, NavigableMap<Integer, Long> halfHeard,
                                     NavigableMap<Integer, Long> halfBelieves, long tick) {
         DayStats now = snapshot(state, family, familyOf, threshold, 0);
-        if (!halfHeard.containsKey(family) && now.heard() * 2 >= Simulation.VILLAGER_COUNT) {
+        int villagers = state.villagers().size();
+        if (villagers == 0) {
+            return;
+        }
+        if (!halfHeard.containsKey(family) && now.heard() * 2 >= villagers) {
             halfHeard.put(family, tick);
         }
-        if (!halfBelieves.containsKey(family) && now.believes() * 2 >= Simulation.VILLAGER_COUNT) {
+        if (!halfBelieves.containsKey(family) && now.believes() * 2 >= villagers) {
             halfBelieves.put(family, tick);
         }
     }

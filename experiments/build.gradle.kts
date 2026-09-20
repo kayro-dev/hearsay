@@ -49,3 +49,11 @@ tasks.register<JavaExec>("worlds") {
     mainClass = "hearsay.experiments.ManyWorlds"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Calibration across village sizes: ./gradlew :experiments:sizes --args="..." */
+tasks.register<JavaExec>("sizes") {
+    group = "application"
+    description = "Sweeps village size on the movement model and on a recorded session."
+    mainClass = "hearsay.experiments.VillageSizes"
+    classpath = sourceSets["main"].runtimeClasspath
+}

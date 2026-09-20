@@ -30,6 +30,9 @@ package hearsay;
  * @param meetingSource       who decides which villagers meet: Hearsay, or something
  *                            outside it. Not a knob to tune, but part of what reproduces
  *                            a run, which is why it lives here
+ * @param villagers           how many villagers the village has. A real village is
+ *                            whatever size it is, and a figure counted out of twenty
+ *                            means nothing in a village of nine
  */
 public record Params(
         double tellThreshold,
@@ -47,7 +50,8 @@ public record Params(
         double marketNoise,
         double noiseDecay,
         int marketQuorum,
-        MeetingSource meetingSource) {
+        MeetingSource meetingSource,
+        int villagers) {
 
     public Params {
         requireFraction(tellThreshold, "tellThreshold");
@@ -64,6 +68,10 @@ public record Params(
         }
         requireFraction(marketNoise, "marketNoise");
         requireFraction(noiseDecay, "noiseDecay");
+        if (villagers < 2 || villagers > Simulation.MOST_VILLAGERS) {
+            throw new IllegalArgumentException("villagers must be 2 to "
+                    + Simulation.MOST_VILLAGERS + ", was " + villagers);
+        }
         if (meetingSource == null) {
             throw new IllegalArgumentException("meetingSource must be given");
         }
@@ -98,7 +106,8 @@ public record Params(
      */
     public static Params defaults() {
         return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
-                100, 0.75, 0.25, 0.10, 0.20, 0.030, 0.86, 5, MeetingSource.SIMULATED);
+                100, 0.75, 0.25, 0.10, 0.20, 0.030, 0.86, 5, MeetingSource.SIMULATED,
+                Simulation.VILLAGER_COUNT);
     }
 
     // Tuning one knob should not mean restating the other eleven, and a sweep that did
@@ -108,62 +117,62 @@ public record Params(
         return new Params(value, repeatWeight, contradictionFactor, dailyDecay, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withDailyDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, value, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withForgetThreshold(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay, value,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withMutationChance(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, value, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withPriceSensitivity(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, value,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withObservationWeight(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorum, meetingSource);
+                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorum, meetingSource, villagers);
     }
 
     public Params withNoiseDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, value,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withFullMoveSize(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, value, marketNoise, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     public Params withMarketNoise(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, value, noiseDecay,
-                marketQuorum, meetingSource);
+                marketQuorum, meetingSource, villagers);
     }
 
     /** The same settings with meetings coming from outside instead of being simulated. */
@@ -171,7 +180,15 @@ public record Params(
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum, value);
+                marketQuorum, value, villagers);
+    }
+
+    /** The same settings for a village of a different size. */
+    public Params withVillagers(int value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
+                observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorum, meetingSource, value);
     }
 
     private static void requireFraction(double value, String name) {

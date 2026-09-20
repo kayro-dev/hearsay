@@ -72,11 +72,36 @@ class RecipeFileTest {
         RecipeFile.write(anInGameSession(), file);
 
         List<String> lines = Files.readAllLines(file);
-        assertEquals("hearsay-recipe 1", lines.get(0));
+        assertEquals("hearsay-recipe 2", lines.get(0));
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("seed 1234")));
         assertTrue(lines.stream().anyMatch(l -> l.contains("meetingSource=EXTERNAL")));
+        assertTrue(lines.stream().anyMatch(l -> l.contains("villagers=")));
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("input plant 3 diamond SCARCE")));
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("input meet ")));
+    }
+
+    @Test
+    void aRecipeWrittenBeforeVillageSizeExistedStillLoads(@TempDir Path folder) throws Exception {
+        // Exactly what the plugin used to write: version 1, with no villagers field.
+        Path old = folder.resolve("old.hearsay");
+        Files.writeString(old, """
+                hearsay-recipe 1
+                seed 99
+                ticks 20
+                params tellThreshold=0.4 repeatWeight=0.25 contradictionFactor=0.5 \
+                dailyDecay=0.92 forgetThreshold=0.05 mutationChance=0.05 plantedConfidence=1.0 \
+                basePrice=100 priceSensitivity=0.75 observationWeight=0.25 \
+                observationThreshold=0.1 fullMoveSize=0.2 marketNoise=0.03 noiseDecay=0.86 \
+                marketQuorum=5 meetingSource=SIMULATED
+                input plant 3 diamond SCARCE 1 4
+                """.replace("\\\n                ", " "));
+
+        Run loaded = RecipeFile.read(old);
+
+        assertEquals(Simulation.VILLAGER_COUNT, loaded.params().villagers(),
+                "a recipe from before the field existed was written when every village had 20");
+        assertEquals(99, loaded.seed());
+        assertEquals(Simulation.VILLAGER_COUNT, loaded.finalState().villagers().size());
     }
 
     @Test

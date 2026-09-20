@@ -523,3 +523,69 @@ makes a thousand worlds enough instead of needing far more.
 
 **Decision.** No parameters changed. This experiment measures the model rather than tuning
 it. The figure to quote is "in 919 of 1000 paired worlds", not "the lie caused the crash".
+
+---
+
+## E7 — Village size, and a village somebody actually played
+
+Two things every earlier entry took for granted. Every figure was counted out of twenty,
+because the village was always twenty; and every figure came from simulated movement, which
+mixes a village far more than real villagers do, since real ones cluster at workstations and
+beds.
+
+Three changes made this askable. Village size is now a parameter, and the in-game session
+uses however many villagers it bound. Headline figures are shares rather than counts, so a
+village of eight and one of thirty can be read side by side. And the experiment runner can
+replay the `ObservedMeeting` inputs out of a saved session as its meeting schedule, so a
+sweep can run against a real village's traces rather than the model's idea of one.
+
+Two measures changed shape as well. A **bubble** is now counted only if it began within 30
+days of the lie: a long enough run wanders into one eventually whether or not anybody lied,
+so "did one ever happen" says more about the length of the run than about the lie. And a
+**spontaneous panic** is a rate per 100 days, counted as onsets — a day when somebody holds
+the claim after a day when nobody did — because a run-level yes or no cannot be compared
+between a 50-day run and a 350-day one.
+
+```
+./gradlew :experiments:sizes --args="--seeds 50 --sizes 8,12,20,30 --ticks 400 \
+    --told-at 41 --window 30 --trace <a saved session> --csv build/e7.csv"
+```
+
+Replaying a session of 1499 meetings over 1413 ticks, naming 9 villagers.
+
+```
+  movement     size  active   bubbled   peak believers   panics/100d   peak$
+  simulated      8     all       56%              41%           0.0   132.9
+  simulated     12     all       68%              37%           0.1   139.8
+  simulated     20     all       62%              32%           0.1   142.2
+  simulated     30     all       50%              32%           0.2   143.9
+  played         8     all       56%              40%           0.3   135.5
+  played        12       9       48%              27%           0.3   131.7
+  played        20       9       48%              16%           0.3   131.7
+  played        30       9       48%              11%           0.3   131.7
+```
+
+**The model transfers to a real village better than expected.** At the size where the two are
+properly comparable — eight villagers, all of them active in both — simulated and played
+movement agree almost exactly: 56% bubbled either way, 41% against 40% peak believers, 133
+against 136 peak price. The worry that tuning on simulated movement meant tuning against the
+wrong village looks largely unfounded, at least for whether a rumor turns into a bubble.
+
+**Where they differ is panics.** The played village talks itself into something at 0.3 per
+100 days at every size, against 0.0 to 0.2 simulated. Real villagers cluster, so the same
+few see each other repeatedly, and a belief that forms has a smaller pool to die out in.
+
+**The played rows above 9 are the distortion, now measured.** Sizes 12, 20 and 30 give
+identical bubble rates and identical peak prices, because only 9 villagers ever meet anybody
+and the rest change nothing but the denominator. Peak believers falls 27%, 16%, 11% across
+those rows while the actual number of believers does not move at all. That is precisely the
+error in the earlier in-game reading: 3 believers reported as "3 of 20" was really 3 of 9.
+
+**Bubbles get harder as a village grows**, on the simulated model: 68% at twelve down to 50%
+at thirty, with peak believer share falling from 37% to 32%. A rumor has further to travel
+and the median ask has more sellers to move.
+
+**Decision.** No defaults changed. The 20-villager calibration still sits inside its target
+band on this stricter measure — 62% bubbling within 30 days of the lie, against the 60-80%
+target — so there is nothing forcing a retune. The in-game session now sizes itself to the
+village it bound, which is a correctness fix rather than a tuning one.
