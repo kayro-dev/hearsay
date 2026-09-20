@@ -3,6 +3,8 @@ package hearsay.paper;
 import hearsay.Bubble;
 import hearsay.ClaimType;
 import hearsay.Params;
+import hearsay.RecipeFile;
+import hearsay.Simulation;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -17,6 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -63,7 +67,27 @@ public final class HearsayPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        loadEverythingSavingNeeds();
         getLogger().info("Hearsay is listening. /hearsay start to bind a village.");
+    }
+
+    /**
+     * Saves a throwaway session at startup, so every class the real save needs is loaded
+     * while the jar is certainly the one this plugin came from.
+     *
+     * <p>Classes load when they are first used. Saving is the last thing a session does, so
+     * its classes are the last to load, and anything that disturbs the jar in between —
+     * deploying a new build over a running server, most likely — takes the session with it.
+     * Loading them up front costs a few milliseconds and removes the whole failure.
+     */
+    private void loadEverythingSavingNeeds() {
+        Path warmUp = getDataFolder().toPath().resolve("sessions").resolve(".warmup");
+        try {
+            RecipeFile.write(new Simulation(0, Params.defaults(), List.of()).toRun(), warmUp);
+            Files.deleteIfExists(warmUp);
+        } catch (RuntimeException | IOException e) {
+            getLogger().warning("Could not check that saving works: " + e.getMessage());
+        }
     }
 
     @Override
@@ -71,8 +95,12 @@ public final class HearsayPlugin extends JavaPlugin {
         // A session that is only saved by /hearsay stop is a session lost to every server
         // restart, and the recipe is the whole point of playing one.
         if (session != null) {
-            Path saved = session.save(getDataFolder().toPath().resolve("sessions"));
-            getLogger().info("Saved the running session to " + saved.getFileName());
+            try {
+                Path saved = session.save(getDataFolder().toPath().resolve("sessions"));
+                getLogger().info("Saved the running session to " + saved.getFileName());
+            } catch (RuntimeException | LinkageError e) {
+                getLogger().severe("Could not save the running session: " + e);
+            }
         }
         stop();
     }
@@ -88,7 +116,7 @@ public final class HearsayPlugin extends JavaPlugin {
             case "start" -> start(player, args);
             case "rumor", "rumour" -> plant(player, args);
             case "status" -> status(player);
-            case "stop" -> stopFor(player);
+            case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
                     "/hearsay start [seed] | rumor diamonds scarce | status | stop"));
         }
@@ -244,17 +272,33 @@ public final class HearsayPlugin extends JavaPlugin {
                 + Bubble.BACK_BELOW, NamedTextColor.AQUA));
     }
 
-    private void stopFor(Player player) {
+    private void stopFor(Player player, String[] args) {
         if (session == null) {
             player.sendMessage(Component.text("Nothing bound.", NamedTextColor.RED));
             return;
         }
-        Path saved = session.save(getDataFolder().toPath().resolve("sessions"));
-        player.sendMessage(Component.text("Saved " + saved.getFileName()
-                + " after " + session.tick() + " ticks.", NamedTextColor.GREEN));
-        player.sendMessage(Component.text(
-                "Ask what would have happened without your lie with the headless counterfactual.",
-                NamedTextColor.GRAY));
+        boolean evenIfItCannotBeSaved = args.length > 1 && args[1].equalsIgnoreCase("force");
+
+        try {
+            Path saved = session.save(getDataFolder().toPath().resolve("sessions"));
+            player.sendMessage(Component.text("Saved " + saved.getFileName()
+                    + " after " + session.tick() + " ticks.", NamedTextColor.GREEN));
+            player.sendMessage(Component.text("Ask what would have happened without your lie: "
+                    + "counterfactual --file <that file>", NamedTextColor.GRAY));
+        } catch (RuntimeException | LinkageError e) {
+            // Keep the session bound: it is still in memory, and throwing it away would
+            // turn a failed save into a lost one.
+            getLogger().severe("Could not save the session: " + e);
+            player.sendMessage(Component.text("Could not save the session: " + e,
+                    NamedTextColor.RED));
+            player.sendMessage(Component.text("If the jar was replaced while this server was "
+                    + "running, this session cannot be saved.", NamedTextColor.RED));
+            if (!evenIfItCannotBeSaved) {
+                player.sendMessage(Component.text("It is still running. /hearsay stop force "
+                        + "to end it and lose it.", NamedTextColor.GRAY));
+                return;
+            }
+        }
         displays.hidePriceBarFrom(player);
         stop();
     }

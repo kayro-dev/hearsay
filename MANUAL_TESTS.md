@@ -10,8 +10,14 @@ Run through it after any change to the `paper` module, and before recording anyt
 1. Copy `local.properties.example` to `local.properties` and point `server.plugins.dir` at
    your server's `plugins` folder — the folder itself, not the server folder above it. The
    file is gitignored: it is specific to your machine.
-2. `./gradlew :paper:deploy`, which copies `Hearsay.jar` into that folder.
-3. **Restart the server.** Do not use `/reload` — it is known to leave plugins in a broken
+2. **Stop the server before deploying.** Replacing the jar under a running server breaks
+   its class loading: whatever the plugin has already used keeps working, and the first
+   class it has not needed yet cannot be found. Saving a session is the usual casualty,
+   because nothing loads those classes until you stop — so the run you were in the middle
+   of is the thing you lose. `deploy` now refuses while the world is locked; `-PforceDeploy`
+   overrides it, and you should not want to.
+3. `./gradlew :paper:deploy`, which copies `Hearsay.jar` into that folder.
+4. **Start the server.** Do not use `/reload` — it is known to leave plugins in a broken
    state, and a plugin that half-reloaded will waste an hour of your evening.
 
 ## Checklist
@@ -32,7 +38,7 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 12 | Watch a grey villager's number climb past 50% | Their text turns from grey to gold |
 | 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
 | 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
-| 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears |
+| 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears. If it cannot save it says so and keeps the session running rather than losing it; `/hearsay stop force` ends it anyway |
 | 16 | Check `plugins/Hearsay/sessions/` | The file is there and is readable plain text: a `seed` line, a `params` line, `input plant …` and many `input meet …` lines |
 | 17 | Stop the server | No errors on shutdown, and no floating text left behind when you restart |
 
