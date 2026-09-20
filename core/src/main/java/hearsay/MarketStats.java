@@ -158,6 +158,18 @@ public final class MarketStats {
         return days;
     }
 
+    /**
+     * The most villagers holding this claim at once at any strength. Catches a belief
+     * taking hold well before anyone is convinced enough to count as a believer.
+     */
+    public int peakHolders() {
+        int peak = 0;
+        for (DayOfTrading day : daily) {
+            peak = Math.max(peak, day.heard());
+        }
+        return peak;
+    }
+
     /** The most villagers believing this claim at once, whatever led them to it. */
     public int peakBelievers() {
         int peak = 0;

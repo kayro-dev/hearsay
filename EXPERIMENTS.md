@@ -288,3 +288,158 @@ spread is about 0.029, which puts the threshold three and a half standard deviat
 decision on whether the weight formula should be rescaled against the threshold rather than
 the raw move, which would put the useful range of `observationWeight` back near its old
 values instead of near 1.
+
+---
+
+## E5a — Tuning the wobble on its own
+
+E4 left spontaneous panics impossible rather than rare: the carried-over noise never
+crossed the threshold an observation needs, so "bubbles need a rumor" was true by
+construction. Before anything else is decided, the wobble is tuned on quiet villages alone,
+where nothing is planted and anything that happens came out of the noise.
+
+The first pass measured panics as villagers reaching the believing threshold of 0.5 and
+read 0% everywhere, while prices in the same runs reached 144 and 181 — far beyond what
+noise alone can produce, so beliefs were plainly forming and amplifying below that line.
+The measure is now whether anyone holds the claim at all, which catches the mechanism
+firing rather than only its end state.
+
+```
+./gradlew :experiments:noise --args="--seeds 300 --ticks 200 \
+    --noise 0.030,0.033,0.036 --decay 0.82,0.84,0.86,0.88 --csv build/noise-fine.csv"
+```
+
+```
+  noise   decay   any holder   any believer   burst   peak$   max$
+  0.030   0.82         0.7%           0.0%    0.0%   106.8    112
+  0.030   0.84         1.7%           0.0%    0.0%   107.1    113
+  0.030   0.86         5.7%           0.0%    0.0%   107.7    121
+  0.030   0.88        15.7%           0.0%    0.0%   108.5    125
+
+  0.033   0.82         3.0%           0.0%    0.0%   107.5    117
+  0.033   0.84        10.0%           0.0%    0.0%   108.1    122
+  0.033   0.86        19.3%           0.0%    0.0%   109.1    124
+  0.033   0.88        31.7%           0.0%    0.3%   110.5    135
+
+  0.036   0.82        12.7%           0.0%    0.0%   108.6    122
+  0.036   0.84        23.3%           0.0%    0.0%   109.6    124
+  0.036   0.86        35.3%           0.0%    0.3%   110.9    135
+  0.036   0.88        55.7%           0.0%    0.7%   113.0    139
+```
+
+The rate is far more sensitive to how long the wobble carries than to how big each step is:
+holding the step at 0.030 and moving the carry from 0.82 to 0.88 takes the rate from 0.7%
+to 15.7%.
+
+**Decision.** `marketNoise` 0.030 with `noiseDecay` 0.86, giving 5.7%, in the middle of the
+2-8% target. A quiet village still averages a peak of 107.7 and never bursts, so the
+mechanism can fire without the village being permanently jumpy.
+
+---
+
+## E5 — Three conditions, and a candidate
+
+Observation weight is now scaled against a new `fullMoveSize` (0.20) rather than the raw
+move: `w = observationWeight × min(1, |move| / fullMoveSize)`. The threshold still decides
+what gets noticed; this decides what a noticed move is worth, and puts the useful range of
+`observationWeight` back near its old values instead of pinned at the top of its range.
+
+Each setting runs three ways over the same seeds: a rumor with the feedback loop live, the
+same rumor with the loop switched off, and a quiet village. All three put the same villagers
+in the same places on the same ticks, so the columns differ only by the rumor and the loop.
+
+```
+./gradlew :experiments:bubble --args="--seeds 50 --ticks 200 \
+    --observation 0.05,0.10,0.15,0.20,0.25,0.30 --sensitivity 0.5,0.75,1.0,1.25,1.5 \
+    --noise 0.030 --decay 0.86 --csv build/e5.csv"
+```
+
+```
+                 rumor + feedback            rumor only               quiet
+  obs  sens   half  peak$  burst  days |  peak$  burst  days |  held  peak$  burst
+ 0.05  0.50    12%  128.6    36%  13.8 | 126.6    28%  10.6 |   0%  107.3     0%
+ 0.05  0.75    14%  143.7    76%  12.3 | 139.0    66%  10.5 |   0%  107.3     0%
+ 0.05  1.00    16%  158.2    92%  13.7 | 151.5    88%  10.2 |   0%  107.3     0%
+ 0.05  1.25    14%  176.0    94%  17.3 | 164.4    96%  11.1 |   0%  107.3     0%
+ 0.05  1.50    14%  190.5    98%  18.6 | 177.0    98%  11.6 |   0%  107.3     0%
+
+ 0.10  0.50    20%  130.1    40%  14.0 | 126.6    28%  10.6 |   2%  107.3     0%
+ 0.10  0.75    22%  145.9    80%  13.0 | 139.0    66%  10.5 |   2%  107.3     0%
+ 0.10  1.00    24%  163.2    92%  14.4 | 151.5    88%  10.2 |   2%  107.3     0%
+ 0.10  1.25    22%  175.6    96%  14.4 | 164.4    96%  11.1 |   2%  107.3     0%
+ 0.10  1.50    22%  193.4    98%  15.2 | 177.0    98%  11.6 |   2%  107.3     0%
+
+ 0.15  0.50    20%  132.0    46%  10.9 | 126.6    28%  10.6 |   2%  107.3     0%
+ 0.15  0.75    36%  150.6    82%  13.8 | 139.0    66%  10.5 |   2%  107.3     0%
+ 0.15  1.00    38%  168.1    92%  13.8 | 151.5    88%  10.2 |   2%  107.3     0%
+ 0.15  1.25    50%  188.9    98%  14.3 | 164.4    96%  11.1 |   2%  107.3     0%
+ 0.15  1.50    52%  208.6   100%  14.5 | 177.0    98%  11.6 |   2%  107.4     0%
+
+ 0.20  0.50    34%  135.1    60%  11.8 | 126.6    28%  10.6 |   2%  107.3     0%
+ 0.20  0.75    52%  154.5    84%  12.5 | 139.0    66%  10.5 |   2%  107.3     0%
+ 0.20  1.00    64%  177.3    96%  12.1 | 151.5    88%  10.2 |   2%  107.3     0%
+ 0.20  1.25    68%  202.1    98%  13.3 | 164.4    96%  11.1 |   2%  107.4     0%
+ 0.20  1.50    76%  224.7    94%  14.2 | 177.0    98%  11.6 |   2%  107.4     0%
+
+ 0.25  0.50    54%  138.7    68%  12.8 | 126.6    28%  10.6 |   2%  107.3     0%
+ 0.25  0.75    72%  162.9    88%  12.9 | 139.0    66%  10.5 |   2%  107.3     0%
+ 0.25  1.00    84%  188.1    92%  13.6 | 151.5    88%  10.2 |   2%  107.4     0%
+ 0.25  1.25   100%  216.3    92%  13.9 | 164.4    96%  11.1 |   2%  107.4     0%
+ 0.25  1.50   100%  248.6    98%  12.6 | 177.0    98%  11.6 |   2%  107.9     0%
+
+ 0.30  0.50    66%  140.6    72%  13.3 | 126.6    28%  10.6 |   2%  107.3     0%
+ 0.30  0.75    86%  169.2    90%  13.5 | 139.0    66%  10.5 |   2%  107.4     0%
+ 0.30  1.00   100%  200.4    98%  12.3 | 151.5    88%  10.2 |   2%  107.4     0%
+ 0.30  1.25   100%  226.9    94%  12.6 | 164.4    96%  11.1 |   2%  107.9     0%
+ 0.30  1.50   100%  256.1    96%  12.6 | 177.0    98%  11.6 |   2%  110.2     0%
+```
+
+**The loop's contribution is now separable.** The rumor-only column depends on sensitivity
+alone, as it must, since with the loop off `observationWeight` does nothing. Reading down a
+sensitivity column shows what the feedback adds: at sensitivity 0.75, going from no loop to
+observation 0.25 lifts the mean peak from 139 to 163, the burst rate from 66% to 88% and
+the fall from 10.5 to 12.9 days.
+
+**Candidate: observation 0.25, sensitivity 0.75.** Chosen for its neighbourhood rather than
+its own number. It reads 72%, and all four adjacent cells stay in range: 54% below, 84%
+above, 52% to one side and 86% to the other. The alternatives in the band sit next to cells
+that jump to 100%: 0.20/1.25 at 68% has 0.25/1.25 at 100% beside it, and 0.20/1.50 at 76%
+has 0.25/1.50 at 100%.
+
+### Validation on seeds 1001-1100, never swept over
+
+```
+./gradlew :experiments:bubble --args="--seeds 100 --first-seed 1001 --ticks 200 \
+    --observation 0.20,0.25,0.30 --sensitivity 0.5,0.75,1.0 --noise 0.030 --decay 0.86 \
+    --csv build/e5-validate.csv"
+```
+
+```
+                 rumor + feedback            rumor only               quiet
+  obs  sens   half  peak$  burst  days |  peak$  burst  days |  held  peak$  burst
+ 0.20  0.50    25%  131.8    45%  10.5 | 125.1    22%   8.4 |   5%  107.5     0%
+ 0.20  0.75    38%  150.2    88%  12.0 | 136.2    65%   7.2 |   5%  107.6     0%
+ 0.20  1.00    59%  174.7    95%  13.1 | 147.3    85%   7.8 |   5%  107.8     0%
+
+ 0.25  0.50    40%  135.5    58%  11.6 | 125.1    22%   8.4 |   5%  107.5     0%
+ 0.25  0.75    65%  157.5    94%  13.5 | 136.2    65%   7.2 |   5%  107.7     0%
+ 0.25  1.00    82%  185.9    96%  13.5 | 147.3    85%   7.8 |   5%  107.8     0%
+
+ 0.30  0.50    57%  137.9    68%  12.8 | 125.1    22%   8.4 |   5%  107.5     0%
+ 0.30  0.75    87%  168.4    98%  13.4 | 136.2    65%   7.2 |   5%  107.9     0%
+ 0.30  1.00   100%  197.8    93%  12.7 | 147.3    85%   7.8 |   5%  108.1     1%
+```
+
+**The candidate holds.** On seeds it has never seen, 0.25/0.75 gives 65% against 72% on the
+tuning seeds: lower, as out-of-sample results usually are, and still inside the 60-80% band.
+Bursts run at 94% taking 13.5 days, and quiet villages produce a holder in 5% of seeds and
+never a burst, against the 2% seen on the tuning seeds and the 5.7% the noise sweep was
+aimed at.
+
+The neighbourhood is wider out of sample than in: 38% and 87% either side on the
+`observationWeight` axis rather than 52% and 86%. The cell is centred but the gradient along
+that axis is steep, so this is a setting to re-validate rather than to treat as settled.
+
+**Decision.** None applied: defaults unchanged. The candidate for week 5's settings is
+`observationWeight` 0.25, `priceSensitivity` 0.75, `marketNoise` 0.030, `noiseDecay` 0.86,
+`fullMoveSize` 0.20.

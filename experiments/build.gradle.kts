@@ -33,3 +33,11 @@ tasks.register<JavaExec>("bubble") {
     mainClass = "hearsay.experiments.Bubble"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Tunes the market wobble on quiet villages: ./gradlew :experiments:noise --args="..." */
+tasks.register<JavaExec>("noise") {
+    group = "application"
+    description = "Runs quiet villages across noise settings and reports how often one panics."
+    mainClass = "hearsay.experiments.Noise"
+    classpath = sourceSets["main"].runtimeClasspath
+}

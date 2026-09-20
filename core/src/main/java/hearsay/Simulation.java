@@ -387,7 +387,11 @@ public final class Simulation {
             }
 
             Claim claim = new Claim(DIAMOND, move > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
-            double weight = params.observationWeight() * Math.min(1, Math.abs(move));
+            // The threshold decides whether the move is noticed; fullMoveSize decides
+            // how much a noticed move is worth. Scaling by the raw move instead would
+            // make every observation a fraction of a fraction.
+            double weight = params.observationWeight()
+                    * Math.min(1, Math.abs(move) / params.fullMoveSize());
             Belief held = villager.belief(claim);
             double before = held == null ? 0 : held.confidence();
             double after = Math.min(1.0, 1 - (1 - before) * (1 - weight));
