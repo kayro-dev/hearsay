@@ -17,4 +17,5 @@ logged so any crash can be replayed and compared against a counterfactual.
 - I'm a Software Engineering student and this is my portfolio project.
   Explain design decisions briefly so I understand and can defend them.
 - Make small, reviewable changes. Run ./gradlew test after every change.
-- Current milestone: event log with replay (week 2), then villagers and beliefs.
+- Done: deterministic loop, event log, replay, drift test, CI (weeks 1-2).
+- Current milestone: villagers, traits, beliefs, and meetings (week 3).
