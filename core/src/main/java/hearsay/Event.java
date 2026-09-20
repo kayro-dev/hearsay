@@ -6,7 +6,7 @@ package hearsay;
  * <em>derived</em> events, which the simulation decides for itself.
  */
 public sealed interface Event permits
-        VillagerCreated, VillagerMoved, VillagersMet,
+        TickStarted, VillagerCreated, VillagerMoved, VillagersMet,
         RumorPlanted, RumorMutated, RumorTold, DayEnded,
         MarketNoiseSet, MarketPriceSet, PriceObserved {
 

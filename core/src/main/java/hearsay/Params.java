@@ -27,6 +27,9 @@ package hearsay;
  * @param noiseDecay          how much of yesterday's wobble carries into today, which is
  *                            what lets a streak build far enough to be noticed
  * @param marketQuorum        fewer sellers than this and the market does not open
+ * @param meetingSource       who decides which villagers meet: Hearsay, or something
+ *                            outside it. Not a knob to tune, but part of what reproduces
+ *                            a run, which is why it lives here
  */
 public record Params(
         double tellThreshold,
@@ -43,7 +46,8 @@ public record Params(
         double fullMoveSize,
         double marketNoise,
         double noiseDecay,
-        int marketQuorum) {
+        int marketQuorum,
+        MeetingSource meetingSource) {
 
     public Params {
         requireFraction(tellThreshold, "tellThreshold");
@@ -60,6 +64,9 @@ public record Params(
         }
         requireFraction(marketNoise, "marketNoise");
         requireFraction(noiseDecay, "noiseDecay");
+        if (meetingSource == null) {
+            throw new IllegalArgumentException("meetingSource must be given");
+        }
         if (marketQuorum < 2) {
             throw new IllegalArgumentException("marketQuorum must be at least 2, was " + marketQuorum);
         }
@@ -91,7 +98,7 @@ public record Params(
      */
     public static Params defaults() {
         return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
-                100, 0.75, 0.25, 0.10, 0.20, 0.030, 0.86, 5);
+                100, 0.75, 0.25, 0.10, 0.20, 0.030, 0.86, 5, MeetingSource.SIMULATED);
     }
 
     // Tuning one knob should not mean restating the other eleven, and a sweep that did
@@ -101,62 +108,70 @@ public record Params(
         return new Params(value, repeatWeight, contradictionFactor, dailyDecay, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withDailyDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, value, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withForgetThreshold(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay, value,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withMutationChance(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, value, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withPriceSensitivity(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, value,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withObservationWeight(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorum);
+                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorum, meetingSource);
     }
 
     public Params withNoiseDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, value,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withFullMoveSize(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, value, marketNoise, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
     }
 
     public Params withMarketNoise(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, value, noiseDecay,
-                marketQuorum);
+                marketQuorum, meetingSource);
+    }
+
+    /** The same settings with meetings coming from outside instead of being simulated. */
+    public Params withMeetingSource(MeetingSource value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
+                observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorum, value);
     }
 
     private static void requireFraction(double value, String name) {

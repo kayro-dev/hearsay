@@ -33,6 +33,7 @@ logged so any crash can be replayed and compared against a counterfactual.
   Rumors, input vs derived events, separate random streams (week 4).
   Prices from belief, market observation, the feedback loop (week 5).
   Counterfactual replay and paired worlds (week 6).
+  In-game spike: external meetings, Paper plugin, saved recipes (week 7).
 - Tuning is decided by seed sweeps in the experiments module, not by hand. Every
   decision is recorded in EXPERIMENTS.md with its command and table. CalibrationTest
   holds the defaults to the behaviour they were chosen for; if it fails, the model
@@ -40,4 +41,9 @@ logged so any crash can be replayed and compared against a counterfactual.
 - State must be complete: anything a decision reads lives in WorldState, or a forked
   world silently loses it. ResumeTest is what catches that; Simulation.fork carries
   simulation-local state and must be updated if any is ever added.
-- Current milestone: the dashboard (week 7), reading the CSVs the CLI writes.
+- Minecraft owns the bodies, Hearsay owns the minds. In MeetingSource.EXTERNAL the
+  plugin reports who met whom as inputs; core never decides movement. Such a run is
+  reproducible from seed + params + inputs, not from the seed alone.
+- `core` has no Paper code and no Paper dependency. Anything worth testing lives there
+  as plain Java; the paper module is only positions, screens and commands.
+- Current milestone: the dashboard, reading the CSVs the CLI writes.

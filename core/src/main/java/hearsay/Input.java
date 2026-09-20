@@ -9,6 +9,6 @@ package hearsay;
  * comes round. Keeping them apart is what lets a counterfactual re-run from seed + params
  * + inputs and have everything derived decided again.
  */
-public sealed interface Input permits PlantRumor {
+public sealed interface Input permits PlantRumor, ObservedMeeting {
     long tick();
 }

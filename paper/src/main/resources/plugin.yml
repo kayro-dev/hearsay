@@ -1,0 +1,13 @@
+name: Hearsay
+version: 0.1.0-spike
+main: hearsay.paper.HearsayPlugin
+api-version: '26.2'
+description: Villagers gossip, believe, and move the price of diamonds.
+commands:
+  hearsay:
+    description: Bind the nearby village, plant a rumor, and watch belief spread.
+    usage: |
+      /hearsay start [seed] - bind nearby villagers and start ticking
+      /hearsay rumor diamonds scarce - tell the nearest villager a lie
+      /hearsay status - tick, price, who has heard and who believes
+      /hearsay stop - stop ticking and save the run

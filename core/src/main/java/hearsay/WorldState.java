@@ -35,6 +35,10 @@ public final class WorldState {
 
     public void apply(Event event) {
         switch (event) {
+            case TickStarted e -> {
+                // The only thing a tick always does: move the clock.
+                tick = e.tick();
+            }
             case VillagerCreated e -> {
                 tick = e.tick();
                 villagers.put(e.id(), new Villager(e.id(), e.name(), e.traits(), Spot.HOME));

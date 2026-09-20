@@ -1,0 +1,3 @@
+# Copy to local.properties, which is gitignored, and point it at your own server.
+# Then: ./gradlew :paper:deploy, and restart the server. Not /reload.
+server.plugins.dir=/Users/you/minecraft/paper-server/plugins

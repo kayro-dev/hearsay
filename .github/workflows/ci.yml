@@ -9,6 +9,12 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          # 21 builds core, cli and experiments; 25 is what Paper 26.2 requires.
+          java-version: |
+            21
+            25
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew test
+      # The plugin has no tests of its own on purpose: everything worth testing lives in
+      # core as plain Java. This proves it still compiles against the Paper API.
+      - run: ./gradlew :paper:jar

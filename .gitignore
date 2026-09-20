@@ -8,3 +8,6 @@ build
 .kotlin
 .DS_Store
 sweep*.csv
+
+# Where your Minecraft server lives: specific to your machine, not to the project.
+local.properties

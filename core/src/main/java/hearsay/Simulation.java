@@ -39,8 +39,11 @@ public final class Simulation {
     private final Random mutation;
     private final Random market;
 
-    /** The inputs as given, kept so this run can describe itself. */
-    private final List<Input> inputs;
+    /**
+     * The inputs, kept so this run can describe itself. Grows during live play, where the
+     * world outside supplies them as it goes instead of all at once.
+     */
+    private final List<Input> inputs = new ArrayList<>();
     /** The same inputs, bucketed by the tick they are due. */
     private final NavigableMap<Long, List<Input>> scheduled = new TreeMap<>();
 
@@ -89,14 +92,23 @@ public final class Simulation {
     private Simulation(long seed, Params params, List<Input> inputs, WorldState state) {
         this.seed = seed;
         this.params = params;
-        this.inputs = List.copyOf(inputs);
+        this.inputs.addAll(inputs);
         this.state = state;
         this.movement = RandomStream.MOVEMENT.from(seed);
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
         this.market = RandomStream.MARKET.from(seed);
         for (Input input : this.inputs) {
+            rejectMismatchedMeeting(input);
             scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
+        }
+    }
+
+    private void rejectMismatchedMeeting(Input input) {
+        if (input instanceof ObservedMeeting && params.meetingSource() != MeetingSource.EXTERNAL) {
+            throw new IllegalArgumentException("An observed meeting was given to a simulation "
+                    + "that moves its own villagers. Mixing the two would have people "
+                    + "meeting twice over.");
         }
     }
 
@@ -106,17 +118,19 @@ public final class Simulation {
         // tick records at least one event, which the check at the end of this method holds
         // to rather than trusting.
         long tick = state.tick() + 1;
+        record(new TickStarted(tick));
         if (tick == 1) {
             createVillagers(tick);
         }
         applyInputs(tick);
-        moveEveryone(tick, DayPart.of(tick));
-        holdMeetings(tick);
+        if (params.meetingSource() == MeetingSource.SIMULATED) {
+            moveEveryone(tick, DayPart.of(tick));
+            holdMeetings(tick);
+        }
         // Price first, then the people standing there read it: within a tick, belief
         // moves the price and the price moves belief, in that order.
         advanceMarketNoise(tick);
-        settleMarketPrice(tick);
-        observeTheMarket(tick);
+        observeTheMarket(tick, settleMarketPrice(tick));
         if (DayPart.of(tick) == DayPart.NIGHT) {
             record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
         }
@@ -160,6 +174,14 @@ public final class Simulation {
             switch (input) {
                 case PlantRumor p -> record(new RumorPlanted(tick, state.nextRumorId(),
                         p.claim(), p.severity(), p.villagerId(), params.plantedConfidence()));
+                // Somebody outside saw these two together. Where they are is as much news
+                // as who they are with, since the market is made of whoever stands in it.
+                case ObservedMeeting m -> {
+                    record(new VillagerMoved(tick, m.a(), m.spot()));
+                    record(new VillagerMoved(tick, m.b(), m.spot()));
+                    record(new VillagersMet(tick, m.a(), m.b(), m.spot()));
+                    exchangeNews(tick, m.a(), m.b());
+                }
             }
         }
     }
@@ -376,7 +398,7 @@ public final class Simulation {
      * villager cannot drag the whole market, while a real shift in belief can. Below a
      * quorum there is no market and no price is set.
      */
-    private void settleMarketPrice(long tick) {
+    private OptionalInt settleMarketPrice(long tick) {
         List<Double> asks = new ArrayList<>();
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.spot() == Spot.MARKET) {
@@ -384,7 +406,7 @@ public final class Simulation {
             }
         }
         if (asks.size() < params.marketQuorum()) {
-            return;
+            return OptionalInt.empty();
         }
         Collections.sort(asks);
 
@@ -395,6 +417,7 @@ public final class Simulation {
 
         int price = Math.max(1, (int) Math.round(median * (1 + state.marketNoiseLevel())));
         record(new MarketPriceSet(tick, price, asks.size()));
+        return OptionalInt.of(price);
     }
 
     /**
@@ -412,12 +435,13 @@ public final class Simulation {
      * the first move still registers as a level. Measuring the first one as a change would
      * leave nobody with anything to compare against, and the loop could never start.
      */
-    private void observeTheMarket(long tick) {
-        OptionalInt settled = state.marketPrice();
-        if (settled.isEmpty() || state.tick() != tick) {
+    private void observeTheMarket(long tick, OptionalInt settledThisTick) {
+        // Only a price set this very tick is there to be read. Asking the world whether its
+        // clock had moved used to answer that; it cannot now that the tick moves itself.
+        if (settledThisTick.isEmpty()) {
             return;
         }
-        int price = settled.getAsInt();
+        int price = settledThisTick.getAsInt();
 
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.spot() != Spot.MARKET) {
@@ -490,7 +514,25 @@ public final class Simulation {
     public long seed() { return seed; }
 
     /** The inputs this simulation was given, in the order they were given. */
-    public List<Input> inputs() { return inputs; }
+    public List<Input> inputs() { return Collections.unmodifiableList(inputs); }
+
+    /**
+     * Adds an input for a tick that has not happened yet.
+     *
+     * <p>For live play. A headless run knows every input before it starts; a game does not,
+     * because the player has not done it yet and Minecraft has not put anyone anywhere yet.
+     * The recipe still records everything, so the session replays exactly either way.
+     */
+    public void schedule(Input input) {
+        if (input.tick() <= state.tick()) {
+            throw new IllegalArgumentException("Tick " + input.tick() + " has already "
+                    + "happened; the world is at " + state.tick() + ". Inputs cannot "
+                    + "change the past.");
+        }
+        rejectMismatchedMeeting(input);
+        inputs.add(input);
+        scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
+    }
 
     /**
      * Everything needed to reproduce this run, bundled with the log it produced, so the

@@ -99,6 +99,7 @@ public final class Narrator {
                             + " (" + percent(before) + " \u2192 " + percent(e.newConfidence()) + ").");
                 }
             }
+            case TickStarted e -> mirror.apply(e);
             case VillagerMoved e -> mirror.apply(e);
             case MarketNoiseSet e -> mirror.apply(e);
             case DayEnded e -> mirror.apply(e);

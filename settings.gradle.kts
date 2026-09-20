@@ -14,3 +14,4 @@ rootProject.name = "hearsay"
 include("core")
 include("cli")
 include("experiments")
+include("paper")
