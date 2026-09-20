@@ -703,3 +703,79 @@ does not matter who you tell is not.
 **Decision.** No parameters changed. This measures the model rather than tuning it. The
 finding does not support building a week of work on "timing beats personality", because that
 is not what the model does.
+
+---
+
+## E9 — A village with real spots, and nobody lying
+
+The first session recorded with locations mapped to spots: a villager counts as being at
+their bed, their workstation, or the village at large, rather than every meeting being
+filed at the market. Ten villagers, 151 ticks, no rumor planted, so anything that happened
+happened on its own.
+
+Measured against the headless movement model at the same size and length, over 40 seeds.
+
+### Meetings
+
+| | per tick | per villager per tick |
+| --- | --- | --- |
+| played, before the mapping (14 villagers) | 1.87 | 0.268 |
+| **played, with the mapping (10 villagers)** | **1.04** | **0.208** |
+| headless model (10 villagers) | 2.60 | 0.520 |
+
+The bed rule cost **22% of meetings per villager**, against an estimate of 25 to 35%. The
+estimate was made in absolute terms for a fourteen-villager village, at 1.2 to 1.4 per tick;
+the new per-villager rate scaled back to fourteen villagers would be 1.46, just above that
+range. Close enough to have been useful, and wrong in the direction of over-stating the
+loss.
+
+**How much the rule filtered cannot be read from the trace.** A meeting that was filtered is
+not recorded, so the log holds only what survived. What can be said is that 17 of 157
+recorded meetings still name HOME, which are pairs where one villager was at a bed and the
+other was not; pairs where both were in bed are the ones that went.
+
+The spots are doing their job: 115 at the village at large, 25 at the market, 17 at home.
+Before the mapping every single meeting was filed at the market.
+
+### The market
+
+| | played | headless |
+| --- | --- | --- |
+| first price | tick 73 | usually within a few ticks |
+| ticks with a price | 14 of 151 (9%) | 41% |
+| most villagers at the market at once | 3 | — |
+| price range over the run | 99 to 104 | — |
+
+**This is the finding.** The real village barely has a market. Its ten villagers reached the
+quorum of three on 9% of ticks, and no more than three were ever standing in the market at
+the same moment. The headless model, with the same ten villagers over the same 151 ticks,
+prices 41% of them. Real villagers spread themselves across bed, workstation and the paths
+between, while the movement model sends a quarter of the village to the market by
+construction on every tick.
+
+Before the mapping this was invisible, because every meeting was filed at the market and the
+whole village therefore stood in it permanently. The market was open 99% of ticks in the
+earlier sessions for that reason alone.
+
+### Spontaneous belief
+
+None. No villager formed a belief, no price observation was ever recorded, the price stayed
+between 99 and 104, and there were no bubbles. The headless model at this size and length
+also produced no holders and no bubbles across all 40 seeds.
+
+The two agree, but for different reasons worth keeping apart. In the model the price simply
+never wandered far enough to be worth reading anything into. In the played village the price
+existed on only 9% of ticks, so there was hardly a price to read at all.
+
+**Conclusion.** The spot mapping works, and it reveals that a real village is far quieter
+than the model in the one place that matters most for prices. Gossip is 40% as frequent per
+villager; the market is open a fifth as often. A rumor in this village would have fewer
+chances to spread and far fewer chances to move a price, which is consistent with E7 finding
+that a recorded village bubbled at 48% where the model said 84%, and suggests the gap is
+mostly about market attendance rather than about gossip.
+
+**Decision.** No parameters changed. Two questions follow, neither answerable from one
+quiet session: whether the market quorum should be lower again for villages that gather as
+loosely as this one, and whether `FIELDS` and the village at large should count toward the
+market at all, given that a real villager standing on a path is not at home and not trading.
+Both want a session with a rumor in it before being decided.
