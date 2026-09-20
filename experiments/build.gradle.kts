@@ -57,3 +57,11 @@ tasks.register<JavaExec>("sizes") {
     mainClass = "hearsay.experiments.VillageSizes"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Does who you tell matter: ./gradlew :experiments:planters --args="..." */
+tasks.register<JavaExec>("planters") {
+    group = "application"
+    description = "Splits the variation in a lie's spread into luck and who was told."
+    mainClass = "hearsay.experiments.PlanterEffect"
+    classpath = sourceSets["main"].runtimeClasspath
+}

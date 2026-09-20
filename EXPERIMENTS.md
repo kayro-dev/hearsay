@@ -627,3 +627,79 @@ But the headline figure is far more sensitive to village size than to anything s
 and a real village of nine bubbles at 48% where the model says 84%. Tuning against recorded
 villages rather than simulated movement is the obvious next question, and it needs more than
 one session to answer.
+
+---
+
+## E8 — Does it matter who you tell, or only when
+
+Telling two different villagers in one recorded village gave wildly different answers: Sela,
+the most talkative villager there at a gossip trait of 1.00, convinced one villager of
+fourteen, while Ivy at 0.55 convinced twelve. Read on its own that says personality does not
+matter and timing does. It is also two runs, and the two faced different luck as well as
+being different people, so it says nothing of the sort.
+
+This takes each villager in turn as the one told, and runs each of them through the same set
+of futures, forked from one shared history at the moment before the lie. World *w* uses the
+same branch seed whoever is told, so the comparison between villagers is paired and the luck
+cancels. That splits the variation in two:
+
+- **within a planter** — the same villager told, across different futures: luck, meaning who
+  happened to walk past whom
+- **between planters** — the spread of each villager's average across all futures: the
+  villager themself
+
+```
+./gradlew :experiments:planters --args="--villages 6 --worlds 40 --ticks 300 \
+    --told-at 41 --csv build/e8.csv"
+```
+
+Six villages of twenty, each villager told in turn, forty futures each: 5,040 runs.
+Outcome is the peak share of the village believing.
+
+```
+  village   spread within a planter   spread between planters   share explained by who
+        1                    0.147                     0.115                     38%
+        2                    0.208                     0.108                     21%
+        3                    0.229                     0.171                     36%
+        4                    0.129                     0.079                     27%
+        5                    0.144                     0.124                     43%
+        6                    0.144                     0.144                     50%
+
+  mean spread within a planter (luck):        0.171
+  mean spread between planters (who):         0.127
+  share of variation explained by who is told: 35%
+  gossip against a planter's average outcome:  r = 0.64 (n = 120)
+```
+
+Ranking all 120 planters by their gossip trait:
+
+| | mean peak believer share |
+| --- | --- |
+| bottom quarter (gossip ≤ 0.31) | 14.5% |
+| top quarter (gossip ≥ 0.80) | 47.7% |
+
+**Luck is the larger factor, but who you tell is not noise.** Timing accounts for about 65%
+of the variation and the choice of villager for about 35%, consistently across all six
+villages, where the per-village figures run from 21% to 50%.
+
+**The original reading was wrong.** It claimed personality did not predict the outcome. It
+does: gossip correlates with a planter's average across futures at r = 0.64, and a
+top-quarter talker convinces more than three times the share of the village that a
+bottom-quarter one does. The Sela result was one draw of bad luck, not evidence about Sela.
+Two runs could not have told the difference, which is the reason for running 5,040.
+
+**Both things are true at once, and that is the interesting part.** Telling the village
+gossip is worth roughly three times as much as telling a quiet villager, and it still fails
+often: comparing a top-quarter planter one standard deviation below their own average
+against a bottom-quarter planter one above theirs, the quiet villager wins 337 times out of
+900. The best planter found averaged 77% of the village with a spread of ±16%; the worst
+averaged 5%.
+
+**Conclusion.** Neither dominates. Who you tell is a real and sizeable effect, worth about a
+third of the variation and well predicted by the gossip trait. Luck is worth the other two
+thirds. A claim that a lie's success is mostly down to chance is defensible; a claim that it
+does not matter who you tell is not.
+
+**Decision.** No parameters changed. This measures the model rather than tuning it. The
+finding does not support building a week of work on "timing beats personality", because that
+is not what the model does.
