@@ -1464,3 +1464,66 @@ to read 119 rather than 100. It fails under the median, which is how it was chec
 
 Old logs replay exactly as before, because `MarketPriceSet` stores the settled price rather
 than recomputing it. Old *recipes* will now re-derive different prices, which is the point.
+
+---
+
+## E21 — The ceiling is confidence, and the band and the village disagree
+
+First session played under the average-ask rule: 21 villagers, 5 lies, 632 ticks, peak 121.
+
+**The market is fixed.** At the peak, 13 villagers were standing in the market and all 13 of
+them believed. The thing every experiment from E13 to E19 was chasing is no longer the
+problem, and the rule change did what E20 said it would.
+
+**The ceiling now is how much they believe, not how many.** At the peak, 17 of 21 villagers
+held the rumor, and their confidences were `0.92, 0.29, 0.17` and then **thirteen at 0.13**.
+An ask at 0.13 is 110, so a village that has entirely fallen for the lie still prices it at
+about 115. Coverage is total; conviction is nil.
+
+**Why it never compounds.** First hearing lands a belief near the tell threshold of 0.40,
+and `dailyDecay` 0.92 carries it under within about two days. Below the threshold it is
+never told again, so it settles just above `forgetThreshold` and sits there. Across the
+whole session only ever **0 or 1 villagers at a time** were above the threshold, and 48 of
+the 57 tellings came from the three villagers the player lied to directly. The rumor is not
+an epidemic; it is a broadcast, and the player is the transmitter. That is exactly what
+"I still needed to lie a couple of times" feels like from inside the game.
+
+**200 was never reachable.** The hard cap is `basePrice * (1 + priceSensitivity)` = **175**,
+since `askingPrice` clamps belief to [-1, 1]. 150 needs the average villager in the market
+at two thirds of total conviction.
+
+**The model cannot see any of this.** Headless on the calibration seeds it reaches a peak of
+**159 median and 178 at p90**, and identically at 50 days and 158 days. Meeting density is
+the same in both worlds (5.7 per tick in the model, 5.5 played) and so is social mixing
+(the played village now covers 81% and 99% of all possible pairs, against the model's 100%).
+The difference is purely that the model's beliefs sit well clear of the tell threshold, so
+decay never touches them, while the village's hover on it and fall through.
+
+Sweeping the two knobs that govern that, against both played sessions and the seeds:
+
+| tellThreshold | dailyDecay | session A peak / tellings | session B peak / tellings | half-believing | quiet bursts |
+| --- | --- | --- | --- | --- | --- |
+| 0.40 | 0.92 (today) | 121 / 57 | 133 / 77 | 62% | 0% |
+| 0.40 | 0.95 | 131 / 83 | 133 / 119 | 96% | 0% |
+| **0.30** | **0.95** | **170 / 287** | **170 / 395** | **98%** | **0%** |
+| 0.30 | 0.92 | 122 / 93 | 152 / 270 | 76% | 0% |
+| 0.25 | 0.92 | 121 / 92 | 144 / 308 | 85% | 0% |
+| 0.20 | 0.95 | 140 / 803 | 142 / 422 | 99% | 0% |
+
+`dailyDecay` is the binding constraint, not the threshold: every row at 0.92 leaves session A
+at about 121 whatever the threshold is, and every row at 0.95 moves it. Lowering the
+threshold alone buys more tellings and no price, because the price follows conviction and
+telling a village of 0.13-believers more often still leaves them at 0.13.
+
+**The conflict, stated plainly.** No setting satisfies both. What makes the played village
+work puts headless half-believing at 96-99%, far outside the 50-85% band `CalibrationTest`
+enforces. The band came from E5, fitted to the model alone, and the model is now the less
+faithful of the two worlds — it cannot reproduce a village that has been played.
+
+Worth separating the two guarantees the band is doing duty for. **A village nobody lied to
+still never bursts: 0% in every row above, without exception.** That is the hard claim of
+the project and it is untouched. The 50-85% band is the softer one, that not every rumor
+takes over, and it is the only thing in conflict.
+
+**Decision.** Nothing changed. Defaults stand at 0.40 and 0.92 pending a call on whether the
+band or the village gives way.
