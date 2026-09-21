@@ -11,7 +11,11 @@ class RumorStatsTest {
     private static final Claim DIAMONDS_SCARCE = new Claim("diamond", ClaimType.SCARCE);
 
     private static Run aRun(int ticks) {
-        return Run.execute(42, Params.defaults(),
+        // A perfectly mixed village, pinned rather than inherited: this is about what the reports say about a run,
+        // not about how clustered a village is. E23 and E24 fitted the clustering to
+        // recorded traces, and that fit should not decide whether a fixture spreads
+        // far enough to have anything to measure.
+        return Run.execute(42, Params.defaults().withMixing(1.0),
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 10)), ticks);
     }
 

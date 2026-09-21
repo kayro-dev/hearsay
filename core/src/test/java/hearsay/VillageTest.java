@@ -134,20 +134,48 @@ class VillageTest {
     }
 
     @Test
-    void nobodyMeetsTwiceInTheSameTick() {
+    void nobodyMeetsTheSamePersonTwiceInOneTick() {
+        // Until E24 nobody met anyone twice in a tick, because everyone was paired off two
+        // by two. Neighbours standing at the same spot are now one conversation rather than
+        // a queue, so three of them at the well produce all three pairs and each of them
+        // meets two people at once. What must still never happen is the same pair being
+        // recorded twice, which would count one conversation as two pieces of evidence.
         Simulation sim = runVillage();
 
         for (Map.Entry<Long, List<Event>> tick : byTick(sim.log()).entrySet()) {
-            Set<Integer> alreadyMet = new HashSet<>();
+            Set<String> alreadySpoken = new HashSet<>();
             for (Event event : tick.getValue()) {
                 if (event instanceof VillagersMet e) {
-                    assertTrue(alreadyMet.add(e.a()),
-                            "villager " + e.a() + " met twice on tick " + tick.getKey());
-                    assertTrue(alreadyMet.add(e.b()),
-                            "villager " + e.b() + " met twice on tick " + tick.getKey());
+                    String pair = Math.min(e.a(), e.b()) + "-" + Math.max(e.a(), e.b());
+                    assertTrue(alreadySpoken.add(pair),
+                            "villagers " + pair + " met twice on tick " + tick.getKey());
                 }
             }
         }
+    }
+
+    @Test
+    void neighboursAtTheSameSpotAllTalkToEachOther() {
+        Simulation sim = runVillage();
+
+        int metMoreThanOne = 0;
+        for (Map.Entry<Long, List<Event>> tick : byTick(sim.log()).entrySet()) {
+            Map<Integer, Integer> partners = new java.util.TreeMap<>();
+            for (Event event : tick.getValue()) {
+                if (event instanceof VillagersMet e) {
+                    partners.merge(e.a(), 1, Integer::sum);
+                    partners.merge(e.b(), 1, Integer::sum);
+                }
+            }
+            for (int count : partners.values()) {
+                if (count > 1) {
+                    metMoreThanOne++;
+                }
+            }
+        }
+        assertTrue(metMoreThanOne > 0,
+                "no villager ever spoke to more than one person in a tick, so groups are "
+                        + "still being paired off two by two");
     }
 
     @Test

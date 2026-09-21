@@ -1737,3 +1737,106 @@ neighbourhoods, and the numbers say it crosses them without inventing panics.
 **Decision.** Adopted: neighbourhoods, `mixing` 0.25, one neighbourhood per three villagers,
 and the re-derived band. Not adopted: the observation weight, pending played-session
 validation and your call.
+
+---
+
+## E24 — Group conversations, and a validation that fails honestly
+
+E23 fitted the clustering but halved the village's meetings, because a neighbourhood pool of
+three yielded one pair and left somebody standing alone.
+
+**What changed.** Neighbours at the same spot are now one conversation rather than a queue:
+every pair in the group happens, so three at the well give three meetings. The village-wide
+pool that `mixing` feeds is still paired off two by two, runs first, and keeps id order, so
+a village at `mixing = 1.0` is untouched and every seed recorded before E23 still replays.
+`VillageTest` gained the new invariant and lost the old one: the same *pair* may never be
+recorded twice in a tick, but a villager now meets several people at once, which is what a
+group is.
+
+**The refit**, on session A alone, against both targets at once (2.12 partners per two days,
+5.55 meetings per tick), 30 seeds:
+
+| mixing | partners per 2 days | meetings per tick | combined error |
+| --- | --- | --- | --- |
+| 0.00 | 2.54 | 5.97 | 0.274 |
+| 0.02 | 2.43 | 5.73 | 0.177 |
+| 0.04 | 2.36 | 5.54 | 0.114 |
+| **0.05** | **2.34** | **5.44** | **0.124** |
+| 0.06 | 2.35 | 5.37 | 0.139 |
+| 0.10 | 2.36 | 5.07 | 0.201 |
+
+A shallow basin rather than a spike, so 0.05 is taken over the 0.04 minimum for having
+stable neighbours on both sides.
+
+**The validation, and it does not all pass.**
+
+| | model | played | fitted on? |
+| --- | --- | --- | --- |
+| partners per 2 days, 21 villagers | 2.34 | 2.12 | yes |
+| meetings per tick, 21 villagers | 5.44 | 5.55 | yes |
+| partners per 2 days, 19 villagers | 2.57 | 2.45 | **no** |
+| meetings per tick, 19 villagers | 5.40 | 5.48 | **no** |
+| **second independent source in time, 21 villagers** | **30%** | **13%** | **no** |
+| **second independent source in time, 19 villagers** | **38%** | **5%** | **no** |
+
+Density and diversity now hold on the session that was never fitted, to within 5%. **The
+confirmation rate does not, and it went the wrong way**: E23's pairing gave 11% against 13%,
+and group conversations take it to 30%. Fixing the density broke the thing the density was
+supposed to serve.
+
+**The trade-off is structural, not a bad fit.** Sweeping neighbourhood size with groups on
+(20 seeds, 21 villagers, targets 2.12 / 5.55 / 13%):
+
+| villagers per neighbourhood | partners | meetings per tick | second source |
+| --- | --- | --- | --- |
+| 2 | 1.55-1.86 | 3.3-3.9 | **9-13%** |
+| **3** | **2.37-2.61** | **4.9-6.1** | 27-45% |
+| 4 | 3.3-3.5 | 6.7-8.6 | 38-51% |
+| 5 | 4.1-4.5 | 8.5-11.1 | 41-54% |
+
+Groups of two match the confirmation rate and lose the density; groups of three match the
+density and lose the confirmation rate. **No size gives both**, because in this model the
+same thing produces them: a bigger group is more meetings *and* more simultaneous sources.
+
+**Why, and it is worth its own entry later.** Independence is judged by whether the teller
+is in the listener's chain. In a group of three where A has told both B and C, C telling B
+counts as a fully independent second source, though the information is A's and B knows it
+already. Real neighbours are correlated in exactly this way, which is why a real village
+confirms so rarely. **The model has no notion of correlated evidence, only of repeated
+tellers**, and that — not the group size — is what the 30% against 13% is measuring. The
+measurement in E22 shares the definition, so the played figures rest on 36 onsets across
+both sessions and are themselves uncertain.
+
+### The observation weight
+
+Swept from 0.30 to 0.40, with the played sessions and paired worlds beside the seeds:
+
+| observationWeight | bursts | **quiet bursts** | half-believing | peak med/p90 | session A | session B | paired: moved / only-lie / only-quiet |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.30 | 47% | **0%** | 5% | 131 / 149 | 143 | 149 | 2/2, 2, 0 |
+| **0.32** | **55%** | **0%** | 22% | 133 / 153 | **138** | **138** | **2/2, 2, 0** |
+| 0.34 | 60% | **0%** | 39% | 138 / 156 | 146 | 145 | 2/2, 2, 0 |
+| 0.35 | 69% | **2%** | 51% | 141 / 156 | 150 | 155 | 2/2, 2, 0 |
+| 0.38 | 72% | 1% | 82% | 146 / 163 | 154 | 152 | 2/2, 2, 0 |
+| 0.40 | 79% | 2% | 89% | 149 / 164 | 168 | 184 | 2/2, 1, 0 |
+
+**0.35 and above bursts villages nobody lied to.** E23 read 0.35 as safe on the old
+structure and it is not on this one, which is the reason for sweeping again rather than
+carrying the number over. The quiet-village guarantee is the floor here, and it ends the
+argument above 0.34.
+
+**0.32 adopted.** It sits with both neighbours quiet-clean, two steps below the cliff rather
+than on its edge. Both played sessions rise from 121 and 133 to 138, which is a bubble that
+can be watched rather than a number that clears the bar. Paired worlds on the recorded
+inputs separate the lie from its absence in both sessions, with two bubbles caused by the
+lie and **none at all without it**. The burst rate of 55% sits inside the 25-60% band E23
+derived, so the band stands unchanged.
+
+The played-session and paired-world columns are measured on real recorded inputs rather than
+on the model, so the choice of 0.32 does not rest on the confirmation rate the model gets
+wrong. That it also lands inside E23's band is worth noting but is the weaker evidence.
+
+**Decision.** Adopted: group conversations, `mixing` 0.05, `observationWeight` 0.32. The
+band is unchanged and the quiet-village guarantee is untouched at 0%. Outstanding: the model
+counts correlated neighbours as independent evidence, which is the next real question and
+should be settled before the clustering is fitted any further.

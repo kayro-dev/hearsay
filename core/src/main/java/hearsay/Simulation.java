@@ -270,16 +270,30 @@ public final class Simulation {
                 }
             }
 
-            List<List<Integer>> pools = new ArrayList<>();
-            pools.add(everyone);
-            pools.addAll(byNeighbourhood.values()); // neighbourhood order, never hash order
-            for (List<Integer> pool : pools) {
-                Collections.shuffle(pool, movement);
-                for (int i = 0; i + 1 < pool.size(); i += 2) {
-                    int a = pool.get(i);
-                    int b = pool.get(i + 1);
-                    record(new VillagersMet(tick, a, b, spot));
-                    exchangeNews(tick, a, b);
+            // Strangers crossing paths, paired off two by two exactly as they always
+            // were. This runs first and keeps id order, so a village at mixing 1.0 hands
+            // the movement stream the same list it has always handed it.
+            Collections.shuffle(everyone, movement);
+            for (int i = 0; i + 1 < everyone.size(); i += 2) {
+                int a = everyone.get(i);
+                int b = everyone.get(i + 1);
+                record(new VillagersMet(tick, a, b, spot));
+                exchangeNews(tick, a, b);
+            }
+
+            // Neighbours at the same spot are a group standing together, not a queue to be
+            // paired off: three of them at the well is one conversation of three, so all
+            // three pairs happen. Pairing them two by two threw away the odd one out and
+            // cost the village half its meetings, which E23 measured and E24 fixes. No
+            // shuffle, because every pair happens anyway and id order keeps it reproducible.
+            for (List<Integer> neighbours : byNeighbourhood.values()) { // neighbourhood order
+                for (int i = 0; i < neighbours.size(); i++) {
+                    for (int j = i + 1; j < neighbours.size(); j++) {
+                        int a = neighbours.get(i);
+                        int b = neighbours.get(j);
+                        record(new VillagersMet(tick, a, b, spot));
+                        exchangeNews(tick, a, b);
+                    }
                 }
             }
         }

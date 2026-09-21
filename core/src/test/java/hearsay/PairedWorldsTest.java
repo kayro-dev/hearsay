@@ -22,7 +22,11 @@ class PairedWorldsTest {
     }
 
     private static PairedWorlds worlds() {
-        return PairedWorlds.run(SEED, Params.defaults(), theLie(), TICKS, PAIRS);
+        // A perfectly mixed village, pinned rather than inherited: this is about the paired-worlds machinery,
+        // not about how clustered a village is. E23 and E24 fitted the clustering to
+        // recorded traces, and that fit should not decide whether a fixture spreads
+        // far enough to have anything to measure.
+        return PairedWorlds.run(SEED, Params.defaults().withMixing(1.0), theLie(), TICKS, PAIRS);
     }
 
     @Test
