@@ -184,16 +184,32 @@ final class VillageSession {
         return asks;
     }
 
-    /** What each bound villager makes of the claim, for the text above their head. */
+    /**
+     * What each bound villager makes of the claim, for the text above their head.
+     *
+     * <p>Read from the simulation's villagers rather than from the bound bodies, which is
+     * the difference between working and bringing the session down. A body is bound the
+     * moment the village is, but the mind inside it is created by the first tick like every
+     * other change, so asking the bound ids what they believe before that tick has run
+     * asks about villagers who do not exist yet.
+     *
+     * <p>This is a read for the screen and must never throw. When it did, the exception
+     * came out of the scheduled tick before the villagers were created, so they were never
+     * created, so it threw again on the next tick and every tick after: the village stayed
+     * "still waking up" for ever and no command worked. The same mistake cost a session
+     * once before through {@code /hearsay who}.
+     */
     Map<Integer, Double> confidences() {
         Map<Integer, Double> held = new LinkedHashMap<>();
-        for (int id : bodies.keySet()) {
-            Villager villager = simulation.state().villager(id);
+        simulation.state().villagers().forEach((id, villager) -> {
+            if (!bodies.containsKey(id)) {
+                return;
+            }
             var belief = villager.belief(tracked);
             if (belief != null) {
                 held.put(id, belief.confidence());
             }
-        }
+        });
         return held;
     }
 
