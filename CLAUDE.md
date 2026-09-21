@@ -48,4 +48,8 @@ logged so any crash can be replayed and compared against a counterfactual.
   reproducible from seed + params + inputs, not from the seed alone.
 - `core` has no Paper code and no Paper dependency. Anything worth testing lives there
   as plain Java; the paper module is only positions, screens and commands.
-- Current milestone: the dashboard, reading the CSVs the CLI writes.
+- The dashboard is `./gradlew :cli:run --args="dashboard --file PATH"`, which writes a
+  self-contained HTML page. It embeds its numbers rather than fetching CSVs, because a
+  page opened from file:// cannot fetch anything at all; the page builder lives in core
+  as DashboardPage so it can be tested, and the cli command is a thin wrapper.
+- Current milestone: playing enough sessions to write the thing up.

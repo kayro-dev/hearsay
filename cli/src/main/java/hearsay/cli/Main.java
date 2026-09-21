@@ -36,6 +36,7 @@ public final class Main {
         switch (command) {
             case "counterfactual" -> Counterfactual.print(rest);
             case "worlds" -> Worlds.print(rest);
+            case "dashboard" -> Dashboard.write(rest);
             case "demo" -> demo(rest);
             default -> {
                 System.out.println("Unknown command: " + command);
@@ -51,6 +52,9 @@ public final class Main {
               counterfactual --seed N         one village, with and without the lie
               counterfactual --file PATH      a session you played, with and without it
               worlds --seed N --pairs M       many paired worlds, with and without the lie
+              dashboard --file PATH           write a played session to an HTML page
+              dashboard --seed N [--ticks N]  write a simulated village to one
+                        [--out PATH]          default build/dashboard.html
             """;
 
     private static void demo(String[] args) {
