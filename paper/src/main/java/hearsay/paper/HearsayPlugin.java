@@ -203,6 +203,26 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                     NamedTextColor.YELLOW));
         }
 
+        // Said at binding rather than discovered halfway through. Only smiths buy
+        // diamonds, and a village with none is a village the player cannot sell into -
+        // worth knowing before an hour of it has been played.
+        int smiths = 0;
+        for (Villager villager : world.getNearbyEntitiesByType(
+                Villager.class, player.getLocation(), BINDING_RANGE)) {
+            if (Counter.canTrade(villager)) {
+                smiths++;
+            }
+        }
+        if (smiths == 0) {
+            player.sendMessage(Component.text("No armorer, toolsmith or weaponsmith here, so "
+                    + "nobody will buy diamonds. Put down a blast furnace, smithing table or "
+                    + "grindstone and let a villager take it up.", NamedTextColor.YELLOW));
+        } else {
+            player.sendMessage(Component.text(smiths + " smith" + (smiths == 1 ? "" : "s")
+                    + " will buy diamonds, at whatever they each believe they are worth.",
+                    NamedTextColor.GREEN));
+        }
+
         lastSeenAlive = session.boundCount();
         long period = SECONDS_PER_TICK * GAME_TICKS_PER_SECOND;
         // The first tick runs at once rather than in ten seconds' time. Villagers are
