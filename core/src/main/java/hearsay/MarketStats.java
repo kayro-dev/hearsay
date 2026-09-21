@@ -257,6 +257,120 @@ public final class MarketStats {
     }
 
     /**
+     * Every leg of the price's wandering, from one turning point to the next.
+     *
+     * <p>A turning point is where the price reverses by at least {@code minimumMove}, which
+     * keeps the ordinary wobble from being counted as a change of mind. The caller supplies
+     * it because this class does not know what normal is; a tenth of the base price is the
+     * usual choice and is what the dashboard passes.
+     *
+     * <p>This is the measure E31 wanted and did not have. Five bubbles in one run says the
+     * village bubbled five times; the swings say whether each one was smaller than the last.
+     */
+    public List<Swing> swings(int minimumMove) {
+        List<Swing> found = new ArrayList<>();
+        if (priceSeries.size() < 2) {
+            return found;
+        }
+        long turnTick = priceSeries.get(0)[0];
+        int turnPrice = priceSeries.get(0)[1];
+        long highTick = turnTick;
+        int highPrice = turnPrice;
+        long lowTick = turnTick;
+        int lowPrice = turnPrice;
+        // Which way the price is currently travelling: 1 up, -1 down, 0 until it has moved
+        // far enough to have made up its mind. Both reversals are live while it is 0, and
+        // whichever happens first decides.
+        int direction = 0;
+
+        for (int[] point : priceSeries) {
+            long tick = point[0];
+            int price = point[1];
+            if (price > highPrice) {
+                highPrice = price;
+                highTick = tick;
+            }
+            if (price < lowPrice) {
+                lowPrice = price;
+                lowTick = tick;
+            }
+
+            if (direction >= 0 && highPrice - price >= minimumMove) {
+                // It climbed to the high and has since come back this far: the high was a
+                // turning point, and the leg up to it is finished.
+                if (highPrice != turnPrice) {
+                    found.add(new Swing(turnTick, highTick, turnPrice, highPrice));
+                }
+                turnTick = highTick;
+                turnPrice = highPrice;
+                direction = -1;
+                highTick = lowTick = tick;
+                highPrice = lowPrice = price;
+            } else if (direction <= 0 && price - lowPrice >= minimumMove) {
+                if (lowPrice != turnPrice) {
+                    found.add(new Swing(turnTick, lowTick, turnPrice, lowPrice));
+                }
+                turnTick = lowTick;
+                turnPrice = lowPrice;
+                direction = 1;
+                highTick = lowTick = tick;
+                highPrice = lowPrice = price;
+            }
+        }
+        return found;
+    }
+
+    /**
+     * How much each leg shrinks against the one before it, averaged over the run.
+     *
+     * <p>Below 1 the village is calming down; above 1 it is winding up; at 1 it oscillates
+     * for ever. Averaged geometrically, because these are ratios and a run that halves and
+     * then doubles has gone nowhere, which an arithmetic mean would report as growth.
+     *
+     * @return empty when there are fewer than two legs to compare
+     */
+    public java.util.OptionalDouble swingDecay(int minimumMove) {
+        List<Swing> legs = swings(minimumMove);
+        if (legs.size() < 2) {
+            return java.util.OptionalDouble.empty();
+        }
+        double logSum = 0;
+        int counted = 0;
+        for (int i = 1; i < legs.size(); i++) {
+            int before = legs.get(i - 1).amplitude();
+            int after = legs.get(i).amplitude();
+            if (before > 0 && after > 0) {
+                logSum += Math.log(after / (double) before);
+                counted++;
+            }
+        }
+        return counted == 0 ? java.util.OptionalDouble.empty()
+                : java.util.OptionalDouble.of(Math.exp(logSum / counted));
+    }
+
+    /**
+     * The tick after which the price never again leaves the given band around normal.
+     *
+     * <p>Measured from the end backwards, so it answers "when did it settle and stay
+     * settled", not "when did it first touch normal on its way past". A village still
+     * swinging when the run ends never settled, and reports empty rather than a number
+     * that would read as though it had.
+     *
+     * @param tolerance how far from normal still counts as settled, as a share: 0.10 is 10%
+     */
+    public java.util.OptionalLong settledAt(int basePrice, double tolerance) {
+        double allowed = basePrice * tolerance;
+        long settled = -1;
+        for (int i = priceSeries.size() - 1; i >= 0; i--) {
+            if (Math.abs(priceSeries.get(i)[1] - basePrice) > allowed) {
+                break;
+            }
+            settled = priceSeries.get(i)[0];
+        }
+        return settled < 0 ? java.util.OptionalLong.empty() : java.util.OptionalLong.of(settled);
+    }
+
+    /**
      * How often a village bubbles, per hundred days, by the one definition in
      * {@link Bubble}. For a village nobody lied to, this is the rate of bubbles that
      * started on their own.

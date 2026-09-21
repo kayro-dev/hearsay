@@ -45,7 +45,8 @@ disagree, the village is dying.
 | 5d | Look at the village | Every bound villager has their name and gossip percentage above their head, green at 60% or more. The name matches the list from 5c |
 | 5e | Walk to a glowing villager | The glow fades after about 30 seconds. Running `/hearsay who` again lights them up once more |
 | 5f | Look at the boss bar before any lie | `Diamonds  · 0%  normal · index 100`, white. The change leads, the index follows in grey |
-| 5g | Look at any villager's name plate | A second line with what they would charge, as a change: `· 0%  100` while nobody believes anything |
+| 5g | Look at any villager's name plate before any lie | Their name and nothing else. A villager asking the ordinary price has nothing to say |
+| 5g2 | Plant a rumour, wait a tick, look again | The villager you told now carries a second line, `▲ +38%` or similar, in the rising colours. A number above a head means somebody believed something |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
 | 5h | `/hearsay market` before marking one | "No market marked", and who counts as a trader is still guessed from workstations |
 | 5i | Stand in an open square, `/hearsay market 8` | "The market is here, 16 blocks across". A ring of white particles appears at its edge each tick |

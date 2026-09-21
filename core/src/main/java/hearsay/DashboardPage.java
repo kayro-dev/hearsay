@@ -22,6 +22,9 @@ public final class DashboardPage {
     private static final int HEIGHT = 240;
     private static final int PAD = 40;
 
+    /** Four ticks to the day, as everywhere else. */
+    private static final int TICKS_PER_DAY = 4;
+
     private DashboardPage() {
     }
 
@@ -66,6 +69,12 @@ public final class DashboardPage {
         out.append("<h2>Who believed it</h2>");
         out.append("<p class=\"sub\">Villagers holding the claim at the end of each day.</p>");
         out.append(believerChart(withLie, params.villagers()));
+
+        out.append("<h2>Does it settle?</h2>");
+        out.append("<p class=\"sub\">A bubble is one shape a price can make. Whether each "
+                + "swing is smaller than the last is a different question, and the one that "
+                + "says whether the village is calming down or going round for ever.</p>");
+        out.append(oscillation(withLie, params.basePrice()));
 
         out.append("<h2>Day by day</h2>").append(table(withLie, withoutLie));
         out.append("</main></body></html>\n");
@@ -217,6 +226,57 @@ public final class DashboardPage {
     private static double y(int value, int low, int high) {
         double span = Math.max(high - low, 1);
         return HEIGHT - PAD - (value - low) * (HEIGHT - 2.0 * PAD) / span;
+    }
+
+    /** How the swings behaved: their sizes, whether they shrank, and whether it ended. */
+    private static String oscillation(MarketStats stats, int basePrice) {
+        int noiseFloor = Math.max(1, basePrice / 10);
+        List<Swing> legs = stats.swings(noiseFloor);
+        StringBuilder out = new StringBuilder("<section class=\"facts\">");
+
+        fact(out, "Swings", String.valueOf(legs.size()));
+        fact(out, "Biggest swing", legs.isEmpty() ? "—"
+                : Math.round(biggest(legs) * 100.0 / basePrice) + "%");
+        String decay = stats.swingDecay(noiseFloor).isPresent()
+                ? String.format(Locale.ROOT, "%.2f", stats.swingDecay(noiseFloor).getAsDouble())
+                : "—";
+        fact(out, "Each swing vs the last", decay);
+        fact(out, "Settled within 10%", stats.settledAt(basePrice, 0.10).isPresent()
+                ? "day " + stats.settledAt(basePrice, 0.10).getAsLong() / (TICKS_PER_DAY)
+                : "never");
+        out.append("</section>");
+
+        if (!legs.isEmpty()) {
+            out.append("<p class=\"sub\">");
+            out.append(stats.swingDecay(noiseFloor).isPresent()
+                    && stats.swingDecay(noiseFloor).getAsDouble() < 1
+                    ? "Each swing is smaller than the one before it, so the village is settling."
+                    : "The swings are not shrinking. Nothing in the model damps them: every "
+                            + "piece of evidence a villager has is either gossip or the price "
+                            + "itself, and neither can contradict the other.");
+            out.append("</p>");
+            out.append("<table><thead><tr><th>Swing</th><th>From</th><th>To</th>"
+                    + "<th>Size</th><th>Days</th></tr></thead><tbody>");
+            int number = 0;
+            for (Swing leg : legs) {
+                out.append("<tr><td>").append(++number)
+                   .append("</td><td>").append(PriceMood.describe(leg.fromPrice(), basePrice))
+                   .append("</td><td>").append(PriceMood.describe(leg.toPrice(), basePrice))
+                   .append("</td><td>").append(Math.round(leg.amplitude() * 100.0 / basePrice))
+                   .append("%</td><td>").append(leg.ticks() / TICKS_PER_DAY)
+                   .append("</td></tr>");
+            }
+            out.append("</tbody></table>");
+        }
+        return out.toString();
+    }
+
+    private static int biggest(List<Swing> legs) {
+        int most = 0;
+        for (Swing leg : legs) {
+            most = Math.max(most, leg.amplitude());
+        }
+        return most;
     }
 
     private static String table(MarketStats withLie, MarketStats withoutLie) {

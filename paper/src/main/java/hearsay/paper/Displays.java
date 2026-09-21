@@ -149,28 +149,30 @@ final class Displays {
      */
     private static Component labelText(String name, Double gossip, Double confidence,
                                        Integer ask, int basePrice, Spot spot) {
+        // The name, and what they would charge if it is not the ordinary price. Nothing
+        // else. This used to carry four numbers at once - how talkative they are, what
+        // they charge, the raw index, and how sure they were - and a player reading four
+        // numbers off one head is reading none of them. Each of the three that went has
+        // somewhere better to be: how talkative they are is what /hearsay who is for and
+        // what the green name says, the raw index is on the boss bar, and how sure they
+        // are is what the glow says.
         Component label = Component.text(name == null ? "?" : name,
                 gossip != null && gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.WHITE);
-        if (gossip != null) {
-            label = label.append(Component.text(
-                    " " + Math.round(gossip * 100) + "%",
-                    gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.GRAY));
-        }
+
         if (ask != null) {
             PriceMood mood = PriceMood.of(ask, basePrice);
-            label = label.append(Component.newline())
-                    .append(Component.text(PriceMood.describe(ask, basePrice))
-                            .color(TextColor.fromHexString(mood.hex())))
-                    .append(Component.text("  " + ask, NamedTextColor.GRAY));
+            // A villager asking the ordinary price is saying nothing, and most villagers
+            // are saying nothing most of the time. Only the ones who have been talked into
+            // something carry a number, so a number means somebody believed something.
+            if (mood != PriceMood.NORMAL) {
+                label = label.append(Component.newline())
+                        .append(Component.text(PriceMood.describe(ask, basePrice))
+                                .color(TextColor.fromHexString(mood.hex())));
+            }
         }
         if (spot != null) {
             label = label.append(Component.newline())
                     .append(Component.text(spot.name(), NamedTextColor.AQUA));
-        }
-        if (confidence != null) {
-            label = label.append(Component.newline()).append(
-                    Component.text("believes " + Math.round(confidence * 100) + "%")
-                            .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY));
         }
         return label;
     }

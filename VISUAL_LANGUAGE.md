@@ -34,7 +34,15 @@ at, so the picture and the statistics can never drift apart, and they scale with
 
 ## Villagers
 
-A villager carries their name, what they would charge, and what they believe.
+A villager carries their name, and what they would charge if it is not the ordinary price.
+**Nothing else.** The label once carried four numbers at once — how talkative they are, what
+they charge, the raw index, and how sure they were — and a player reading four numbers off
+one head is reading none of them.
+
+Each of the three that went has somewhere better to be: how talkative somebody is is what
+`/hearsay who` is for and what the green name says, the raw index is on the boss bar, and
+how sure they are is what the glow says. A villager asking the ordinary price shows only
+their name, so **a number above a head means somebody believed something**.
 
 | State | Outline | Meaning |
 | --- | --- | --- |

@@ -217,6 +217,67 @@ timeline's index. It is the cheapest output in this document and probably the mo
 convincing, because it turns "the price index reached 138" into a number in the player's
 pocket.
 
+---
+
+## Stage 4 — something true to be wrong about
+
+E32 measured what E31 only suggested: the swings grow by about 5% each, and the village
+never settles. The cause is structural rather than a setting. **Every piece of evidence a
+villager can have is either gossip or the price, and both are made of belief.** A rumour can
+only be contradicted by another rumour; a price cannot be wrong, because the price is
+whatever the village thinks it should be. A loop with no external reference has nothing to
+converge on, so it wanders until something stops it, and nothing does.
+
+The concept doc's **reality checks** are the damping mechanism, and stage 3 is what makes
+them possible: once trades are real, the village has a true supply for the first time, and a
+belief about scarcity can be **wrong** rather than merely unpopular.
+
+**The shape of it.** A villager who believes diamonds are scarce, and who then sees diamonds
+— in a chest they have access to, in a trade another villager is offering, in what the
+player hands them — has met evidence that does not come from anybody's opinion. That
+evidence moves confidence the way a telling does, through the same combining rule, with one
+difference that matters: **it is not a rumour and starts no family.** Nothing can be
+exaggerated in the retelling of it, because it was not told.
+
+**What changes in core.**
+- A new input, `RealityChecked(tick, villagerId, item, sawHowMany)`, alongside `PlayerTraded`.
+  An input rather than a derived event, because the world outside the simulation is what
+  produced it.
+- Confidence combines as it does today, with the source being the world rather than a
+  villager. It belongs in no chain, and so is never a repeat — but for the opposite reason
+  the market is never a repeat: the market is everyone's opinion at once, and this is
+  nobody's.
+- **Asymmetry worth deciding before building.** Seeing plenty of a thing believed scarce
+  should weigh more than seeing a little of a thing believed plentiful, because absence is
+  weak evidence and presence is strong. That is a parameter and it must be swept, not
+  guessed.
+
+**Determinism and replay.** Preserved by the same argument as stage 3. What a villager saw
+is an input, recorded in the recipe, so a session replays exactly. It also makes a third
+counterfactual available: **what would this village have believed if it had never looked?**
+
+**Old recipes.** Keep loading; they contain no checks. Format version 7.
+
+**Success test, and it is the point of doing this at all.** E32's four numbers are the
+baseline. Stage 4 works if, on a village of the same size with the same single lie:
+
+| | E31 baseline | stage 4 must reach |
+| --- | --- | --- |
+| swing decay | **1.05** | **below 1**, and convincingly — say 0.85 or lower |
+| settled within 10% | **never** | **some day before the run ends** |
+| biggest swing | 112% | no requirement; a first panic may be as large as it likes |
+| bubbles caused by the lie | 5 against 0 | **unchanged** — damping must not cost the claim |
+
+That last row is the trap. A mechanism that damps the oscillation by making villagers hard
+to convince would pass the first two rows and destroy the project: the quiet-village
+guarantee and the paired-worlds separation must hold exactly as they do now. **Damping the
+swing is not the same as muting the village**, and only running both sets of measures
+together can tell them apart.
+
+**Experiments to re-run.** All of the calibration, because this changes how belief moves.
+`CalibrationTest`'s band, the quiet-village rate, and E29's gossip share would all need
+re-deriving on a village that can now be contradicted by the world.
+
 ## What this does to the project's claim
 
 Today the counterfactual answers one question: what would this village have done if nobody
@@ -233,3 +294,5 @@ makes the question sharper, and a sharper question is worth more than a bigger w
 2. Play sessions in a real marketplace and re-measure the in-game figures.
 3. Stage 2's indices, fitted before any emerald mapping is chosen.
 4. Stage 3, with the trade-evidence sweep done before it is enabled by default.
+5. Stage 4, measured against E32's baseline, with the paired-worlds separation checked at
+   every step so damping never quietly becomes muting.

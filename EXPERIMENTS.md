@@ -2254,3 +2254,55 @@ measures how a bubble should decay over months, and nothing should be changed un
 something does.
 
 **Decision.** Nothing changed. This session is the one the dashboard now publishes.
+
+---
+
+## E32 — Measuring the oscillation instead of tuning it
+
+E31 ran five bubbles and four busts over 177 days and never settled. Counting bubbles said
+"five" and said nothing about whether the village was calming down, which is the more
+interesting question. Three measures now answer it, and E31 is their baseline.
+
+**What is measured.** A **swing** is one leg of the price's wandering, from a turning point
+to the next, where a turning point is a reversal of at least a tenth of the normal price —
+enough to keep the ordinary wobble from counting as a change of mind. **Swing decay** is how
+much each leg shrinks against the one before, averaged geometrically, because these are
+ratios and a run that halves and then doubles has gone nowhere. **Settling** is the tick
+after which the price never again leaves ±10% of normal, measured from the end backwards so
+it answers "when did it settle and stay settled" rather than "when did it first cross
+normal on the way past".
+
+### E31's baseline
+
+| | |
+| --- | --- |
+| swings | **20** |
+| biggest swing | **112%** of normal |
+| each swing against the last | **1.05** |
+| settled within 10% | **never** |
+
+| swing | from | to | size | days |
+| --- | --- | --- | --- | --- |
+| 2 | · −3% | ▲ +36% | 39% | 3 |
+| 5 | ▲ +26% | ▼ −23% | 49% | 18 |
+| 6 | ▼ −23% | ▲ +34% | 57% | 33 |
+| 9 | ▲ +42% | ▼ −45% | 87% | 20 |
+
+**A ratio of 1.05 is the finding.** Above 1 the village is winding up, not calming down.
+Not dramatically — 5% a swing is slow — but it is the wrong side of 1, and over 177 days it
+took the swings from 39% to 87%. Nothing in the model damps them, and the numbers say so
+rather than the impression saying so.
+
+**Why there is nothing to damp them, which is the hypothesis this was built to test.** Every
+piece of evidence a villager can have is either something another villager told them or the
+price itself. Gossip comes from belief and the price comes from belief, so **the village has
+no anchor to anything true**. A rumor cannot be contradicted by the world, only by another
+rumor, and a price cannot be wrong because the price is whatever the village believes it
+should be. A loop with no external reference has nothing to converge on.
+
+That is a coherent model of a rumour, and it is what this project set out to build. It is
+not a coherent model of a market, and the difference is what stage 4 of V2_PROPOSAL.md
+proposes to fix.
+
+**Decision.** Nothing changed and nothing tuned. The oscillation is now a measurement rather
+than an impression, and these four numbers are what any damping mechanism has to beat.
