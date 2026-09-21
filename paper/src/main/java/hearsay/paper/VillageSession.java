@@ -1,5 +1,6 @@
 package hearsay.paper;
 
+import hearsay.BeliefReport;
 import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.MeetingSource;
@@ -183,6 +184,11 @@ final class VillageSession {
                      java.util.NavigableSet<Integer> witnesses) {
         simulation.schedule(new PlayerTraded(simulation.state().tick() + 1,
                 villagerId, count, emeralds, witnesses));
+    }
+
+    /** What this villager would tell you if you asked. Reads the world; changes nothing. */
+    List<String> whatTheyHeard(int villagerId) {
+        return BeliefReport.of(simulation.state(), villagerId);
     }
 
     /** Which bound villager this body is, or null if it is not one of ours. */

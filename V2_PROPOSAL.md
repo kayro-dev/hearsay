@@ -12,9 +12,20 @@ names. This is the order:**
 | | Stage | Why here |
 | --- | --- | --- |
 | 1st | **1 — a marked market** *(built)* | Small, and it made every existing measurement honest |
-| 2nd | **3 — real trades, diamonds only** | Depth before breadth. One good, taken all the way to the player's hands |
-| 3rd | **4 — reality checks** | Damping needs a true supply to damp against, and stage 3 is what creates one |
-| 4th | **2 — more goods** | Only once the model is damped |
+| 2nd | **3 — real trades, diamonds only** *(built, E33)* | Depth before breadth. One good, taken all the way to the player's hands |
+| 3rd | **measure the selling** | A played session and a headless sweep, before anything is built on top |
+| 4th | **4 — reality checks** | Proposed first. Damping needs a true supply to damp against |
+| 5th | **2 — more goods** | Only once stage 4 passes |
+
+**Nothing starts until the step before it is done and measured.** Each of these has a test
+it must pass, written down before it is built, and a stage that fails its test is not
+followed by the next one — it is followed by the next attempt at itself.
+
+| Step | Done when |
+| --- | --- |
+| measure the selling | a session recorded at a busy smith and at an isolated one, plus a headless sweep of both weights, reported as an E-number. **Does witnessed selling alone bring decay below 1 while the lie still causes its bubbles against none without it?** The no-lie timeline's price effect is reported separately, so the lie is never credited with the player's own selling |
+| stage 4 | **decay below 1, settles before the run ends, and lie-caused bubbles unchanged.** If it fails, the village purse is the next damper and is measured on its own |
+| stage 2 | stage 4 passed, on its own terms, first |
 
 **Why goods come last.** Every good added before stage 4 is a good whose market parameters
 must be fitted, and stage 4 changes how belief moves, so all of it would be fitted twice.
@@ -515,6 +526,54 @@ machinery already runs many worlds, so it can carry them.
 
 That is the argument for doing stage 3 at all. Stages 1 and 2 make the world richer; stage 3
 makes the question sharper, and a sharper question is worth more than a bigger world.
+
+## Between stages: personality labels — *proposed, not built*
+
+A readable name for what a villager is like, from the three traits they already have. Purely
+a reading of `Traits`; it decides nothing and is worth no experiment.
+
+**The rules, which want agreeing before they are built.** One label per villager, picked by
+the first rule that matches, so a villager is never two things at once and the order is the
+priority:
+
+| Label | When | Why it is first |
+| --- | --- | --- |
+| **the Town Crier** | gossip ≥ 0.80 | The one the player most needs to find. It outranks everything |
+| **the Sceptic** | credulity ≤ 0.20 | A wall a rumour dies against, and worth knowing before you spend a lie on them |
+| **the Worrier** | credulity ≥ 0.80 | Believes the first thing they hear. The Crier's opposite number and just as useful |
+| **the Hoarder** | greed ≥ 0.80 | Prices high whatever they believe |
+| **the Quiet One** | gossip ≤ 0.20 | A rumour told here goes nowhere |
+| **the Haggler** | greed ≤ 0.20 | Prices low whatever they believe |
+| *(no label)* | none of the above | Most of the village. A label on everybody is a label on nobody |
+
+**Three deliberate choices.** The thresholds are 0.2 and 0.8, so about a fifth of villagers
+carry a label at all and it keeps meaning something. Gossip outranks credulity because who
+*spreads* a rumour matters more than who believes it — E8 put the planter at about a third
+of the variance and E27 showed what aiming badly costs. And nothing is labelled by what it
+believes, only by what it is: beliefs change every day, and a name that changed with them
+would be useless for choosing whom to tell.
+
+**Where it shows.** Beside the percentage in `/hearsay who`, and on the second line of the
+villager's name plate. Not replacing the gossip figure, which is the number the player acts
+on — the label is what makes the number memorable.
+
+## The rest of v2, not yet scheduled
+
+Everything below is in the concept doc and none of it has a date. It is listed so the shape
+of the whole is visible, and so that nothing here is mistaken for something that was
+forgotten. **None of it is started until the four stages above are done**, because each of
+them would add a mechanism to a model that is still oscillating, and a model that cannot
+settle is not one to build more onto.
+
+| | What it is | Why it waits |
+| --- | --- | --- |
+| **Player credibility** | the village learns whether *you* are worth believing, and a player caught lying is trusted less next time | needs a history of the player's claims against what turned out to be true, which needs stage 4's truth |
+| **Professions** | a farmer and a librarian believe different things about different goods, and weight each other accordingly | needs more than one good, so it waits on stage 2 |
+| **Relationships and trust** | who a villager believes depends on who they like, not only on who is in their chain | the largest of these, and it changes every number in EXPERIMENTS.md |
+| **Households** | families who share a home share what they hear, ahead of the village | overlaps the neighbourhoods from E23 and may replace them |
+| **Claims about people** | rumours about villagers rather than goods: who is a thief, who is generous | the belief machinery carries it already; what it lacks is anything for such a claim to *do* |
+| **Corrections** | a villager who learns they were wrong tells the people they told | the natural partner to reality checks, and worth nothing before them |
+| **Notice board** | a place the player can post a claim to the whole village at once | trivial to build and easy to abuse; it wants credibility first, or it is a panic button |
 
 ## Order of work
 

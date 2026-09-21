@@ -56,10 +56,18 @@ logged so any crash can be replayed and compared against a counterfactual.
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.
 - Current milestone: v2, proposed in V2_PROPOSAL.md, taken depth first rather than breadth
-  first. Stage 1 (the marked market) is built. Stage 3, real diamond trades, is built (E33).
-  Next is stage 4, reality checks, and only then stage 2, more goods. The stage numbers are names
-  rather than an order: goods come last because stage 4 changes how belief moves, so any
-  good calibrated before it would be calibrated twice.
+  first. The stage numbers are names rather than an order. Built: stage 1 (the marked
+  market) and stage 3 (real diamond trades, E33). **The order from here, and no step starts
+  until the one before it is done and measured:**
+  1. measure the selling — a played session plus a headless sweep of both trade weights,
+     reported as an E-number. Does witnessed selling alone bring decay below 1 while the lie
+     still causes its bubbles? The no-lie timeline's price effect reported separately.
+  2. stage 4, reality checks. Design proposed before built. Passes only when decay is below
+     1, the price settles before the run ends, and lie-caused bubbles are unchanged. If it
+     fails, the village purse is the next damper and is measured on its own.
+  3. stage 2, more goods, only after stage 4 passes.
+- Player-facing features built between stages must not touch the simulation's decisions or
+  the calibration, and each needs a test proving it read-only, so no experiment re-runs.
 - Stage 4 is not done when it is built but when it works: swing decay below 1 and the lie
   still causing its bubbles, against E32's baseline of 1.05, never settling, 5 bubbles to 0.
   Damping the swings must never become muting the village, and only running the oscillation

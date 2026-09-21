@@ -22,6 +22,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import io.papermc.paper.event.player.PlayerTradeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -472,6 +474,42 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                 session.nameOf(trader) + " takes " + diamonds + " diamond"
                         + (diamonds == 1 ? "" : "s") + " for " + emeralds + " emeralds. "
                         + watching.size() + " saw it.", NamedTextColor.AQUA));
+    }
+
+    /**
+     * Right-clicking a villager with an empty hand asks them what they have heard.
+     *
+     * <p>Empty hand on purpose: a full hand is how you trade, and a player holding diamonds
+     * in front of a smith means to sell them. Asking is what you do when you are not doing
+     * anything else.
+     *
+     * <p>Cancelled so the trade screen does not open on top of the answer. Nothing here
+     * touches the simulation — it reads beliefs the village already holds — so no
+     * experiment is affected by a player being curious.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onAsk(PlayerInteractEntityEvent event) {
+        if (session == null || event.getHand() != EquipmentSlot.HAND
+                || !(event.getRightClicked() instanceof Villager body)) {
+            return;
+        }
+        if (!event.getPlayer().getInventory().getItemInMainHand().getType().isAir()) {
+            return; // they are holding something, so they mean to trade
+        }
+        Integer id = session.idOf(body.getUniqueId());
+        if (id == null || notReady(event.getPlayer())) {
+            return;
+        }
+        event.setCancelled(true);
+
+        Player player = event.getPlayer();
+        List<String> heard = session.whatTheyHeard(id);
+        player.sendMessage(Component.text(session.nameOf(id), NamedTextColor.WHITE)
+                .append(Component.text(heard.isEmpty()
+                        ? " has heard nothing at all." : " has heard:", NamedTextColor.GRAY)));
+        for (String said : heard) {
+            player.sendMessage(Component.text("  " + said, NamedTextColor.AQUA));
+        }
     }
 
     /** Says why nothing can be answered yet, if anything cannot. */
