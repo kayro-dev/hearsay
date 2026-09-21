@@ -106,7 +106,8 @@ public final class RecipeFile {
                 + " marketQuorumFraction=" + p.marketQuorumFraction()
                 + " marketWindowTicks=" + p.marketWindowTicks()
                 + " meetingSource=" + p.meetingSource()
-                + " villagers=" + p.villagers();
+                + " villagers=" + p.villagers()
+                + " mixing=" + p.mixing();
     }
 
     private static Params readParams(String text) {
@@ -136,7 +137,10 @@ public final class RecipeFile {
                 // this reproduces them exactly rather than guessing.
                 values.containsKey("villagers")
                         ? (int) number(values, "villagers")
-                        : Simulation.VILLAGER_COUNT);
+                        : Simulation.VILLAGER_COUNT,
+                // Written before neighbourhoods existed, when the village was perfectly
+                // mixed. 1.0 is that village exactly, so those sessions still reproduce.
+                values.containsKey("mixing") ? number(values, "mixing") : 1.0);
     }
 
     /**

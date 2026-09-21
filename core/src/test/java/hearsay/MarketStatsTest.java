@@ -10,7 +10,10 @@ class MarketStatsTest {
     private static final Claim DIAMONDS_SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
     private static MarketStats afterARumor() {
-        return MarketStats.of(Run.execute(3, Params.defaults(),
+        // A perfectly mixed village, pinned rather than inherited: this is about the shape of a bubble,
+        // not about how clustered a village is, and E23's fit should not decide
+        // whether the fixture spreads far enough to test anything.
+        return MarketStats.of(Run.execute(3, Params.defaults().withMixing(1.0),
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 12)), 200).log(), DIAMONDS_SCARCE);
     }
 

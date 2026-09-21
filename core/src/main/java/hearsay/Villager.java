@@ -19,6 +19,7 @@ public final class Villager {
     private final int id;
     private final String name;
     private final Traits traits;
+    private final int neighbourhood;
     private final NavigableMap<Claim, Belief> beliefs = new TreeMap<>();
     private Spot spot;
 
@@ -30,11 +31,12 @@ public final class Villager {
 
     private static final long NEVER = Long.MIN_VALUE;
 
-    Villager(int id, String name, Traits traits, Spot spot) {
+    Villager(int id, String name, Traits traits, Spot spot, int neighbourhood) {
         this.id = id;
         this.name = name;
         this.traits = traits;
         this.spot = spot;
+        this.neighbourhood = neighbourhood;
     }
 
     void moveTo(Spot destination, long tick) {
@@ -87,6 +89,9 @@ public final class Villager {
     public int id() { return id; }
     public String name() { return name; }
     public Traits traits() { return traits; }
+
+    /** Which part of the village this villager lives and works in. */
+    public int neighbourhood() { return neighbourhood; }
     public Spot spot() { return spot; }
 
     /**
@@ -129,6 +134,7 @@ public final class Villager {
             && id == v.id
             && name.equals(v.name)
             && traits.equals(v.traits)
+            && neighbourhood == v.neighbourhood
             && spot == v.spot
             && lastObservedPrice == v.lastObservedPrice
             && lastAtMarket == v.lastAtMarket
@@ -136,7 +142,7 @@ public final class Villager {
     }
 
     @Override
-    public int hashCode() { return Objects.hash(id, name, traits, spot, lastObservedPrice, lastAtMarket, beliefs); }
+    public int hashCode() { return Objects.hash(id, name, traits, neighbourhood, spot, lastObservedPrice, lastAtMarket, beliefs); }
 
     @Override
     public String toString() { return name + "#" + id + " at " + spot; }

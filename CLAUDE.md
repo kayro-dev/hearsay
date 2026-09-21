@@ -34,6 +34,8 @@ logged so any crash can be replayed and compared against a counterfactual.
   Prices from belief, market observation, the feedback loop (week 5).
   Counterfactual replay and paired worlds (week 6).
   In-game spike: external meetings, Paper plugin, saved recipes (week 7).
+  The average-ask price rule, and neighbourhoods fitted to recorded traces so the
+  model mixes the way a played village does (E20, E23).
 - Tuning is decided by seed sweeps in the experiments module, not by hand. Every
   decision is recorded in EXPERIMENTS.md with its command and table. CalibrationTest
   holds the defaults to the behaviour they were chosen for; if it fails, the model

@@ -1612,3 +1612,128 @@ village rather than a different number.
 
 **Decision.** Nothing changed. Defaults stand at 0.40 and 0.92. The quiet-village guarantee
 is untouched and measured at 0% in every row above.
+
+---
+
+## E23 — Neighbourhoods, fitted to the traces, and the model stops flattering itself
+
+E22 found the two worlds differ in mixing rather than in any parameter. This builds the
+neighbourhoods, fits them to a recorded session, validates on what was held back, and
+re-derives the calibration band on the model that results.
+
+**What was built.** Each villager is given a neighbourhood at creation. `holdMeetings` now
+splits whoever is at a spot into a village-wide pool and one pool per neighbourhood, and
+pairs within each. A new `mixing` parameter is the chance of landing in the village-wide
+pool. Neighbourhoods are drawn from a **stream of their own**, appended last in
+`RandomStream` so no other subsystem's ordinal moves, and the mixing roll is drawn from
+that same stream, so the movement stream is untouched at any value of `mixing`.
+
+The count is **derived from village size**, about one neighbourhood per three villagers,
+rather than being a second knob. Seven villagers to a neighbourhood was tried first and
+rejected on measurement, not taste: at that size the model floors at 2.9 distinct partners
+even at `mixing = 0`, so the observed 2.12 was unreachable at any value.
+
+**Mixing at 1.0 is the old village exactly**, confirmed rather than asserted: half-believing
+62%, quiet bursts 0%, headless peak median 159, played sessions 121 and 133 — every figure
+from E21 and E22 reproduced to the digit. `NeighbourhoodTest` pins the meeting count for
+seed 42 at 1137 so a seed recorded before E23 cannot quietly stop replaying.
+
+**The fit**, against session A alone, on distinct partners per two days only:
+
+| mixing | partners per 2 days |
+| --- | --- |
+| 1.00 | 4.21 |
+| 0.30 | 2.20 |
+| **0.25** | **2.07** (played A: **2.12**) |
+| 0.20 | 1.96 |
+
+**The validation**, on what the fit never saw:
+
+| | model | played | fitted on? |
+| --- | --- | --- | --- |
+| partners per 2 days, 21 villagers | 2.07 | 2.12 | yes |
+| **second independent source in time, 21 villagers** | **11%** | **13%** | **no** |
+| partners per 2 days, 19 villagers | 2.13 | 2.45 | no, other session |
+| second independent source in time, 19 villagers | 16% | 5% | no, other session |
+
+The held-out number is the one that matters, and it lands: 11% against 13%, from a fit that
+only ever saw a partner count. The second session is looser — the model comes out more
+clustered than it was and its confirmation rate sits above rather than below — but both are
+in the right country, and both are a world away from the 49% the mixed model gave.
+
+**A limitation, recorded rather than buried.** Clustering also cut total meetings roughly in
+half, 1137 to 602 for the same seed, because a pool of three yields one pair and leaves
+someone standing alone. Real villages do not lose meetings that way: they run at 5.5 per
+tick, the mixed model at 5.7, and the clustered model now at 3.0. The model therefore
+matches the *diversity* of real meetings and the confirmation rate that follows from it,
+while under-producing meetings by about half. Letting the odd villager out of each
+neighbourhood pair with other leftovers would fix the density, but it would also create
+exactly the cross-neighbourhood ties this entry exists to remove, so it needs its own fit
+rather than a patch. **This is the first thing to fix.**
+
+### The re-derived band
+
+On the faithful model, seeds 1001-1100:
+
+| | mixed (before) | clustered (now) |
+| --- | --- | --- |
+| half the village believes | 62% | **1%** |
+| the lie bursts the price | 92% | **39%** |
+| peak price, median / p90 | 159 / 178 | **129 / 145** |
+| second independent source in time | 49% | 15% |
+| **a village nobody lied to bursts** | **0%** | **0%** |
+
+`CalibrationTest` held half-believing between 50% and 85%. That band is not a
+mis-measurement to be widened; it described a village that mixes perfectly, and no such
+village exists. It is replaced by the rate at which the lie bursts the price, measured at
+39% and held between 25% and 60%. **The quiet-village guarantee is untouched and still
+measures 0%.**
+
+The counterfactual survives, weaker and intact. On held-back seeds 2001-2200, the lie moved
+the price in **200 of 200** paired worlds either way; the median gap falls from +56 to +20,
+bubbles that happen only because of the lie from 185 to 81, and bubbles that happen only
+without it stay at **0**.
+
+**The model now agrees with the village.** Its median peak is 129 where the played sessions
+reached 121 and 133. The ~120 ceiling is not a bug in the plugin, a mis-set parameter or a
+measurement artefact. It is what a clustered village of twenty does, and five weeks of
+sweeps could not see it because the model was flattering itself.
+
+### Which bridge would break the ceiling
+
+The diagnosis names its own answer. Belief dies because a villager's neighbours all share
+their chain, so re-hearing carries `repeatWeight` rather than full weight, and an
+independent second source rarely arrives in time. Anything that breaks the ceiling must
+deliver **chain-independent evidence across neighbourhood lines**.
+
+Exactly one thing in the model already does. `Belief.MARKET` is a source id no villager
+holds, which "sits harmlessly in a chain and simply never matches a teller" — **the market
+price is independent evidence by construction, and it reaches every villager standing in
+the market whatever neighbourhood they came from.** It is the only bridge the village has.
+
+A rolling market window was the obvious candidate and is **rejected on measurement**: across
+0, 4, 8 and 16 ticks the clustered model's median peak goes 129, 128, 126, 126 and
+half-believing stays at 1%. It makes the market a better *sample*; it does not make the
+market a better *source*.
+
+`observationWeight` does, and it is the lever with real authority — the parameter doc
+already warns it moves half-believing by twenty points per 0.05. On the clustered model:
+
+| observationWeight | the lie bursts the price | half-believing | peak median / p90 | **quiet villages burst** |
+| --- | --- | --- | --- | --- |
+| 0.25 (today) | 39% | 1% | 129 / 145 | **0%** |
+| 0.30 | 58% | 7% | 132 / 149 | **0%** |
+| **0.35** | **62%** | **53%** | **139 / 162** | **0%** |
+| 0.40 | 65% | 95% | 153 / 175 | **0%** |
+
+At 0.35 a clustered village behaves the way the mixed one used to, and **the quiet-village
+guarantee holds at every value** — unlike every earlier attempt at this, which bought spread
+by letting noise do the lie's work.
+
+**Recommendation, not adopted:** `observationWeight` 0.35, validated against played sessions
+before anything is changed. It is the bridge because it is the only source that crosses
+neighbourhoods, and the numbers say it crosses them without inventing panics.
+
+**Decision.** Adopted: neighbourhoods, `mixing` 0.25, one neighbourhood per three villagers,
+and the re-derived band. Not adopted: the observation weight, pending played-session
+validation and your call.

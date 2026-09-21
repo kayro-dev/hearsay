@@ -40,7 +40,10 @@ class RumorTest {
      * milder versions, which is what those two tests need to have anything to check.
      */
     private static Simulation runWithEchoesAndBacktracking() {
-        Simulation sim = new Simulation(11, Params.defaults(),
+        // A perfectly mixed village, pinned rather than inherited: this is about what a telling does to a belief,
+        // not about how clustered a village is, and E23's fit should not decide
+        // whether the fixture spreads far enough to test anything.
+        Simulation sim = new Simulation(11, Params.defaults().withMixing(1.0),
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 10)));
         sim.run(TICKS);
         return sim;

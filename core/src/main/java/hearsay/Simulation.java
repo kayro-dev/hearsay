@@ -3,6 +3,7 @@ package hearsay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.Random;
@@ -47,6 +48,7 @@ public final class Simulation {
     private final Random gossip;
     private final Random mutation;
     private final Random market;
+    private final Random neighbourhood;
 
     /**
      * The inputs, kept so this run can describe itself. Grows during live play, where the
@@ -107,6 +109,7 @@ public final class Simulation {
         this.gossip = RandomStream.GOSSIP.from(seed);
         this.mutation = RandomStream.MUTATION.from(seed);
         this.market = RandomStream.MARKET.from(seed);
+        this.neighbourhood = RandomStream.NEIGHBOURHOOD.from(seed);
         for (Input input : this.inputs) {
             rejectMismatchedMeeting(input);
             scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
@@ -174,7 +177,10 @@ public final class Simulation {
             // The order of these three rolls is part of the seed contract: reordering
             // them gives every seed a different village.
             Traits traits = new Traits(movement.nextDouble(), movement.nextDouble(), movement.nextDouble());
-            record(new VillagerCreated(tick, id, NAMES.get(id), traits));
+            // Drawn from its own stream, so a village with mixing at 1.0 walks and talks
+            // exactly as it did before neighbourhoods existed.
+            record(new VillagerCreated(tick, id, NAMES.get(id), traits,
+                    neighbourhood.nextInt(params.neighbourhoods())));
         }
     }
 
@@ -242,18 +248,39 @@ public final class Simulation {
                 continue;
             }
 
-            List<Integer> present = new ArrayList<>();
-            for (Villager villager : state.villagers().values()) {
-                if (villager.spot() == spot) {
-                    present.add(villager.id());
+            // Whoever is here, split into the pools that can actually see each other.
+            // The village-wide pool comes first and keeps id order, so a village with
+            // mixing at 1.0 shuffles exactly the list it always shuffled.
+            List<Integer> everyone = new ArrayList<>();
+            // A TreeMap on principle rather than on evidence: neighbourhood ids are small
+            // integers, so a HashMap happens to iterate them in the same order today and a
+            // test could not tell the two apart. It would stop being true the moment the
+            // ids stopped being small, and pairs decided by hash order are exactly the bug
+            // this codebase refuses to risk.
+            Map<Integer, List<Integer>> byNeighbourhood = new TreeMap<>();
+            for (Villager villager : state.villagers().values()) { // id order
+                if (villager.spot() != spot) {
+                    continue;
+                }
+                if (neighbourhood.nextDouble() < params.mixing()) {
+                    everyone.add(villager.id());
+                } else {
+                    byNeighbourhood.computeIfAbsent(villager.neighbourhood(), k -> new ArrayList<>())
+                            .add(villager.id());
                 }
             }
-            Collections.shuffle(present, movement);
-            for (int i = 0; i + 1 < present.size(); i += 2) {
-                int a = present.get(i);
-                int b = present.get(i + 1);
-                record(new VillagersMet(tick, a, b, spot));
-                exchangeNews(tick, a, b);
+
+            List<List<Integer>> pools = new ArrayList<>();
+            pools.add(everyone);
+            pools.addAll(byNeighbourhood.values()); // neighbourhood order, never hash order
+            for (List<Integer> pool : pools) {
+                Collections.shuffle(pool, movement);
+                for (int i = 0; i + 1 < pool.size(); i += 2) {
+                    int a = pool.get(i);
+                    int b = pool.get(i + 1);
+                    record(new VillagersMet(tick, a, b, spot));
+                    exchangeNews(tick, a, b);
+                }
             }
         }
     }

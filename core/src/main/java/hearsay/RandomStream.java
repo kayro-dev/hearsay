@@ -23,7 +23,15 @@ public enum RandomStream {
      * hold a perfectly flat price forever, and a bubble arising on its own could not even
      * be measured.
      */
-    MARKET;
+    MARKET,
+    /**
+     * Which neighbourhood a villager belongs to, and whether they stray out of it.
+     *
+     * <p>Appended rather than inserted: {@link #from} branches on the ordinal, so putting
+     * this anywhere but last would hand every other subsystem a different stream and give
+     * every existing seed a different village.
+     */
+    NEIGHBOURHOOD;
 
     /**
      * A generator for this stream. The seeds are spread apart by the SplitMix64 mixing

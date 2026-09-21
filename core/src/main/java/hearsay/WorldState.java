@@ -41,7 +41,7 @@ public final class WorldState {
             }
             case VillagerCreated e -> {
                 tick = e.tick();
-                villagers.put(e.id(), new Villager(e.id(), e.name(), e.traits(), Spot.HOME));
+                villagers.put(e.id(), new Villager(e.id(), e.name(), e.traits(), Spot.HOME, e.neighbourhood()));
             }
             case VillagerMoved e -> {
                 tick = e.tick();

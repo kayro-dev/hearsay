@@ -13,8 +13,8 @@ class NarratorTest {
     /** Two villagers and a rumor already in Mira's head, as a starting point. */
     private static List<Event> twoVillagersAndARumor() {
         return List.of(
-                new VillagerCreated(1, 0, "Mira", PLAIN),
-                new VillagerCreated(1, 1, "Bo", PLAIN),
+                new VillagerCreated(1, 0, "Mira", PLAIN, 0),
+                new VillagerCreated(1, 1, "Bo", PLAIN, 0),
                 new RumorPlanted(1, 0, DIAMONDS_SCARCE, 1, 0, 1.0));
     }
 

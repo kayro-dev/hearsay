@@ -30,7 +30,7 @@ class SimulationStateTest {
      * anything except the world.
      */
     private static final Set<String> ALLOWED = Set.of(
-            "seed", "params", "movement", "gossip", "mutation", "market",
+            "seed", "params", "movement", "gossip", "mutation", "market", "neighbourhood",
             "inputs", "scheduled", "state", "log");
 
     private static Set<String> instanceFieldsOf(Class<?> type) {
