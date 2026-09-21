@@ -1840,3 +1840,72 @@ wrong. That it also lands inside E23's band is worth noting but is the weaker ev
 band is unchanged and the quiet-village guarantee is untouched at 0%. Outstanding: the model
 counts correlated neighbours as independent evidence, which is the next real question and
 should be settled before the clustering is fitted any further.
+
+---
+
+## E25 — Witnessed provenance, and the confirmation rate lands
+
+E24 left the model counting correlated neighbours as independent evidence: in a group where
+A had told both B and C, C telling B later counted as a fresh source though the information
+was A's. That put the model's confirmation rate at 30% against a played 13%.
+
+**The rule, and what it deliberately is not.** Villagers do not track where a belief really
+came from, because real people cannot and being taken in by correlated sources is much of
+what this project is about. What they know is **who was standing there**. A telling to a
+group is now one utterance: one decision to speak, one chance for the rumor to grow, one set
+of witnesses, however many were listening. Each listener's chain records everyone present,
+so two people who heard the same telling are repeats to each other ever afterwards.
+Correlation nobody witnessed still fools them, by design.
+
+`RumorTold` carries its witnesses, so a log still replays without the rule being
+recomputed. For a conversation between two the witnesses are just the pair, and the chain
+comes out exactly as it did before — which is why **a perfectly mixed village is untouched**
+and every seed recorded before E23 still replays.
+
+**Bootstrap first, since the played rates rest on 36 onsets.** 10,000 resamples:
+
+| | confirmed | rate | 95% interval |
+| --- | --- | --- | --- |
+| played, 21 villagers | 2 of 16 | 13% | **0% - 31%** |
+| played, 19 villagers | 1 of 20 | 5% | **0% - 15%** |
+| played, both | 3 of 36 | 8% | **0% - 19%** |
+
+Wide enough that E24's 30% was a real disagreement and E23's 11% was never as precise a hit
+as it looked.
+
+**Re-measured under witnessed provenance:**
+
+| | E24 | now | played | inside the interval? |
+| --- | --- | --- | --- | --- |
+| second independent source, 21 villagers | 30% | **4%** | 13% [0-31%] | **yes** |
+| second independent source, 19 villagers | 38% | **4%** | 5% [0-15%] | **yes** |
+| partners per 2 days, 21 / 19 | 2.34 / 2.57 | 2.34 / 2.57 | 2.12 / 2.45 | unchanged |
+| meetings per tick, 21 / 19 | 5.44 / 5.40 | 5.44 / 5.40 | 5.55 / 5.48 | unchanged |
+
+**No refit was needed.** The rule changes chains, not movement, so the two structural
+targets `mixing` was fitted on are untouched and 0.05 still stands. The model now sits at
+the low end of both intervals rather than far above them.
+
+**Re-swept `observationWeight`**, and the cliff moved down a step, from 0.35 to 0.34:
+
+| observationWeight | bursts | **quiet bursts** | half-believing | peak med/p90 | session A | session B | paired |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.29 | 38% | **0%** | 0% | 129 / 143 | 134 | 139 | 2/2, 2, 0 |
+| 0.31 | 47% | **0%** | 6% | 132 / 145 | 136 | 148 | 2/2, 2, 0 |
+| **0.32** | **55%** | **0%** | 11% | 134 / 146 | **138** | **138** | **2/2, 2, 0** |
+| 0.33 | 53% | **0%** | 22% | 135 / 149 | 147 | 142 | 2/2, 2, 0 |
+| 0.34 | 55% | **1%** | 31% | 136 / 149 | 146 | 145 | 2/2, 2, 0 |
+| 0.40 | 80% | 2% | 88% | 146 / 158 | 168 | 184 | 2/2, 1, 0 |
+
+**0.32 survives unchanged**, with 0.31 and 0.33 both quiet-clean on either side and the
+cliff two steps above. Suppressing the false confirmations did not cost the loop: the burst
+rate is still 55%, inside E23's 25-60% band, both played sessions still reach 138, and
+paired worlds on the recorded inputs still separate the lie in both with **no bubble
+without it**.
+
+That the sweep came back to the same number on a model that now matches the played
+confirmation rate is worth more than the number. E24 chose 0.32 on played sessions while the
+model behind it was wrong; the choice now rests on a model that is not.
+
+**Decision.** Adopted: witnessed provenance. `mixing` stays 0.05, `observationWeight` stays
+0.32, the band stays 25-60%, and the quiet-village guarantee is untouched at 0%.

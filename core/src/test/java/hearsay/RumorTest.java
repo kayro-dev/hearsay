@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -225,6 +226,29 @@ class RumorTest {
             }
         }
         assertTrue(reachedTheTop, "the run should have produced a severity 3 rumor");
+    }
+
+    @Test
+    void everyoneWhoWasStandingThereGoesIntoTheListenersChain() {
+        // E25: a rumor told to a group is one thing said once, so each listener knows the
+        // others heard it too. Villager 2 was standing there, so when they repeat it to
+        // villager 1 later they are not a second source, however sincere they are.
+        Traits plain = new Traits(0.5, 0.5, 0.5);
+        WorldState world = new WorldState();
+        for (int id = 0; id < 3; id++) {
+            world.apply(new VillagerCreated(1, id, "V" + id, plain, 0));
+        }
+        world.apply(new RumorPlanted(1, 0, DIAMONDS_SCARCE, 1, 0, 1.0));
+
+        world.apply(new RumorTold(2, 0, 1, 0, 0, 0.5,
+                new java.util.TreeSet<>(java.util.List.of(0, 1, 2))));
+
+        NavigableSet<Integer> chain = world.villager(1).belief(DIAMONDS_SCARCE).chain();
+        assertTrue(chain.contains(0), "the teller belongs in the chain");
+        assertTrue(chain.contains(2),
+                "villager 2 heard it said and is not an independent source for it, but the "
+                        + "chain is " + chain);
+        assertFalse(chain.contains(1), "nobody sits in their own chain");
     }
 
     @Test

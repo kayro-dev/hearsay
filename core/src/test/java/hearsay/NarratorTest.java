@@ -42,17 +42,17 @@ class NarratorTest {
     void aTellingShowsTheConfidenceItChanged() {
         assertEquals(
                 List.of("Day 1, midday: Mira tells Bo that diamonds are scarce (Bo: 0% → 42%)."),
-                primed().narrate(new RumorTold(2, 0, 1, 0, 0, 0.42)));
+                primed().narrate(new RumorTold(2, 0, 1, 0, 0, 0.42, new java.util.TreeSet<>(java.util.List.of(0, 1)))));
     }
 
     @Test
     void aSecondTellingStartsFromWhatTheListenerAlreadyBelieved() {
         Narrator narrator = primed();
-        narrator.narrate(new RumorTold(2, 0, 1, 0, 0, 0.42));
+        narrator.narrate(new RumorTold(2, 0, 1, 0, 0, 0.42, new java.util.TreeSet<>(java.util.List.of(0, 1))));
 
         assertEquals(
                 List.of("Day 1, midday: Mira tells Bo that diamonds are scarce (Bo: 42% → 70%)."),
-                narrator.narrate(new RumorTold(2, 0, 1, 0, 0, 0.70)));
+                narrator.narrate(new RumorTold(2, 0, 1, 0, 0, 0.70, new java.util.TreeSet<>(java.util.List.of(0, 1)))));
     }
 
     @Test
@@ -64,7 +64,7 @@ class NarratorTest {
         assertEquals(
                 List.of("Day 1, midday: Mira tells Bo that diamonds are very scarce (Bo: 0% → 42%).",
                         "Day 1, midday: …and it grew in the telling: diamonds are now very scarce."),
-                narrator.narrate(new RumorTold(2, 0, 1, 1, 1, 0.42)));
+                narrator.narrate(new RumorTold(2, 0, 1, 1, 1, 0.42, new java.util.TreeSet<>(java.util.List.of(0, 1)))));
     }
 
     @Test

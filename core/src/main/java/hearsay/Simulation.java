@@ -5,9 +5,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Decides what happens, then writes it down. {@link #record(Event)} is the single door
@@ -287,27 +289,43 @@ public final class Simulation {
             // cost the village half its meetings, which E23 measured and E24 fixes. No
             // shuffle, because every pair happens anyway and id order keeps it reproducible.
             for (List<Integer> neighbours : byNeighbourhood.values()) { // neighbourhood order
+                // Everybody there met everybody there...
                 for (int i = 0; i < neighbours.size(); i++) {
                     for (int j = i + 1; j < neighbours.size(); j++) {
-                        int a = neighbours.get(i);
-                        int b = neighbours.get(j);
-                        record(new VillagersMet(tick, a, b, spot));
-                        exchangeNews(tick, a, b);
+                        record(new VillagersMet(tick, neighbours.get(i), neighbours.get(j), spot));
                     }
                 }
+                // ...but they had one conversation, not three. E25: saying it once to the
+                // group is what lets the group know they all heard it once.
+                talkAmongstThemselves(tick, neighbours);
             }
         }
     }
 
     /** Both villagers get a turn to speak, the lower id first so the order never varies. */
     private void exchangeNews(long tick, int a, int b) {
-        int first = Math.min(a, b);
-        int second = Math.max(a, b);
-        maybeTell(tick, first, second);
-        maybeTell(tick, second, first);
+        talkAmongstThemselves(tick, List.of(Math.min(a, b), Math.max(a, b)));
     }
 
-    private void maybeTell(long tick, int tellerId, int listenerId) {
+    /**
+     * Everyone standing together gets one turn to speak, in id order, and what they say is
+     * heard by all the others at once.
+     *
+     * @param group who is standing there, in id order
+     */
+    private void talkAmongstThemselves(long tick, List<Integer> group) {
+        for (int tellerId : group) {
+            maybeTell(tick, tellerId, group);
+        }
+    }
+
+    /**
+     * One villager says their piece to everyone standing with them. It is a single
+     * utterance: one decision to speak, one chance for the rumor to grow, and one set of
+     * witnesses, however many people were listening. Telling three people separately would
+     * hand each of them three independent-looking sources for what was actually said once.
+     */
+    private void maybeTell(long tick, int tellerId, List<Integer> group) {
         Villager teller = state.villager(tellerId);
         Belief toTell = teller.strongestBeliefWorthTelling(params.tellThreshold());
         if (toTell == null) {
@@ -320,12 +338,18 @@ public final class Simulation {
 
         int toldRumorId = growInTheTelling(tick, toTell.rumorId());
         Claim claim = state.rumor(toldRumorId).claim();
-        Villager listener = state.villager(listenerId);
-        Belief held = listener.belief(claim);
-        double heard = confidenceAfterHearing(listener, claim, toTell, tellerId);
+        NavigableSet<Integer> witnesses = new TreeSet<>(group);
+        for (int listenerId : group) { // id order
+            if (listenerId == tellerId) {
+                continue;
+            }
+            Villager listener = state.villager(listenerId);
+            Belief held = listener.belief(claim);
+            double heard = confidenceAfterHearing(listener, claim, toTell, tellerId);
 
-        record(new RumorTold(tick, tellerId, listenerId, toldRumorId,
-                worseOf(held, toldRumorId), heard));
+            record(new RumorTold(tick, tellerId, listenerId, toldRumorId,
+                    worseOf(held, toldRumorId), heard, witnesses));
+        }
     }
 
     /**

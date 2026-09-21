@@ -110,7 +110,8 @@ public final class WorldState {
 
     /**
      * The history the listener's belief now carries: everywhere the teller's belief had
-     * been, plus the teller. The listener is dropped, so nobody sits in their own chain.
+     * been, plus the teller and everyone else who heard it said. The listener is dropped,
+     * so nobody sits in their own chain.
      */
     private NavigableSet<Integer> chainAfter(RumorTold told, Claim claim) {
         NavigableSet<Integer> chain = new TreeSet<>();
@@ -119,6 +120,10 @@ public final class WorldState {
             chain.addAll(tellerBelief.chain());
         }
         chain.add(told.tellerId());
+        // Everyone who heard it said. A villager who was standing there when this was
+        // told is not an independent source for it afterwards, however sincerely they
+        // repeat it later.
+        chain.addAll(told.witnesses());
         chain.remove(told.listenerId());
         return chain;
     }
