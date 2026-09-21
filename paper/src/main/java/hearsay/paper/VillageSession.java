@@ -161,7 +161,8 @@ final class VillageSession {
 
         int eventsBefore = simulation.log().size();
         simulation.step();
-        return Telling.from(simulation.log().subList(eventsBefore, simulation.log().size()));
+        return Telling.from(simulation.log().subList(eventsBefore, simulation.log().size()),
+                simulation.state());
     }
 
     /** Notes where everybody was standing, for sweeping the mapping afterwards. */
@@ -173,6 +174,14 @@ final class VillageSession {
     void plantRumorIn(int villagerId, ClaimType type) {
         simulation.schedule(new PlantRumor(simulation.state().tick() + 1,
                 new Claim(Simulation.DIAMOND, type), 1, villagerId));
+    }
+
+    /** What each bound villager would charge, as a price index, for the text above them. */
+    Map<Integer, Integer> asks() {
+        Map<Integer, Integer> asks = new LinkedHashMap<>();
+        simulation.state().villagers().forEach((id, villager) ->
+                asks.put(id, (int) Math.round(simulation.askingPrice(villager))));
+        return asks;
     }
 
     /** What each bound villager makes of the claim, for the text above their head. */

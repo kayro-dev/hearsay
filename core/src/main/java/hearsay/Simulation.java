@@ -443,7 +443,12 @@ public final class Simulation {
      * that half-sure of the worst version and certain of the mildest saturate at the same
      * ask.
      */
-    double askingPrice(Villager villager) {
+    /**
+     * What this villager would charge, given what they believe. Public so the plugin can
+     * float it above their head: a villager's own asking price is the most honest thing to
+     * show about them, and it is the number their belief actually feeds into.
+     */
+    public double askingPrice(Villager villager) {
         double scarcityBelief = strengthOf(villager, ClaimType.SCARCE)
                 - strengthOf(villager, ClaimType.ABUNDANT);
         double clamped = Math.max(-1, Math.min(1, scarcityBelief));

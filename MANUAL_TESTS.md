@@ -44,7 +44,15 @@ disagree, the village is dying.
 | 5c | `/hearsay who` | The bound villagers listed most talkative first, with a percentage, how far away each is, and which way to walk. Up to three of the talkers are outlined in the world for 30 seconds |
 | 5d | Look at the village | Every bound villager has their name and gossip percentage above their head, green at 60% or more. The name matches the list from 5c |
 | 5e | Walk to a glowing villager | The glow fades after about 30 seconds. Running `/hearsay who` again lights them up once more |
+| 5f | Look at the boss bar before any lie | `Diamonds  · 0%  normal · index 100`, white. The change leads, the index follows in grey |
+| 5g | Look at any villager's name plate | A second line with what they would charge, as a change: `· 0%  100` while nobody believes anything |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
+| 6a | Plant a rumour, then wait a tick | The villager you told is outlined **warm orange**. Villagers who have merely heard it are outlined **grey**. Everyone else has no outline at all |
+| 6b | Watch a whisper happen | A trail of **flame** particles from teller to listener for about a second, and a chime. Warm particles for scarcity; a rumour that diamonds are *abundant* draws **soul fire** in cool blue with a lower chime |
+| 6c | Watch someone cross into believing | A `❗` in the panic red appears above them for one tick, with a higher chime. It appears once per villager, not on every repetition |
+| 6d | Let the price climb past 130 | The boss bar turns red and reads `▲ +30%` or more. Villagers who believe it show a warm change above their heads; villagers who do not still read `· 0%` |
+| 6e | Let a bubble deflate past 85 | The bar turns **blue** and reads `▼ -15%` or worse. Rising is never green and falling is never red: see VISUAL_LANGUAGE.md |
+| 6f | `/hearsay stop` | Every outline goes out, every name plate and mark disappears, and no villager is left glowing |
 | 7 | Wait one tick (10s) | **Gold** text above that villager: `Diamonds scarce? 100%`. Gold because they are certain — you told them. Grey is for villagers who have merely heard it from someone else |
 | 8 | Watch that villager walk | The label stays over their head as they move, with no lag and without being left behind at a workstation |
 | 9 | Break their workstation so they wander | The label follows, and the villager still walks about normally — the label rides them, so watch that it has not affected their behaviour |

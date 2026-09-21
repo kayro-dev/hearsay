@@ -45,8 +45,10 @@ public final class DashboardPage {
            .append("</p>");
 
         out.append("<section class=\"facts\">");
-        fact(out, "Peak price, with the lie", String.valueOf(withLie.peakPrice()));
-        fact(out, "Peak price, without it", String.valueOf(withoutLie.peakPrice()));
+        // The change leads and the index follows: 138 says nothing until you have worked
+        // out that it means 38% dear, and the whole index is built so 100 is normal.
+        priceFact(out, "Peak, with the lie", withLie.peakPrice(), params.basePrice());
+        priceFact(out, "Peak, without it", withoutLie.peakPrice(), params.basePrice());
         fact(out, "Bubbles", withLie.bubbles().size() + " / " + withoutLie.bubbles().size());
         fact(out, "Busts", withLie.busts().size() + " / " + withoutLie.busts().size());
         fact(out, "Held the rumour", peakHolders(withLie) + " of " + params.villagers());
@@ -83,7 +85,7 @@ public final class DashboardPage {
         }
         if (gap > 0) {
             return "The lie raised the peak price by " + gap
-                    + ", but not far enough to count as a bubble.";
+                    + " points, but not far enough to count as a bubble.";
         }
         return "The lie changed nothing the market noticed.";
     }
@@ -94,6 +96,14 @@ public final class DashboardPage {
             peak = Math.max(peak, day.heard());
         }
         return peak;
+    }
+
+    private static void priceFact(StringBuilder out, String label, int price, int basePrice) {
+        PriceMood mood = PriceMood.of(price, basePrice);
+        out.append("<div class=\"fact\"><span class=\"n\" style=\"color:").append(mood.hex())
+           .append("\">").append(PriceMood.describe(price, basePrice))
+           .append("</span><span class=\"l\">").append(label).append(" · index ").append(price)
+           .append("</span></div>");
     }
 
     private static void fact(StringBuilder out, String label, String value) {
@@ -109,9 +119,11 @@ public final class DashboardPage {
         int days = Math.max(Math.max(lied.size(), quiet.size()), 2);
 
         StringBuilder svg = new StringBuilder(open());
-        svg.append(guide(basePrice, lowest, highest, "base " + basePrice));
-        svg.append(guide(Bubble.PEAK_ABOVE, lowest, highest, "bubble " + Bubble.PEAK_ABOVE));
-        svg.append(guide(Bubble.TROUGH_BELOW, lowest, highest, "bust " + Bubble.TROUGH_BELOW));
+        svg.append(guide(basePrice, lowest, highest, "normal"));
+        svg.append(guide(Bubble.PEAK_ABOVE, lowest, highest,
+                "bubble " + PriceMood.describe(Bubble.PEAK_ABOVE, basePrice)));
+        svg.append(guide(Bubble.TROUGH_BELOW, lowest, highest,
+                "bust " + PriceMood.describe(Bubble.TROUGH_BELOW, basePrice)));
         svg.append(path(quiet, days, lowest, highest, "quiet"));
         svg.append(path(lied, days, lowest, highest, "lied"));
         svg.append(axis(days));

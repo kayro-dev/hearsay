@@ -56,6 +56,9 @@ public final class HearsayPlugin extends JavaPlugin {
     /** How far away a whisper still puts a line on your action bar. */
     private static final double WHISPER_VISIBLE_RANGE = 48.0;
 
+    /** The confidence at which a villager counts as believing it, per VISUAL_LANGUAGE.md. */
+    private static final double BELIEVES = 0.5;
+
     /** The gossip level worth walking across the village for. */
     private static final double TALKATIVE = 0.6;
 
@@ -73,6 +76,9 @@ public final class HearsayPlugin extends JavaPlugin {
     private UUID watcher;
     private World world;
     private boolean showingSpots;
+
+    /** Villagers /hearsay who is outlining in green, which the belief glow must not fight. */
+    private final java.util.Set<UUID> lit = new java.util.LinkedHashSet<>();
 
     /** How many bound villagers were still alive last tick, to notice when one is not. */
     private int lastSeenAlive;
@@ -200,6 +206,9 @@ public final class HearsayPlugin extends JavaPlugin {
         });
 
         session.survey(session.tick() + 1, bodies);
+        // Kept from before the tick so a villager crossing into believing can be told from
+        // one who already did. The mark is for the moment it took, not for every repetition.
+        Map<Integer, Double> before = new LinkedHashMap<>(session.confidences());
         List<Telling> tellings = session.advance(positions, spots);
 
         Map<Integer, String> names = new LinkedHashMap<>();
@@ -209,16 +218,34 @@ public final class HearsayPlugin extends JavaPlugin {
             gossip.put(id, session.gossipOf(id));
         });
         displays.showBeliefs(world, bodies, names, gossip, session.confidences(),
+                session.asks(), Params.defaults().basePrice(),
                 showingSpots ? spots : Map.of());
+        displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
+                bodies, session.confidences(), lit);
+        displays.fadeMarks(world);
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
         for (Telling telling : tellings) {
             Villager teller = bodies.get(telling.tellerId());
             Villager listener = bodies.get(telling.listenerId());
+            boolean tookHold = telling.newConfidence() >= BELIEVES
+                    && before.getOrDefault(telling.listenerId(), 0.0) < BELIEVES;
             if (teller == null || listener == null) {
                 continue;
             }
             announceWhisper(telling, teller, listener);
+
+            if (tookHold) {
+                // The moment the rumour took, marked once. Every repetition after this one
+                // leaves no mark, or the village would be covered in them.
+                displays.markBelief(world, listener.getLocation(), telling.type());
+                Player watching = watcher == null ? null : getServer().getPlayer(watcher);
+                if (watching != null && watching.getWorld().equals(world)
+                        && watching.getLocation().distance(listener.getLocation())
+                                < WHISPER_VISIBLE_RANGE) {
+                    displays.playBeliefTaking(watching, listener.getLocation());
+                }
+            }
         }
     }
 
@@ -235,7 +262,7 @@ public final class HearsayPlugin extends JavaPlugin {
         if (player != null && player.getWorld().equals(world)
                 && player.getLocation().distance(teller.getLocation()) < WHISPER_VISIBLE_RANGE) {
             displays.tell(player, Component.text(said, NamedTextColor.GRAY));
-            displays.playWhisper(player, teller.getLocation());
+            displays.playWhisper(player, teller.getLocation(), telling.type());
         }
 
         new BukkitRunnable() {
@@ -247,12 +274,26 @@ public final class HearsayPlugin extends JavaPlugin {
                     cancel();
                     return;
                 }
-                displays.showWhisperFrame(world, teller.getLocation(), listener.getLocation());
+                displays.showWhisperFrame(world, teller.getLocation(),
+                        listener.getLocation(), telling.type());
                 if (++frame >= WHISPER_FRAMES) {
                     cancel();
                 }
             }
         }.runTaskTimer(this, 0L, WHISPER_FRAME_GAP);
+    }
+
+    /** Puts every bound villager back to normal, so stopping leaves no outlines behind. */
+    private void stopGlowing() {
+        if (session == null || world == null) {
+            return;
+        }
+        session.bodies().values().forEach(id -> {
+            if (world.getEntity(id) instanceof Villager villager) {
+                villager.setGlowing(false);
+            }
+        });
+        lit.clear();
     }
 
     /**
@@ -348,6 +389,8 @@ public final class HearsayPlugin extends JavaPlugin {
                 : "Spots hidden.", NamedTextColor.AQUA));
         if (session != null && world != null && !showingSpots) {
             displays.removeEverything(world);
+            displays.forgetTeams(getServer().getScoreboardManager().getMainScoreboard());
+            stopGlowing();
         }
     }
 
@@ -413,11 +456,16 @@ public final class HearsayPlugin extends JavaPlugin {
                     + "planted in this village will struggle.", NamedTextColor.YELLOW));
             return;
         }
-        displays.highlight(toLight);
+        displays.highlight(getServer().getScoreboardManager().getMainScoreboard(), toLight);
+        toLight.forEach(body -> lit.add(body.getUniqueId()));
         // Lit for a while rather than for good: a village permanently outlined stops
         // telling the player anything, and the glow is meant to answer one question once.
         getServer().getScheduler().runTaskLater(this,
-                () -> displays.stopHighlighting(toLight), 20L * GLOW_SECONDS);
+                () -> {
+                    displays.stopHighlighting(
+                            getServer().getScoreboardManager().getMainScoreboard(), toLight);
+                    toLight.forEach(body -> lit.remove(body.getUniqueId()));
+                }, 20L * GLOW_SECONDS);
     }
 
     private static String bearingFrom(Location from, Location to) {
@@ -486,6 +534,8 @@ public final class HearsayPlugin extends JavaPlugin {
         }
         if (displays != null && world != null) {
             displays.removeEverything(world);
+            displays.forgetTeams(getServer().getScoreboardManager().getMainScoreboard());
+            stopGlowing();
         }
         session = null;
         displays = null;
