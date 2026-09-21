@@ -134,6 +134,13 @@ final class VillageSession {
     List<Telling> advance(Map<Integer, Location> positions, Map<Integer, Spot> spots) {
         long nextTick = simulation.state().tick() + 1;
 
+        // Everything sold at each counter since the last tick, as one sale apiece.
+        pendingSales.forEach((villagerId, running) -> simulation.schedule(new PlayerTraded(
+                nextTick, villagerId, running[0], running[1],
+                pendingWatchers.getOrDefault(villagerId, new java.util.TreeSet<>()))));
+        pendingSales.clear();
+        pendingWatchers.clear();
+
         // Where everybody is, every tick, whether or not they are talking to anyone. The
         // market is then something measured rather than guessed at from who happened to be
         // gossiping in it. Only the changes reach the log.
@@ -174,17 +181,44 @@ final class VillageSession {
     }
 
     /**
+     * Sales waiting to be reported, by the villager who took them.
+     *
+     * <p>Shift-clicking a trade fires one event per item, so selling a dozen diamonds
+     * arrives as a dozen separate sales of one. E34 found that this is not merely untidy:
+     * the sight of goods saturates, so a stack sold one at a time applies the saturating
+     * weight sixty-four times over and convinces about three times as much as the same
+     * stack sold at once. That is backwards — one large sale is the stronger sight.
+     *
+     * <p>So they are gathered here and reported as what they were: one sale, of everything
+     * that crossed that counter before the tick came round, seen by everyone who saw any
+     * part of it.
+     */
+    private final Map<Integer, int[]> pendingSales = new LinkedHashMap<>();
+    private final Map<Integer, java.util.NavigableSet<Integer>> pendingWatchers =
+            new LinkedHashMap<>();
+
+    /**
      * Records that somebody sold a villager diamonds, in front of whoever was near enough.
      *
-     * <p>Scheduled for the tick that has not happened yet, exactly as planting a rumour is,
-     * so an input never arrives in the middle of one being worked out.
+     * <p>Held until the tick comes round rather than scheduled at once, so a burst of
+     * clicks at one counter becomes one sale. Inputs still land on a tick boundary, exactly
+     * as planting a rumour does.
      *
      * @param witnesses simulation ids of everyone who saw it, the trader included
      */
     void recordTrade(int villagerId, int count, int emeralds,
                      java.util.NavigableSet<Integer> witnesses) {
-        simulation.schedule(new PlayerTraded(simulation.state().tick() + 1,
-                villagerId, count, emeralds, witnesses));
+        int[] running = pendingSales.computeIfAbsent(villagerId, id -> new int[2]);
+        running[0] += count;
+        running[1] += emeralds;
+        pendingWatchers.computeIfAbsent(villagerId, id -> new java.util.TreeSet<>())
+                .addAll(witnesses);
+    }
+
+    /** How much has been sold at this counter since the last tick, for telling the player. */
+    int soldSoFar(int villagerId) {
+        int[] running = pendingSales.get(villagerId);
+        return running == null ? 0 : running[0];
     }
 
     /** Who in this village answers to what. Reads the world; changes nothing. */

@@ -436,86 +436,107 @@ pocket.
 
 ---
 
-## Stage 4 — something true to be wrong about — *third*
+## Stage 4 — something true to be wrong about — *next, designed below*
 
-E32 measured what E31 only suggested: the swings grow by about 5% each, and the village
-never settles. The cause is structural rather than a setting. **Every piece of evidence a
-villager can have is either gossip or the price, and both are made of belief.** A rumour can
-only be contradicted by another rumour; a price cannot be wrong, because the price is
-whatever the village thinks it should be. A loop with no external reference has nothing to
-converge on, so it wanders until something stops it, and nothing does.
+E32 measured that the swings grow by about 5% each and the village never settles. E33 and
+E34 then established *why* the obvious fix does not work, which is what this design is built
+on.
 
-The concept doc's **reality checks** are the damping mechanism, and stage 3 is what makes
-them possible: once trades are real, the village has a true supply for the first time, and a
-belief about scarcity can be **wrong** rather than merely unpopular.
+### What E34 proved, and it changes the mechanism
 
-**The shape of it.** A villager who believes diamonds are scarce, and who then sees diamonds
-— in a chest they have access to, in a trade another villager is offering, in what the
-player hands them — has met evidence that does not come from anybody's opinion. That
-evidence moves confidence the way a telling does, through the same combining rule, with one
-difference that matters: **it is not a rumour and starts no family.** Nothing can be
-exaggerated in the retelling of it, because it was not told.
+A player selling into a panic moved the peak by six points in the right direction and moved
+the decay from 1.72 to 1.64 — real, and nowhere near 1. The reason is one figure: across ten
+sales, **the biggest single jump in anyone's belief in plenty was 0.004.** Four thousandths.
 
-**What changes in core.**
-- A new input, `RealityChecked(tick, villagerId, item, sawHowMany)`, alongside `PlayerTraded`.
-  An input rather than a derived event, because the world outside the simulation is what
-  produced it.
-- Confidence combines as it does today, with the source being the world rather than a
-  villager. It belongs in no chain, and so is never a repeat — but for the opposite reason
-  the market is never a repeat: the market is everyone's opinion at once, and this is
-  nobody's.
-- **Asymmetry worth deciding before building.** Seeing plenty of a thing believed scarce
-  should weigh more than seeing a little of a thing believed plentiful, because absence is
-  weak evidence and presence is strong. That is a parameter and it must be swept, not
-  guessed.
+The fault is not the weight. Turning it up is what E33 swept, and past a witness weight of
+0.14 a village nobody lied to starts bursting — the player becomes able to start a panic
+without telling a lie, which is worse than the problem.
 
-**Determinism and replay.** Preserved by the same argument as stage 3. What a villager saw
-is an input, recorded in the recipe, so a session replays exactly. It also makes a third
-counterfactual available: **what would this village have believed if it had never looked?**
+**The fault is the shape of the rule.** Every piece of evidence in this model *adds*:
 
-**Old recipes.** Keep loading; they contain no checks. Format version 7.
+```
+new = 1 − (1 − old) × (1 − weight)
+```
 
-**Success test, and it is the point of doing this at all.** E32's four numbers are the
-baseline. Stage 4 works if, on a village of the same size with the same single lie:
+That only ever pushes confidence upward, and decay only ever pulls it down. A price made of
+nothing but shoves and fading has no level to come to rest at, which is exactly what "decay
+above 1, never settles" is describing. **A sale is an event. Events shove. Nothing converges
+under shoving.**
 
-| | E31 baseline | stage 4 must reach |
+### The mechanism: belief is pulled toward what can be seen
+
+A reality check is not another shove. It is an **anchor**, and it works by attraction:
+
+```
+new = old + checkWeight × (whatTheStockImplies − old)
+```
+
+Confidence moves a *fraction of the way toward* the truth rather than a step away from where
+it was. That is a contraction: repeated checks converge on the implied value instead of
+wandering, and the distance from it shrinks geometrically. **This is the only rule in the
+model that can bring a swing down, because it is the only one that knows where down is.**
+
+A villager who believes diamonds are gone and can see two hundred of them does not merely
+gain some belief in plenty — their belief in scarcity is *drawn toward* what is in front of
+them. A villager who believes it and sees an empty village stays where they are.
+
+### What the villager is actually looking at
+
+**The village's visible stock**: diamonds in containers inside the marked market region,
+counted by the plugin. A standing fact, still there tomorrow, unlike a sale.
+
+| | |
+| --- | --- |
+| **Who checks** | villagers standing in the market region, which stage 1 already defines |
+| **How often** | once a day, at `DayEnded`, beside the fading that already happens then |
+| **What they see** | how many diamonds are in reach, as a count |
+| **What it implies** | plenty above a threshold, scarcity below it, in proportion between |
+| **New input** | `RealityChecked(tick, villagerId, item, sawHowMany)` |
+
+A player who wants to calm a village stocks a chest by the market and leaves it there. A
+player who wants to start a panic empties one. **Both are things you do to the world rather
+than things you say**, which is the distinction the project has been missing.
+
+### What changes in core
+
+- `RealityChecked` as an input, recorded in the recipe, so replay is exact and a third
+  counterfactual becomes available: *what would they have believed if they had never looked?*
+- One new rule in `Simulation`, the attracting one above. It does not replace the evidence
+  rule; tellings still shove, and that is right, because a rumour is not a measurement.
+- Two parameters: `checkWeight` — how far toward the truth one look moves you — and how much
+  stock reads as plenty. Both swept before adoption, against the quiet-village guarantee.
+- **Asymmetry to decide by sweep, not by guess.** Seeing plenty where scarcity was believed
+  should probably weigh more than seeing little where plenty was believed, because absence
+  is weak evidence and presence is strong. That is a parameter and it must be measured.
+
+### Determinism, old recipes, experiments
+
+Replay is preserved by the same argument as trades: what a villager saw is an input, written
+into the recipe. Old recipes keep loading and contain no checks; format version 7.
+
+**All of the calibration re-runs**, because this changes how belief moves: the burst band,
+the quiet-village rate, E29's gossip share. That is the cost of the only mechanism that can
+damp anything, and it is why it is worth doing once, properly, rather than tuning around.
+
+### The test it has to pass
+
+E32's baseline, on a village of the same size with the same single lie:
+
+| | baseline | stage 4 must reach |
 | --- | --- | --- |
-| swing decay | **1.05** | **below 1**, and convincingly — say 0.85 or lower |
-| settled within 10% | **never** | **some day before the run ends** |
-| biggest swing | 112% | no requirement; a first panic may be as large as it likes |
-| bubbles caused by the lie | 5 against 0 | **unchanged** — damping must not cost the claim |
+| swing decay | **1.05** (E32), 1.64 with selling (E34) | **below 1**, convincingly — 0.85 or lower |
+| settles within 10% | **never** | **before the run ends** |
+| lie-caused bubbles | **5 against 0** | **unchanged** |
+| quiet villages bursting | 0.33% | **unchanged** |
 
-That last row is the trap. A mechanism that damps the oscillation by making villagers hard
-to convince would pass the first two rows and destroy the project: the quiet-village
-guarantee and the paired-worlds separation must hold exactly as they do now. **Damping the
-swing is not the same as muting the village**, and only running both sets of measures
-together can tell them apart.
+The last two rows are the trap. A mechanism that damps by making villagers hard to convince
+would pass the first two and destroy the project. **Damping the swing is not muting the
+village**, and only running the oscillation measures beside the paired-worlds separation can
+tell them apart.
 
-**What stage 3 already told us, and it was worth asking early.** E33 swept witnessed
-selling and found that **it does not damp anything**: decay sits at 1.19 to 1.44 against
-E32's 1.05 with no trading at all. Selling into a panic makes the swings *bigger*, because
-it is one more shock arriving from outside rather than a force pulling the price back.
-
-So this stage begins knowing that **a single narrow channel of truth is not enough**, and
-knowing why. Seeing one player's diamonds tells a villager something about that player, not
-about the world. It is evidence that arrives and then stops, so there is nothing for the
-price to converge on.
-
-**That changes what stage 4 has to be.** A reality check cannot be a series of events, the
-way a sale is. It has to be **a standing fact about supply** — how many diamonds are in the
-village, visible to a villager who looks — so that belief is measured against something that
-is still there tomorrow. A villager who remembers a sale is holding another rumour, told by
-the world. A villager who can look in the chest is holding a fact.
-
-**Experiments to re-run.** All of the calibration, because this changes how belief moves.
-`CalibrationTest`'s band, the quiet-village rate, and E29's gossip share would all need
-re-deriving on a village that can now be contradicted by the world.
-
-**The purse, held over from stage 3.** A finite pool of emeralds the village can pay out is
-a damping mechanism in its own right, and was deliberately kept out of stage 3 so it could
-not confound this stage's measurement. It is the next thing to try if reality checks do not
-bring decay under 1 on their own, and it is testable on its own terms precisely because it
-was kept out of the way.
+**If it fails**, the village purse is the next damper — a finite pool of emeralds that empties
+as the village buys — held back from stage 3 precisely so it could be measured on its own
+rather than confounding this.
 
 ## What this does to the project's claim
 

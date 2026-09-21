@@ -491,10 +491,14 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         int emeralds = event.getTrade().getResult().getAmount();
         session.recordTrade(trader, diamonds, emeralds, watching);
 
+        // The running total at this counter, not this one click: shift-clicking fires the
+        // event once per item, and telling the player "1 diamond" a dozen times over would
+        // describe the transaction they are actually making rather poorly.
+        int soFar = session.soldSoFar(trader);
         event.getPlayer().sendActionBar(Component.text(
-                session.nameOf(trader) + " takes " + diamonds + " diamond"
-                        + (diamonds == 1 ? "" : "s") + " for " + emeralds + " emeralds. "
-                        + watching.size() + " saw it.", NamedTextColor.AQUA));
+                session.nameOf(trader) + " takes " + soFar + " diamond"
+                        + (soFar == 1 ? "" : "s") + ". " + watching.size() + " watching.",
+                NamedTextColor.AQUA));
     }
 
     /**
