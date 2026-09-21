@@ -1,5 +1,6 @@
 package hearsay.paper;
 
+import hearsay.Bearing;
 import hearsay.Bubble;
 import hearsay.ClaimType;
 import hearsay.Params;
@@ -54,6 +55,13 @@ public final class HearsayPlugin extends JavaPlugin {
 
     /** How far away a whisper still puts a line on your action bar. */
     private static final double WHISPER_VISIBLE_RANGE = 48.0;
+
+    /** The gossip level worth walking across the village for. */
+    private static final double TALKATIVE = 0.6;
+
+    /** How many talkers to outline at once, and for how long. */
+    private static final int MOST_TO_LIGHT = 3;
+    private static final long GLOW_SECONDS = 30;
 
     /** A whisper is drawn this many times, this many game ticks apart: about a second. */
     private static final int WHISPER_FRAMES = 8;
@@ -194,7 +202,13 @@ public final class HearsayPlugin extends JavaPlugin {
         session.survey(session.tick() + 1, bodies);
         List<Telling> tellings = session.advance(positions, spots);
 
-        displays.showBeliefs(world, bodies, session.confidences(),
+        Map<Integer, String> names = new LinkedHashMap<>();
+        Map<Integer, Double> gossip = new LinkedHashMap<>();
+        bodies.keySet().forEach(id -> {
+            names.put(id, session.nameOf(id));
+            gossip.put(id, session.gossipOf(id));
+        });
+        displays.showBeliefs(world, bodies, names, gossip, session.confidences(),
                 showingSpots ? spots : Map.of());
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
@@ -301,8 +315,8 @@ public final class HearsayPlugin extends JavaPlugin {
         // no way to tell one from another by looking.
         player.sendMessage(Component.text(session.nameOf(nearest) + " is "
                 + describeTalker(gossip) + " (gossip " + Math.round(gossip * 100) + "%).",
-                gossip >= 0.6 ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
-        if (gossip < 0.6) {
+                gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+        if (gossip < TALKATIVE) {
             player.sendMessage(Component.text("A quieter villager than you want. "
                     + "/hearsay who lists the talkers.", NamedTextColor.YELLOW));
         }
@@ -377,17 +391,37 @@ public final class HearsayPlugin extends JavaPlugin {
         List<Integer> byTalkativeness = new ArrayList<>(session.bodies().keySet());
         byTalkativeness.sort((a, b) -> Double.compare(session.gossipOf(b), session.gossipOf(a)));
 
-        player.sendMessage(Component.text("Who talks, most first. Stand by one and "
-                + "/hearsay rumor diamonds scarce.", NamedTextColor.AQUA));
+        player.sendMessage(Component.text("Who talks, most first. The glowing ones are worth "
+                + "walking to; their names are above their heads.", NamedTextColor.AQUA));
+        List<Villager> toLight = new ArrayList<>();
         for (int id : byTalkativeness) {
             double gossip = session.gossipOf(id);
             Villager body = here.get(id);
-            String where = body == null ? " (gone)" : " " + (int) body.getLocation().distance(
-                    player.getLocation()) + " blocks away";
+            String where = body == null ? " (gone)"
+                    : " " + (int) body.getLocation().distance(player.getLocation())
+                            + " blocks " + bearingFrom(player.getLocation(), body.getLocation());
             player.sendMessage(Component.text("  " + session.nameOf(id) + "  "
                     + Math.round(gossip * 100) + "%  " + describeTalker(gossip) + where,
-                    gossip >= 0.6 ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+                    gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+            if (body != null && gossip >= TALKATIVE && toLight.size() < MOST_TO_LIGHT) {
+                toLight.add(body);
+            }
         }
+
+        if (toLight.isEmpty()) {
+            player.sendMessage(Component.text("Nobody here is much of a talker. A rumor "
+                    + "planted in this village will struggle.", NamedTextColor.YELLOW));
+            return;
+        }
+        displays.highlight(toLight);
+        // Lit for a while rather than for good: a village permanently outlined stops
+        // telling the player anything, and the glow is meant to answer one question once.
+        getServer().getScheduler().runTaskLater(this,
+                () -> displays.stopHighlighting(toLight), 20L * GLOW_SECONDS);
+    }
+
+    private static String bearingFrom(Location from, Location to) {
+        return Bearing.of(to.getX() - from.getX(), to.getZ() - from.getZ());
     }
 
     private void status(Player player) {

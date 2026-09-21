@@ -41,7 +41,9 @@ disagree, the village is dying.
 | 4 | `/hearsay start` again | Refuses, telling you to stop first |
 | 5 | Watch for a minute | A price bar reading "Diamonds: no market yet"; no text above any head yet, because nobody has heard anything |
 | 5b | Keep watching | The bar shows a price once enough villagers have been seen meeting — a few ticks. It waits on positions, not on beliefs, so it can stay empty while a rumor is already spreading |
-| 5c | `/hearsay who` | The bound villagers listed most talkative first, with a percentage and how far away each is. Walk to one near the top |
+| 5c | `/hearsay who` | The bound villagers listed most talkative first, with a percentage, how far away each is, and which way to walk. Up to three of the talkers are outlined in the world for 30 seconds |
+| 5d | Look at the village | Every bound villager has their name and gossip percentage above their head, green at 60% or more. The name matches the list from 5c |
+| 5e | Walk to a glowing villager | The glow fades after about 30 seconds. Running `/hearsay who` again lights them up once more |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
 | 7 | Wait one tick (10s) | **Gold** text above that villager: `Diamonds scarce? 100%`. Gold because they are certain — you told them. Grey is for villagers who have merely heard it from someone else |
 | 8 | Watch that villager walk | The label stays over their head as they move, with no lag and without being left behind at a workstation |

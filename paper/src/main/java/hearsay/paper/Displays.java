@@ -19,6 +19,7 @@ import org.bukkit.entity.Villager;
 import org.bukkit.util.Transformation;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +32,9 @@ final class Displays {
 
     /** Confidence at or above which a villager is shown as believing rather than informed. */
     private static final double BELIEVES = 0.5;
+
+    /** The gossip level worth walking across the village for. Matches the plugin's advice. */
+    private static final double TALKATIVE = 0.6;
 
     /** How high above the villager's own position the label rides. */
     private static final float LABEL_HEIGHT = 0.9f;
@@ -74,32 +78,44 @@ final class Displays {
      * each tick trailed well behind anyone walking, and stayed where a villager had been
      * standing when they moved on.
      *
-     * <p>A villager who has not heard anything is left alone: an empty label above every
-     * head would say nothing and hide the village.
+     * <p>Every villager is named, whether or not they have heard anything. Until a
+     * villager's name was written above them there was no way to tell which of them
+     * {@code /hearsay who} was talking about, and the choice of who to lie to is worth
+     * about a third of whether a rumor takes hold (E8, E27). A name nobody can match to a
+     * body is not a name.
      */
-    void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, Double> confidences,
+    void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, String> names,
+                     Map<Integer, Double> gossip, Map<Integer, Double> confidences,
                      Map<Integer, Spot> spotsToShow) {
         bodies.forEach((id, body) -> {
-            Double confidence = confidences.get(id);
-            Spot spot = spotsToShow.get(id);
-            if ((confidence == null && spot == null) || !body.isValid()) {
+            if (!body.isValid()) {
                 removeLabel(world, id);
                 return;
             }
-            labelFor(world, id, body).text(labelText(confidence, spot));
+            labelFor(world, id, body).text(labelText(
+                    names.get(id), gossip.get(id), confidences.get(id), spotsToShow.get(id)));
         });
     }
 
-    /** The spot when it was asked for, the belief when there is one, or both. */
-    private static Component labelText(Double confidence, Spot spot) {
-        Component belief = confidence == null ? Component.empty()
-                : Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
-                        .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY);
-        if (spot == null) {
-            return belief;
+    /** Who they are, then where they are if it was asked for, then what they believe. */
+    private static Component labelText(String name, Double gossip, Double confidence, Spot spot) {
+        Component label = Component.text(name == null ? "?" : name,
+                gossip != null && gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.WHITE);
+        if (gossip != null) {
+            label = label.append(Component.text(
+                    " " + Math.round(gossip * 100) + "%",
+                    gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.GRAY));
         }
-        Component where = Component.text(spot.name(), NamedTextColor.AQUA);
-        return confidence == null ? where : where.append(Component.newline()).append(belief);
+        if (spot != null) {
+            label = label.append(Component.newline())
+                    .append(Component.text(spot.name(), NamedTextColor.AQUA));
+        }
+        if (confidence != null) {
+            label = label.append(Component.newline()).append(
+                    Component.text("Diamonds scarce? " + Math.round(confidence * 100) + "%")
+                            .color(confidence >= BELIEVES ? NamedTextColor.GOLD : NamedTextColor.GRAY));
+        }
+        return label;
     }
 
     /**
@@ -134,6 +150,23 @@ final class Displays {
      */
     void playWhisper(Player player, Location where) {
         player.playSound(where, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.MASTER, 1.0f, 1.4f);
+    }
+
+    /** Outlines these villagers through walls, so a name in a list becomes a body to walk to. */
+    void highlight(Collection<Villager> bodies) {
+        for (Villager body : bodies) {
+            if (body.isValid()) {
+                body.setGlowing(true);
+            }
+        }
+    }
+
+    void stopHighlighting(Collection<Villager> bodies) {
+        for (Villager body : bodies) {
+            if (body.isValid()) {
+                body.setGlowing(false);
+            }
+        }
     }
 
     void removeEverything(World world) {
