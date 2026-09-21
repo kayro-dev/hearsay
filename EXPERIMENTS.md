@@ -2352,3 +2352,74 @@ sale has another rumour, told by the world.
 **Decision.** `tradeWeight` 0.28 and `witnessWeight` 0.14 adopted, the highest pair that
 leaves the quiet-village rate untouched. Nothing else changed; no headless experiment needed
 re-running, since a headless run has no player in it.
+
+---
+
+## E34 — Selling into a panic, played rather than swept
+
+21 villagers, 34 ticks, two lies at ticks 9 and 11, and ten sales at six different counters
+with between 1 and 14 villagers watching each. The first session in which a player sold
+into a panic they had started.
+
+### Who moved the price
+
+| timeline | peak |
+| --- | --- |
+| as played — the lies and the sales | **162** |
+| **the sales alone**, on a village nobody lied to | **105** |
+| the lies alone, on a village nobody sold to | 168 |
+| neither | 105 |
+
+**The lie contributed +57. The selling contributed −6.** Reported separately, because the
+two are measured against different timelines and neither may take credit for the other.
+
+**The sales alone did nothing at all**: 105 against the 105 of a village left entirely
+alone. A player selling hard into a village nobody had lied to did not move its peak by a
+single point, which is the quiet-village guarantee holding on real inputs rather than on
+seeds.
+
+**And the selling worked in the right direction.** 162 against the 168 the lies would have
+reached unaided: selling into the panic took six points off it. Small, but it is the first
+time the mechanism has been seen doing what it was built to do — the player puncturing a
+bubble they started, with their own diamonds as the evidence.
+
+### But it does not damp the oscillation
+
+| timeline | swings | decay | settled |
+| --- | --- | --- | --- |
+| as played | 4 | **1.64** | never |
+| the lie alone | 4 | **1.72** | never |
+| the sales alone | 2 | 1.50 | yes |
+| neither | 1 | — | yes |
+
+Selling brings decay from 1.72 to 1.64 — **the right direction, and nowhere near 1**. This
+is the played confirmation of what E33's sweep predicted, and the answer to the question the
+roadmap gated stage 4 on: **no, witnessed selling alone does not bring decay below 1.**
+
+**Why, and it is visible in one number.** The biggest single jump in anyone's belief in
+plenty, across all ten sales, was **+0.004**. Four thousandths. A sale is a shove so light
+that decay erases it before the next one lands, where the lie is a standing story the
+village keeps retelling itself. That is the difference between an event and a fact, and it
+is exactly the distinction stage 4 has to be built on.
+
+### A recording fault worth fixing first
+
+Every bulk sale appears in the recipe as **twelve separate sales of one diamond**, because
+shift-clicking a trade fires the event once per use and the plugin records each. Grouped by
+counter and moment they read correctly — 12 diamonds at tick 16, 6 watching — but the model
+does not group them.
+
+That matters because the evidence saturates: a sale of *n* counts as `min(1, n/16)`. Twelve
+diamonds sold one at a time apply that twelve times over and compound to about the same as
+one sale of twelve, by coincidence at this size. At a stack they diverge badly: 64 diamonds
+one at a time convinces about three times as much as 64 in one go, which is backwards — **a
+single large sale should be the stronger sight, not the weaker one.**
+
+The fix belongs in the plugin, not the model: accumulate the sales at one counter within a
+tick and schedule one input carrying their total. Nothing in core changes, no experiment
+re-runs, and the saturation starts meaning what it says.
+
+**Decision.** Nothing tuned. Stage 4 is now justified on played evidence as well as swept:
+a reality check has to be a standing fact about supply, because an event this light cannot
+hold a village's attention. The bulk-sale grouping is fixed first, since every future
+measurement of selling depends on the count being right.
