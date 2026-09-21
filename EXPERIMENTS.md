@@ -1399,3 +1399,62 @@ were a majority of the people standing in the market at once.
 
 **Decision.** Nothing changed; this is a change to the price rule and wants proposing first.
 Defaults untouched.
+
+---
+
+## E20 — Median, mean or trimmed mean, decided by measurement
+
+E19 found that the price rule, not the tuning, is what kept the lie from moving the price
+in-game. Three candidates, measured behind a temporary seam that was reverted afterwards;
+nothing in this entry is implemented.
+
+**The argument before the measurement.** `askingPrice` clamps belief to [-1, 1], so every
+ask sits between 25 and 175 at today's sensitivity. Asks are bounded by construction: there
+is no heavy tail and no villager who can drag anything. The median's stated justification,
+that one extreme villager cannot move the market, defends against something the clamp had
+already made impossible. Against that, the median's cost is total — its sensitivity to any
+one villager's ask is exactly zero until believers pass half the market.
+
+The trimmed mean drops the highest and lowest ask. That predicts a dead zone at the *onset*:
+with one believer among twelve, the believer **is** the maximum, so trimming discards
+precisely the signal. It trades the median's dead zone in the middle for one at the start,
+which is the phase that has to start the loop.
+
+**The measurement.** Headless seeds 1001-1100 as `CalibrationTest` measures them, and both
+played sessions run with and without their lies:
+
+| rule | half-believing | lie bubbles | quiet bursts | quiet beliefs | session A: lie / no lie | obs | session B: lie / no lie | obs |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| median | 63% | 92% | 0% | 5% | **107 / 107** | 0 | **108 / 108** | 0 |
+| **mean** | 62% | 88% | 0% | 5% | **133 / 107** | 178 | **124 / 108** | 154 |
+| trimmed | 61% | 93% | 0% | 5% | 127 / 107 | 163 | **109 / 108** | 0 |
+
+The onset prediction holds exactly. The trimmed mean works in session A, where five lies had
+been planted and believers were many, and does nothing at all in session B, where one lie
+left believers few — 109 against 108, a single point. The mean separates the lie from the
+absence of it in both.
+
+Paired worlds on held-back seeds, to check the rule does not cost the counterfactual:
+
+| rule | lie moved the price | median gap | bubble only with the lie | bubble only without |
+| --- | --- | --- | --- | --- |
+| median | 200/200 | +54 | 182 | 0 |
+| mean | 200/200 | +56 | 185 | 0 |
+| trimmed | 200/200 | +57 | 184 | 0 |
+
+**Why the bug was invisible headless for five weeks.** All three rules score the same in the
+model, because there a planted rumor reaches most of the village and a majority does move a
+median. In-game belief reaches about half, and the market is a small wandering subset of
+that, so the median never crosses. The headless model was never able to see this defect, and
+no amount of seed sweeping would have found it. Only the played sessions did.
+
+**The full suite passes under the mean unchanged** — 145 tests including `CalibrationTest`,
+the drift test, resume and the counterfactuals. The quiet column is identical under every
+rule, because with nobody believing, all asks are equal and mean, median and trimmed mean
+are the same number. The change costs nothing where nothing is believed.
+
+**Recommendation: the mean.** It is the only rule that answers the question the project
+asks — does the lie move the price — in both played sessions, it needs no retuning, and the
+robustness the median was bought for was never at risk.
+
+**Decision.** Not implemented; defaults untouched pending review.
