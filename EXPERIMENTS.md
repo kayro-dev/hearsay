@@ -1457,4 +1457,10 @@ are the same number. The change costs nothing where nothing is believed.
 asks — does the lie move the price — in both played sessions, it needs no retuning, and the
 robustness the median was bought for was never at risk.
 
-**Decision.** Not implemented; defaults untouched pending review.
+**Decision. Adopted.** The price is the average ask from now on. `CalibrationTest` and the
+whole suite pass unchanged, and `MarketTest.aMinorityOfBelieversStillMovesThePrice` pins the
+behaviour: eight villagers in the market, two of them certain of the worst, and the price has
+to read 119 rather than 100. It fails under the median, which is how it was checked.
+
+Old logs replay exactly as before, because `MarketPriceSet` stores the settled price rather
+than recomputing it. Old *recipes* will now re-derive different prices, which is the point.

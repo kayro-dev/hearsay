@@ -46,6 +46,35 @@ class MarketTest {
     }
 
     @Test
+    void aMinorityOfBelieversStillMovesThePrice() {
+        // E19: the price used to be the median ask, which asks only which side of the
+        // middle a villager falls on. A quarter of the market believing the worst moved it
+        // by nothing at all, which is what kept every played session pinned at base.
+        Params params = Params.defaults()
+                .withMarketNoise(0)
+                .withMeetingSource(MeetingSource.EXTERNAL)
+                .withVillagers(20);
+
+        List<Input> inputs = new ArrayList<>();
+        int inTheMarket = 8;
+        for (int id = 0; id < params.villagers(); id++) {
+            inputs.add(new VillagerSeen(1, id, id < inTheMarket ? Spot.MARKET : Spot.HOME));
+        }
+        // Two of the eight standing there, a clear minority on either side of the middle.
+        inputs.add(new PlantRumor(1, DIAMONDS_SCARCE, 1, 0));
+        inputs.add(new PlantRumor(1, DIAMONDS_SCARCE, 1, 1));
+
+        List<MarketPriceSet> settled = prices(Run.execute(42, params, inputs, 1).log());
+
+        assertEquals(1, settled.size(), "the market should have settled exactly one price");
+        MarketPriceSet price = settled.get(0);
+        assertEquals(inTheMarket, price.askingVillagers());
+        // Six asking 100 and two asking 175, which averages 118.75.
+        assertEquals(119, price.price(),
+                "a quarter of the market believing the worst has to show in the price");
+    }
+
+    @Test
     void theMarketOnlyOpensWithAQuorum() {
         Run run = quietVillage(Params.defaults());
 

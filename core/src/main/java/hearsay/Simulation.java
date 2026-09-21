@@ -411,9 +411,21 @@ public final class Simulation {
     }
 
     /**
-     * The market price is the median ask of whoever is standing there, so one extreme
-     * villager cannot drag the whole market, while a real shift in belief can. Below a
-     * quorum there is no market and no price is set.
+     * The market price is the average ask of whoever is standing there. Below a quorum
+     * there is no market and no price is set.
+     *
+     * <p>This was the median until E20. A median asks which side of the middle a villager
+     * falls on and never how strongly they feel, so it cannot move at all until believers
+     * are more than half of the people standing in the market at one moment. In the model
+     * that went unnoticed for five weeks, because a planted rumor there reaches most of the
+     * village and a majority does move a median. In a real village belief reaches about
+     * half, and the market is a small wandering subset of that, so the median never crossed
+     * and a lie told to a third of the village moved the price by exactly nothing.
+     *
+     * <p>The median was chosen so that one extreme villager could not drag the market. That
+     * was never a risk: {@link #askingPrice} clamps belief to [-1, 1], so every ask is
+     * bounded, and one utterly convinced villager in a market of twelve moves the average
+     * by a few percent. The insurance was real; the thing it insured against was not.
      */
     private OptionalInt settleMarketPrice(long tick) {
         List<Double> asks = new ArrayList<>();
@@ -425,14 +437,13 @@ public final class Simulation {
         if (asks.size() < params.marketQuorum()) {
             return OptionalInt.empty();
         }
-        Collections.sort(asks);
+        double total = 0;
+        for (double ask : asks) { // id order, and addition of a sorted-by-id list either way
+            total += ask;
+        }
+        double average = total / asks.size();
 
-        int middle = asks.size() / 2;
-        double median = asks.size() % 2 == 1
-                ? asks.get(middle)
-                : (asks.get(middle - 1) + asks.get(middle)) / 2;
-
-        int price = Math.max(1, (int) Math.round(median * (1 + state.marketNoiseLevel())));
+        int price = Math.max(1, (int) Math.round(average * (1 + state.marketNoiseLevel())));
         record(new MarketPriceSet(tick, price, asks.size()));
         return OptionalInt.of(price);
     }

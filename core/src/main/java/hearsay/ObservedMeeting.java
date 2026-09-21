@@ -5,7 +5,7 @@ package hearsay;
  * movement when {@link MeetingSource#EXTERNAL} is in force.
  *
  * <p>It carries a spot as well as a pair, because a pair on its own says who can talk but
- * not where anyone is, and the market is the median ask of whoever is standing in it. The
+ * not where anyone is, and the market is the average ask of whoever is standing in it. The
  * adapter decides which spot a location counts as.
  *
  * <p>One consequence worth knowing: a villager standing alone at the market is invisible to
