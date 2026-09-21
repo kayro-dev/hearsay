@@ -2,6 +2,7 @@ package hearsay;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Every other test asks whether a rule was followed. These ask whether the village still
  * does the thing the whole project is about: a planted rumor usually turns into a bubble,
- * and a village nobody lied to does not. A change that quietly retunes the model will pass
+ * and a village nobody lied to almost never does. A change that quietly retunes the model will pass
  * every invariant and fail here.
  *
  * <p>The seeds are 1001 to 1100, held back from every sweep in EXPERIMENTS.md, so this
@@ -36,6 +37,22 @@ class CalibrationTest {
     // measured at 39% on these seeds.
     private static final double AT_LEAST = 0.25;
     private static final double AT_MOST = 0.60;
+
+    /**
+     * Villages nobody lied to, and how many of them may talk themselves into a bubble.
+     *
+     * <p>This used to demand none at all, which was a claim about a hundred seeds dressed
+     * up as a law. Measured across nine hundred seeds the rate is about 0.33%: one in
+     * 1001-1300, one in 2001-2200, one in 5000-5399. A village that panics unaided is rare,
+     * not impossible, and a test that forbids it outright fails the first time an unlucky
+     * seed is added to the set.
+     *
+     * <p>Three hundred seeds with a ceiling of four keeps the power that matters. At the
+     * measured rate four or more happens about three times in a thousand, so it will not
+     * cry wolf; if the rate ever climbed to 3%, this would catch it in 98 runs out of 100.
+     */
+    private static final int QUIET_SEEDS = 300;
+    private static final int MOST_THAT_MAY_BURST = 4;
 
     private static MarketStats runVillage(long seed, List<Input> inputs) {
         return MarketStats.of(
@@ -67,10 +84,17 @@ class CalibrationTest {
     }
 
     @Test
-    void aVillageNobodyLiedToNeverBursts() {
-        for (long seed = FIRST_SEED; seed < FIRST_SEED + SEEDS; seed++) {
-            assertTrue(runVillage(seed, List.of()).bubble().isEmpty(),
-                    "seed " + seed + " panicked on its own, with nothing planted");
+    void villagesNobodyLiedToHardlyEverBurst() {
+        List<Long> panicked = new ArrayList<>();
+        for (long seed = FIRST_SEED; seed < FIRST_SEED + QUIET_SEEDS; seed++) {
+            if (runVillage(seed, List.of()).bubble().isPresent()) {
+                panicked.add(seed);
+            }
         }
+
+        assertTrue(panicked.size() <= MOST_THAT_MAY_BURST,
+                "villages nobody lied to are bursting: " + panicked.size() + " of "
+                        + QUIET_SEEDS + ", at seeds " + panicked + ". The measured rate is "
+                        + "about one in three hundred, so this is the loop starting itself.");
     }
 }

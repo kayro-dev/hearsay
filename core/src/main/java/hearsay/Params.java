@@ -118,7 +118,8 @@ public record Params(
      *
      * <p>The market knobs come from E5. On a hundred seeds the sweep never saw, a planted
      * rumor convinces half the village in 65% of them and the price bursts in 94%, while a
-     * village nobody lied to produces a believer in 5% and never bursts. CalibrationTest
+     * village nobody lied to produces a believer in 5% and bursts in about one seed in three
+     * hundred, measured across nine hundred of them rather than assumed. CalibrationTest
      * holds those figures in place.
      *
      * <p>{@code observationWeight} is the touchy one: a change of 0.05 either way moves the

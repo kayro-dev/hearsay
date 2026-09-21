@@ -128,6 +128,17 @@ behaviour than the rumor-only layer should produce on its own.
 **Decision.** Defaults set to `tellThreshold` 0.4 and `dailyDecay` 0.92. No seed in fifty
 overshoots at that setting, which leaves the headroom for week 5.
 
+> **Note added at E29.** This sweep held `tellThreshold` fixed at 0.4 and varied only the
+> decay, and every sweep after it treated the threshold as settled. That was safe only
+> because the village here mixes perfectly: a villager meets four different people in two
+> days, so a belief is confirmed again before it decays under the threshold and the
+> threshold barely matters. Once E23 clustered the village to match recorded traces, a
+> villager meets about two, confirmations arrive late or not at all, and the threshold
+> decides whether a rumor is ever repeated at all. At 0.4 in a clustered village the
+> market ends up doing nearly all the convincing, which E29 measured and fixed by dropping
+> the threshold to 0.25. **What this experiment established holds for the mixed model
+> only.**
+
 ---
 
 ## E3 — Does a rumor make a bubble, and does the village stay calm without one
@@ -2142,3 +2153,53 @@ before this one ran with that path dead.
 
 **Decision.** Adopted: `tellThreshold` 0.25, `shareFromGossip()`, `busts()`, and the
 `RumorStats` fix. Nothing else changed, and the quiet-village guarantee is untouched.
+
+---
+
+## E30 — Fuzzing the parameters, and saying what the guarantee actually is
+
+Two corrections to how this project checks itself, neither of them a tuning change.
+
+**A parameter fuzz test.** Every sweep here runs the defaults or a neighbourhood of them,
+which leaves whole paths unreached: E29's `familyOf` bug lived in one of them for
+twenty-eight experiments. `ParameterFuzzTest` draws random settings across the whole valid
+range with random seeds, and asserts only what must hold whatever the knobs say — that
+nothing throws, that confidences are confidences, that every belief points at a rumor that
+exists, that nobody is in their own chain, and that the log replays to the world it
+describes. It asserts no rates and no bands, so tuning can never make it fail.
+
+It was checked by putting E29's bug back, and it catches it. It also catches it **with the
+old `tellThreshold` of 0.4**, because the fuzz randomises the threshold rather than
+inheriting it — so it would have found the bug before the retune rather than because of it,
+which is the whole point. A second test asserts the fuzz actually reaches the path in
+question, since a fuzz run that never has an observed rumor told on would pass for the
+wrong reason.
+
+**The quiet-village guarantee, measured rather than asserted.** `CalibrationTest` demanded
+that no village nobody lied to ever bursts, across a hundred seeds. That was a claim about a
+hundred seeds dressed up as a law. Measured:
+
+| seeds | quiet villages that bubbled |
+| --- | --- |
+| 1001-1300 | 1 of 300 |
+| 2001-2200 | 1 of 200 |
+| 5000-5399 (never used before) | 1 of 400 |
+| **all nine hundred** | **3, about 0.33%** |
+
+A village that panics unaided is **rare, not impossible**. The test now runs three hundred
+seeds and allows up to four, which at the measured rate cries wolf about three times in a
+thousand, and would still catch a rate that climbed to 3% in 98 runs out of 100. It keeps
+its teeth: raising `observationWeight` to 0.45 fails it.
+
+The README says the same thing in the same terms, since this is the project's central claim
+and it should not be stated more strongly there than the measurements support.
+
+**E2 has a note added.** That experiment fixed `tellThreshold` at 0.4 and swept only the
+decay, and everything after it treated the threshold as settled. That was safe only for a
+perfectly mixed village, where a belief is confirmed again before it decays under the
+threshold. In a clustered village the threshold decides whether a rumor is repeated at all.
+The finding held for the model E2 was run on, and stopped holding at E23 without anyone
+noticing until E29.
+
+**Decision.** No parameter changed. Tests added, a guarantee restated as a rate, and an old
+experiment annotated with the conditions it actually holds under.
