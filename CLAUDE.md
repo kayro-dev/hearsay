@@ -56,8 +56,8 @@ logged so any crash can be replayed and compared against a counterfactual.
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.
 - Current milestone: v2, proposed in V2_PROPOSAL.md, taken depth first rather than breadth
-  first. Stage 1 (the marked market) is built. Next is stage 3, real diamond trades, then
-  stage 4, reality checks, and only then stage 2, more goods. The stage numbers are names
+  first. Stage 1 (the marked market) is built. Stage 3, real diamond trades, is built (E33).
+  Next is stage 4, reality checks, and only then stage 2, more goods. The stage numbers are names
   rather than an order: goods come last because stage 4 changes how belief moves, so any
   good calibrated before it would be calibrated twice.
 - Stage 4 is not done when it is built but when it works: swing decay below 1 and the lie

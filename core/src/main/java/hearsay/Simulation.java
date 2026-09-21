@@ -201,6 +201,11 @@ public final class Simulation {
                         record(new VillagerMoved(tick, seen.villagerId(), seen.spot()));
                     }
                 }
+                // Somebody sold this villager diamonds where others could see. Nobody
+                // learns anything from the price - the village quoted that price itself -
+                // but everyone who saw it learns that there were diamonds to sell, in a
+                // village that may have been told there are none.
+                case PlayerTraded t -> watchGoodsChangeHands(tick, t);
                 case ObservedMeeting m -> {
                     record(new VillagerMoved(tick, m.a(), m.spot()));
                     record(new VillagerMoved(tick, m.b(), m.spot()));
@@ -408,6 +413,55 @@ public final class Simulation {
             weight *= params.contradictionFactor();
         }
         return Math.min(1.0, 1 - (1 - before) * (1 - weight));
+    }
+
+    /**
+     * How many of a thing have to change hands for the sight of it to be complete evidence.
+     *
+     * <p>A constant rather than a knob, so the sweep that fits the two trade weights stays
+     * two-dimensional. One diamond is a curiosity, a stack is a glut, and sixteen is where
+     * the line between them sits until an experiment says otherwise.
+     */
+    private static final int SIGHT_SATURATES = 16;
+
+    /**
+     * A sale in public, and what everyone who saw it makes of it.
+     *
+     * <p>The evidence is that diamonds exist to be sold, so it argues for plenty whatever
+     * the village currently believes. It combines by the same rule a telling does, because
+     * it is the same kind of thing — a reason to change your mind — and differs only in
+     * where it came from: not a villager and not the market, so it is in nobody's chain and
+     * can never be a repeat of anything.
+     *
+     * <p>The one who took the goods weighs them by {@code tradeWeight} and everyone who
+     * merely watched by {@code witnessWeight}. Seeing a thing yourself and seeing somebody
+     * else see it are different amounts of evidence.
+     */
+    private void watchGoodsChangeHands(long tick, PlayerTraded trade) {
+        Claim plenty = new Claim(DIAMOND, ClaimType.ABUNDANT);
+        // Saturating rather than proportional: the twentieth diamond tells nobody anything
+        // the sixteenth did not.
+        double howPlainly = Math.min(1.0, trade.count() / (double) SIGHT_SATURATES);
+
+        for (int witnessId : trade.witnesses()) { // id order
+            Villager saw = state.villager(witnessId);
+            boolean traded = witnessId == trade.villagerId();
+            double weight = saw.traits().credulity() * howPlainly
+                    * (traded ? params.tradeWeight() : params.witnessWeight());
+            if (saw.belief(plenty.opposite()) != null) {
+                // They have been told the opposite. Seeing it still counts, but a villager
+                // convinced of a shortage does not throw the belief away at one sale.
+                weight *= params.contradictionFactor();
+            }
+            Belief had = saw.belief(plenty);
+            double before = had == null ? 0 : had.confidence();
+            double after = Math.min(1.0, 1 - (1 - before) * (1 - weight));
+            if (after <= before) {
+                continue; // nothing was learned, so nothing is written down
+            }
+            int rumorId = had == null ? state.nextRumorId() : had.rumorId();
+            record(new TradeSeen(tick, witnessId, plenty, rumorId, after, traded));
+        }
     }
 
     /**

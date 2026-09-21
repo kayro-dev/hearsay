@@ -32,6 +32,16 @@ public record Belief(Claim claim, double confidence, int sourceId, long sinceTic
      */
     public static final int MARKET = -2;
 
+    /**
+     * Source id for a belief a villager got from watching goods change hands. No villager
+     * has this id either, so it sits in a chain and never matches a teller.
+     *
+     * <p>Distinct from {@link #MARKET} on purpose. The market is everyone's opinion at
+     * once; this is nobody's opinion at all, and the difference is the whole point of it.
+     * Seeing a thing cannot be a repeat of having been told about it.
+     */
+    public static final int SEEN = -3;
+
     public Belief {
         if (!(confidence >= 0 && confidence <= 1)) {
             throw new IllegalArgumentException("confidence must be between 0 and 1, was " + confidence);

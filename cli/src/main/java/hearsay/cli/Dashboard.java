@@ -3,6 +3,7 @@ package hearsay.cli;
 import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.DashboardPage;
+import hearsay.Footprint;
 import hearsay.Input;
 import hearsay.MarketStats;
 import hearsay.Params;
@@ -67,7 +68,8 @@ final class Dashboard {
         String html = DashboardPage.render(withLie.seed(), withLie.ticks(), withLie.params(),
                 DIAMONDS_SCARCE,
                 MarketStats.of(withLie.log(), DIAMONDS_SCARCE),
-                MarketStats.of(withoutLie.log(), DIAMONDS_SCARCE));
+                MarketStats.of(withoutLie.log(), DIAMONDS_SCARCE),
+                Footprint.of(withLie, DIAMONDS_SCARCE));
 
         try {
             if (out.getParent() != null) {

@@ -44,7 +44,9 @@ class ParameterFuzzTest {
                 fuzz.nextInt(20),               // marketWindowTicks
                 MeetingSource.SIMULATED,
                 2 + fuzz.nextInt(Simulation.MOST_VILLAGERS - 1),
-                fraction());                    // mixing
+                fraction(),                     // mixing
+                fraction(),                     // tradeWeight
+                fraction());                    // witnessWeight
     }
 
     private double fraction() {
@@ -59,8 +61,22 @@ class ParameterFuzzTest {
             String where = "seed " + seed + " with " + params;
 
             Claim claim = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
-            List<Input> inputs = List.of(new PlantRumor(1, claim, 1 + fuzz.nextInt(3),
+            List<Input> inputs = new ArrayList<>();
+            inputs.add(new PlantRumor(1, claim, 1 + fuzz.nextInt(3),
                     fuzz.nextInt(params.villagers())));
+            // Somebody selling diamonds, witnessed by a random handful. A trade reaches
+            // code no headless sweep ever runs, which is exactly where the last bug lived.
+            for (int trade = 0; trade < fuzz.nextInt(4); trade++) {
+                int trader = fuzz.nextInt(params.villagers());
+                java.util.NavigableSet<Integer> watching = new java.util.TreeSet<>();
+                watching.add(trader);
+                for (int extra = 0; extra < fuzz.nextInt(4); extra++) {
+                    watching.add(fuzz.nextInt(params.villagers()));
+                }
+                inputs.add(new PlayerTraded(2 + fuzz.nextInt(TICKS - 2), trader,
+                        1 + fuzz.nextInt(64), 1 + fuzz.nextInt(64), watching));
+            }
+            inputs.sort(java.util.Comparator.comparingLong(Input::tick));
 
             Run executed = assertDoesNotThrow(
                     () -> Run.execute(seed, params, inputs, TICKS), where);

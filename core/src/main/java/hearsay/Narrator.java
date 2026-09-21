@@ -90,6 +90,17 @@ public final class Narrator {
                             + " (" + e.askingVillagers() + " selling).");
                 }
             }
+            case TradeSeen e -> {
+                double before = confidenceIn(e.villagerId(), e.claim());
+                mirror.apply(e);
+                if (e.newConfidence() > before) {
+                    lines.add(prefix(e.tick()) + name(e.villagerId())
+                            + (e.traded() ? " takes diamonds off a stranger"
+                                          : " watches diamonds change hands")
+                            + " and wonders if they are so scarce after all ("
+                            + percent(before) + " \u2192 " + percent(e.newConfidence()) + ").");
+                }
+            }
             case PriceObserved e -> {
                 double before = confidenceIn(e.villagerId(), e.claim());
                 mirror.apply(e);

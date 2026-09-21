@@ -70,6 +70,25 @@ public final class WorldState {
                 villager(e.listenerId()).believe(new Belief(kept.claim(), e.newConfidence(),
                         e.tellerId(), e.tick(), e.keptRumorId(), chainAfter(e, kept.claim())));
             }
+            case TradeSeen e -> {
+                tick = e.tick();
+                // A sale starts a rumor family the same way reading the price does: the
+                // first villager to conclude it opens one, everyone after joins it.
+                if (!rumors.containsKey(e.rumorId())) {
+                    addRumor(new Rumor(e.rumorId(), e.claim(), Rumor.MIN_SEVERITY,
+                            Rumor.NO_PARENT, e.tick(), RumorOrigin.OBSERVED));
+                }
+                Rumor about = rumor(e.rumorId());
+                Belief had = villager(e.villagerId()).belief(about.claim());
+                NavigableSet<Integer> chain = new TreeSet<>();
+                if (had != null) {
+                    chain.addAll(had.chain());
+                }
+                // Not the market and not a villager. Nobody told them; they watched.
+                chain.add(Belief.SEEN);
+                villager(e.villagerId()).believe(new Belief(about.claim(), e.newConfidence(),
+                        Belief.SEEN, e.tick(), e.rumorId(), chain));
+            }
             case MarketNoiseSet e -> {
                 tick = e.tick();
                 marketNoiseLevel = e.level();

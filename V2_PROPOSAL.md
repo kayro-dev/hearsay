@@ -180,7 +180,7 @@ behaviour, so nothing about the rest of the game changes.
 
 ---
 
-## Stage 3 — trades that actually happen — *next*
+## Stage 3 — trades that actually happen — **BUILT** (E33)
 
 Belief-driven prices change villagers' real trade menus, and a player trading with a
 villager comes back into the simulation as an input event.
@@ -480,12 +480,21 @@ guarantee and the paired-worlds separation must hold exactly as they do now. **D
 swing is not the same as muting the village**, and only running both sets of measures
 together can tell them apart.
 
-**What stage 3 will already have told us.** Witnessed selling is a reality check with a very
-narrow aperture, and stage 3 builds it. By the time this stage starts, the oscillation
-measures will already have been run on a village that can be contradicted by one thing. If
-that alone moved E32's decay below 1, this stage is a generalisation of something known to
-work. If it did not, this stage begins knowing that a single narrow channel of truth is not
-enough — which is worth more than starting blind.
+**What stage 3 already told us, and it was worth asking early.** E33 swept witnessed
+selling and found that **it does not damp anything**: decay sits at 1.19 to 1.44 against
+E32's 1.05 with no trading at all. Selling into a panic makes the swings *bigger*, because
+it is one more shock arriving from outside rather than a force pulling the price back.
+
+So this stage begins knowing that **a single narrow channel of truth is not enough**, and
+knowing why. Seeing one player's diamonds tells a villager something about that player, not
+about the world. It is evidence that arrives and then stops, so there is nothing for the
+price to converge on.
+
+**That changes what stage 4 has to be.** A reality check cannot be a series of events, the
+way a sale is. It has to be **a standing fact about supply** — how many diamonds are in the
+village, visible to a villager who looks — so that belief is measured against something that
+is still there tomorrow. A villager who remembers a sale is holding another rumour, told by
+the world. A villager who can look in the chest is holding a fact.
 
 **Experiments to re-run.** All of the calibration, because this changes how belief moves.
 `CalibrationTest`'s band, the quiet-village rate, and E29's gossip share would all need

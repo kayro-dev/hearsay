@@ -2306,3 +2306,49 @@ proposes to fix.
 
 **Decision.** Nothing changed and nothing tuned. The oscillation is now a measurement rather
 than an impression, and these four numbers are what any damping mechanism has to beat.
+
+---
+
+## E33 — The two trade weights, and what selling does not do
+
+Stage 3 built. Sweeping both weights together, as the proposal said they must be, since one
+is about goods you took and the other about goods you watched somebody else take. Forty
+seeds each, a village lied to and sold into hard, beside a village **nobody lied to** that
+the player sold into just as hard.
+
+| tradeWeight | witnessWeight | peak (p50) | swing decay | settled | **quiet village bursts** |
+| --- | --- | --- | --- | --- | --- |
+| 0.14 | 0.07 | 130 | 1.37 | 52% | **0%** |
+| 0.14 | 0.14 | 129 | 1.25 | 50% | **0%** |
+| 0.14 | 0.28 | 130 | 1.20 | 37% | **2%** |
+| **0.28** | **0.14** | **130** | **1.19** | **50%** | **0%** |
+| 0.28 | 0.28 | 130 | 1.20 | 55% | **10%** |
+| 0.42 | 0.07 | 129 | 1.19 | 52% | **0%** |
+| 0.42 | 0.14 | 129 | 1.19 | 50% | **2%** |
+| 0.42 | 0.28 | 130 | 1.21 | 52% | **7%** |
+
+**The guarantee sets the ceiling, and it is the witness weight that threatens it.** At a
+witness weight of 0.28 a village nobody lied to bursts in up to 10% of seeds, against the
+0.33% measured in E30. A player selling hard enough could start a panic without telling a
+single lie — which is the bug the proposal named in advance. **The trader's own weight
+barely matters to it; what matters is how much a crowd makes of watching.** 0.14 holds the
+rate at zero and is adopted, with the trader at 0.28.
+
+**And the finding that matters more: witnessed selling does not damp the oscillation.**
+Decay sits between 1.19 and 1.44 at every setting, against E32's baseline of 1.05 without
+any trading at all. Selling into a panic does not calm the village — **it makes the swings
+bigger**, because it is one more shock arriving from outside rather than a force pulling the
+price back to anything.
+
+That was the cheap version of stage 4's question, asked early and on purpose, and the answer
+is no. **A single narrow channel of truth is not enough.** Seeing one player's diamonds tells
+a villager something about that player, not about the world; it is evidence that arrives and
+then stops, so there is nothing for the price to converge *on*. Stage 4 starts knowing this,
+which is worth more than starting blind, and it says something about what the reality checks
+will have to be: **a standing fact about supply rather than a series of events.** A villager
+who can see how many diamonds are in the village has an anchor. One who merely remembers a
+sale has another rumour, told by the world.
+
+**Decision.** `tradeWeight` 0.28 and `witnessWeight` 0.14 adopted, the highest pair that
+leaves the quiet-village rate untouched. Nothing else changed; no headless experiment needed
+re-running, since a headless run has no player in it.

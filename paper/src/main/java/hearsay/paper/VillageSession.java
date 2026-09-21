@@ -6,6 +6,7 @@ import hearsay.MeetingSource;
 import hearsay.ObservedMeeting;
 import hearsay.Params;
 import hearsay.PlantRumor;
+import hearsay.PlayerTraded;
 import hearsay.ProximityPairing;
 import hearsay.RecipeFile;
 import hearsay.Sighting;
@@ -168,6 +169,30 @@ final class VillageSession {
     /** Notes where everybody was standing, for sweeping the mapping afterwards. */
     void survey(long tick, Map<Integer, org.bukkit.entity.Villager> bodies) {
         bodies.forEach((id, body) -> survey.add(Whereabouts.sightingOf(tick, id, body)));
+    }
+
+    /**
+     * Records that somebody sold a villager diamonds, in front of whoever was near enough.
+     *
+     * <p>Scheduled for the tick that has not happened yet, exactly as planting a rumour is,
+     * so an input never arrives in the middle of one being worked out.
+     *
+     * @param witnesses simulation ids of everyone who saw it, the trader included
+     */
+    void recordTrade(int villagerId, int count, int emeralds,
+                     java.util.NavigableSet<Integer> witnesses) {
+        simulation.schedule(new PlayerTraded(simulation.state().tick() + 1,
+                villagerId, count, emeralds, witnesses));
+    }
+
+    /** Which bound villager this body is, or null if it is not one of ours. */
+    Integer idOf(UUID body) {
+        for (Map.Entry<Integer, UUID> bound : bodies.entrySet()) {
+            if (bound.getValue().equals(body)) {
+                return bound.getKey();
+            }
+        }
+        return null;
     }
 
     /** Plants a rumor in one villager, on the tick that has not happened yet. */

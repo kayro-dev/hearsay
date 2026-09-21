@@ -26,10 +26,11 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 4";
+    private static final String HEADER = "hearsay-recipe 5";
 
     private static final java.util.Set<String> READABLE_HEADERS =
-            java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3", HEADER);
+            java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3",
+                    "hearsay-recipe 4", HEADER);
 
     private RecipeFile() {
     }
@@ -107,7 +108,9 @@ public final class RecipeFile {
                 + " marketWindowTicks=" + p.marketWindowTicks()
                 + " meetingSource=" + p.meetingSource()
                 + " villagers=" + p.villagers()
-                + " mixing=" + p.mixing();
+                + " mixing=" + p.mixing()
+                + " tradeWeight=" + p.tradeWeight()
+                + " witnessWeight=" + p.witnessWeight();
     }
 
     private static Params readParams(String text) {
@@ -140,7 +143,13 @@ public final class RecipeFile {
                         : Simulation.VILLAGER_COUNT,
                 // Written before neighbourhoods existed, when the village was perfectly
                 // mixed. 1.0 is that village exactly, so those sessions still reproduce.
-                values.containsKey("mixing") ? number(values, "mixing") : 1.0);
+                values.containsKey("mixing") ? number(values, "mixing") : 1.0,
+                // Written before anybody could trade, so no trade ever happened in them and
+                // the weights cannot change what they replay to.
+                values.containsKey("tradeWeight")
+                        ? number(values, "tradeWeight") : Params.TRADE_WEIGHT,
+                values.containsKey("witnessWeight")
+                        ? number(values, "witnessWeight") : Params.WITNESS_WEIGHT);
     }
 
     /**
@@ -175,7 +184,32 @@ public final class RecipeFile {
             case ObservedMeeting m -> "meet " + m.tick() + " " + m.a() + " " + m.b()
                     + " " + m.spot();
             case VillagerSeen s -> "seen " + s.tick() + " " + s.villagerId() + " " + s.spot();
+            // The witnesses are part of what happened, not a detail of how it was drawn:
+            // who saw a sale decides who learned anything from it, so a recipe without them
+            // would replay to a different village.
+            case PlayerTraded t -> "trade " + t.tick() + " " + t.villagerId() + " "
+                    + t.count() + " " + t.emeralds() + " " + join(t.witnesses());
         };
+    }
+
+    /** Witness ids as one field, so a trade stays one whitespace-separated line. */
+    private static String join(java.util.Collection<Integer> ids) {
+        StringBuilder out = new StringBuilder();
+        for (int id : ids) {
+            out.append(out.isEmpty() ? "" : ",").append(id);
+        }
+        return out.isEmpty() ? "-" : out.toString();
+    }
+
+    private static java.util.NavigableSet<Integer> split(String field) {
+        java.util.NavigableSet<Integer> ids = new java.util.TreeSet<>();
+        if (field.isBlank() || field.equals("-")) {
+            return ids;
+        }
+        for (String id : field.split(",")) {
+            ids.add(Integer.parseInt(id));
+        }
+        return ids;
     }
 
     private static Input readInput(String text) {
@@ -186,6 +220,9 @@ public final class RecipeFile {
                     Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
             case "seen" -> new VillagerSeen(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Spot.valueOf(parts[3]));
+            case "trade" -> new PlayerTraded(Long.parseLong(parts[1]),
+                    Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
+                    Integer.parseInt(parts[4]), split(parts.length > 5 ? parts[5] : ""));
             case "meet" -> new ObservedMeeting(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
                     Spot.valueOf(parts[4]));

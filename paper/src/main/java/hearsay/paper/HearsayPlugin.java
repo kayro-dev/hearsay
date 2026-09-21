@@ -18,6 +18,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import io.papermc.paper.event.player.PlayerTradeEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -41,7 +45,7 @@ import java.util.UUID;
  *
  * <p>A spike. One village, bound once, with villagers who wander in afterwards ignored.
  */
-public final class HearsayPlugin extends JavaPlugin {
+public final class HearsayPlugin extends JavaPlugin implements Listener {
 
     /** How far from the player to look for a village. */
     private static final double BINDING_RANGE = 64.0;
@@ -98,6 +102,7 @@ public final class HearsayPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         loadEverythingSavingNeeds();
+        getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("Hearsay is listening. /hearsay start to bind a village.");
     }
 
@@ -236,6 +241,7 @@ public final class HearsayPlugin extends JavaPlugin {
         displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
                 bodies, session.confidences(), lit);
         displays.fadeMarks(world);
+        priceTheCounters(bodies);
         if (market != null) {
             displays.showMarketEdge(world, market);
         }
@@ -297,6 +303,21 @@ public final class HearsayPlugin extends JavaPlugin {
                 }
             }
         }.runTaskTimer(this, 0L, WHISPER_FRAME_GAP);
+    }
+
+    /**
+     * Rebuilds the diamond trade on every smith, at what that villager personally would pay.
+     *
+     * <p>Once a tick rather than continuously, so a menu the player has open cannot change
+     * under their hands mid-trade.
+     */
+    private void priceTheCounters(Map<Integer, Villager> bodies) {
+        Map<Integer, Integer> asks = session.asks();
+        bodies.forEach((id, body) -> {
+            if (Counter.canTrade(body) && asks.containsKey(id)) {
+                Counter.setPrice(body, Counter.emeraldsFor(asks.get(id), Params.defaults()));
+            }
+        });
     }
 
     /** Puts every bound villager back to normal, so stopping leaves no outlines behind. */
@@ -408,6 +429,49 @@ public final class HearsayPlugin extends JavaPlugin {
             displays.forgetTeams(getServer().getScoreboardManager().getMainScoreboard());
             stopGlowing();
         }
+    }
+
+    /**
+     * Somebody traded with a villager. If it was the diamond trade Hearsay manages, the
+     * village has just watched diamonds arrive.
+     *
+     * <p>Listened to at MONITOR, after anything that might cancel it, so nothing is
+     * recorded that did not happen. A cancelled trade is a trade the village never saw.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTrade(PlayerTradeEvent event) {
+        if (session == null || world == null || !Counter.isManaged(event.getTrade())) {
+            return;
+        }
+        if (!(event.getVillager() instanceof Villager body)) {
+            return; // a wandering trader has no mind here
+        }
+        Integer trader = session.idOf(body.getUniqueId());
+        if (trader == null) {
+            return; // not one of ours
+        }
+
+        // Everyone near enough to see it, which is the same range a whisper carries. E25
+        // established that people who witness one event together are not separate sources
+        // for it, and a sale in the square is the same shape as a rumour in the square.
+        java.util.NavigableSet<Integer> watching = new java.util.TreeSet<>();
+        watching.add(trader);
+        for (Villager nearby : body.getLocation().getNearbyEntitiesByType(
+                Villager.class, VillageSession.TALKING_RANGE)) {
+            Integer id = session.idOf(nearby.getUniqueId());
+            if (id != null) {
+                watching.add(id);
+            }
+        }
+
+        int diamonds = event.getTrade().getIngredients().get(0).getAmount();
+        int emeralds = event.getTrade().getResult().getAmount();
+        session.recordTrade(trader, diamonds, emeralds, watching);
+
+        event.getPlayer().sendActionBar(Component.text(
+                session.nameOf(trader) + " takes " + diamonds + " diamond"
+                        + (diamonds == 1 ? "" : "s") + " for " + emeralds + " emeralds. "
+                        + watching.size() + " saw it.", NamedTextColor.AQUA));
     }
 
     /** Says why nothing can be answered yet, if anything cannot. */

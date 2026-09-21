@@ -111,6 +111,20 @@ public final class RumorStats {
                 // lookup below found no family and threw. It stayed hidden while the
                 // telling threshold was high enough that observed beliefs were never
                 // repeated, and E29 lowered it.
+                // A rumor born of watching goods change hands opens a family exactly as
+                // one born of reading the price does. E29 found this missing for the
+                // price; the fuzz test written afterwards found it missing for trades the
+                // first time a trade existed, which is the whole reason that test is here.
+                case TradeSeen e -> {
+                    if (!familyOf.containsKey(e.rumorId())) {
+                        familyOf.put(e.rumorId(), e.rumorId());
+                        claims.put(e.rumorId(), e.claim());
+                        daily.put(e.rumorId(), new ArrayList<>());
+                        lifetimeDays.put(e.rumorId(), new ArrayList<>());
+                        everHeardBy.put(e.rumorId(), new TreeSet<>());
+                        conversionsBy.put(e.rumorId(), new TreeMap<>());
+                    }
+                }
                 case PriceObserved e -> {
                     if (!familyOf.containsKey(e.rumorId())) {
                         familyOf.put(e.rumorId(), e.rumorId());
@@ -138,6 +152,9 @@ public final class RumorStats {
             }
             if (event instanceof PriceObserved read) {
                 everHeardBy.get(familyOf.get(read.rumorId())).add(read.villagerId());
+            }
+            if (event instanceof TradeSeen saw) {
+                everHeardBy.get(familyOf.get(saw.rumorId())).add(saw.villagerId());
             }
             if (event instanceof RumorTold told) {
                 everHeardBy.get(family).add(told.listenerId());

@@ -34,6 +34,16 @@ public final class DashboardPage {
      */
     public static String render(long seed, int ticks, Params params, Claim claim,
                                 MarketStats withLie, MarketStats withoutLie) {
+        return render(seed, ticks, params, claim, withLie, withoutLie, null);
+    }
+
+    /**
+     * @param footprint the four-way split of who moved the price, or null when nobody
+     *                  traded and there is nothing to split
+     */
+    public static String render(long seed, int ticks, Params params, Claim claim,
+                                MarketStats withLie, MarketStats withoutLie,
+                                Footprint footprint) {
         StringBuilder out = new StringBuilder();
         out.append("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">")
            .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
@@ -70,6 +80,27 @@ public final class DashboardPage {
         out.append("<p class=\"sub\">Villagers holding the claim at the end of each day.</p>");
         out.append(believerChart(withLie, params.villagers()));
 
+        if (footprint != null && footprint.peakFromTheTrading() != 0) {
+            out.append("<h2>Who moved the price</h2>");
+            out.append("<p class=\"sub\">Two things moved it, and one counterfactual cannot "
+                    + "say which. Each is measured against the timeline where only the other "
+                    + "happened.</p>");
+            out.append("<section class=\"facts\">");
+            fact(out, "The lie, with your trades held fixed",
+                    signed(footprint.peakFromTheLie()));
+            fact(out, "Your selling, with the lie held fixed",
+                    signed(footprint.peakFromTheTrading()));
+            fact(out, "Neither: the village left alone",
+                    String.valueOf(footprint.peakLeftAlone()));
+            fact(out, "The two together, beyond their sum",
+                    signed(footprint.interaction()));
+            out.append("</section>");
+            out.append("<p class=\"sub\">These are the same trades priced against each "
+                    + "timeline. They are not what you would have made, because a player "
+                    + "seeing different prices would have traded differently, and nothing "
+                    + "here can guess how.</p>");
+        }
+
         out.append("<h2>Does it settle?</h2>");
         out.append("<p class=\"sub\">A bubble is one shape a price can make. Whether each "
                 + "swing is smaller than the last is a different question, and the one that "
@@ -105,6 +136,10 @@ public final class DashboardPage {
             peak = Math.max(peak, day.heard());
         }
         return peak;
+    }
+
+    private static String signed(int points) {
+        return (points > 0 ? "+" : "") + points;
     }
 
     private static void priceFact(StringBuilder out, String label, int price, int basePrice) {
