@@ -327,11 +327,24 @@ public final class MarketStats {
      * for ever. Averaged geometrically, because these are ratios and a run that halves and
      * then doubles has gone nowhere, which an arithmetic mean would report as growth.
      *
-     * @return empty when there are fewer than two legs to compare
+     * <p><strong>Only comparable between runs of the same length.</strong> E36 measured the
+     * same model at 2.22 over ten days, 1.37 over fifty and 1.07 over a hundred and
+     * seventy-five: early swings are small while the rumour is still building, so the ratio
+     * starts high and only means anything once there are enough swings to average. Two
+     * published comparisons were withdrawn for ignoring this.
+     *
+     * @return empty when there are fewer than {@link #ENOUGH_SWINGS} legs, since a ratio
+     *         between a handful of noisy numbers is not a measurement
      */
+    /**
+     * How many legs a run needs before the ratio between them is worth quoting. Below this
+     * the figure is dominated by how early in the run you happened to look.
+     */
+    public static final int ENOUGH_SWINGS = 10;
+
     public java.util.OptionalDouble swingDecay(int minimumMove) {
         List<Swing> legs = swings(minimumMove);
-        if (legs.size() < 2) {
+        if (legs.size() < ENOUGH_SWINGS) {
             return java.util.OptionalDouble.empty();
         }
         double logSum = 0;

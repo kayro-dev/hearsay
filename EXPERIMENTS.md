@@ -2488,3 +2488,70 @@ adopted.
 **Decision.** Nothing adopted. `checkWeight` 0.30 and `emptyEvidence` 0.25 stand as
 provisional defaults, unswept, and the gate is rewritten above before the sweep that would
 settle them.
+
+---
+
+## E36 — The baseline depends on how long you watch, which invalidates two comparisons
+
+E31's session read decay 1.05 and E34's read 1.72, and I quoted them against each other as
+though the model had got worse. Checking properly:
+
+| | run through **today's** model, lie only | ticks | swings | mean amplitude | decay |
+| --- | --- | --- | --- | --- | --- |
+| E31's session | 708 | 177 days | 20 | 49.0 | **1.05** |
+| E34's session | 34 | 8 days | 4 | 29.3 | **1.72** |
+
+**E31's session still reads exactly 1.05 on today's model.** Nothing in `tellThreshold`,
+the clustering or witnessed provenance moved it, which stands to reason — none of them is
+reached by a run with no trades in it. **The difference was never the model. It was that
+E34's session is eight days long and has four swings in it.**
+
+Headless on today's model, forty seeds, one lie, nothing else:
+
+| length | mean swings | decay | settled | bubbles |
+| --- | --- | --- | --- | --- |
+| 40 ticks (10 days) | 3.0 | **2.22** | 35% | 5% |
+| 200 ticks (50 days) | 6.9 | **1.37** | 67% | 37% |
+| 700 ticks (175 days) | 16.7 | **1.07** | 77% | 52% |
+
+**Swing decay falls with the length of the run, steeply.** Early swings are small because
+the rumour is still building, so the ratio of each to the last starts high and only settles
+once there are enough swings for the average to mean anything. A decay figure from four
+swings is a ratio between a handful of noisy numbers.
+
+### Two comparisons I have to withdraw
+
+**E34's "1.72 against E32's 1.05" was not a finding.** Both sessions behave the same on the
+same model; one was measured over eight days and the other over a hundred and seventy-seven.
+The conclusion E34 drew from it — that selling does not damp — still holds, because the
+1.72-to-1.64 comparison was within one session and one length. But the baseline it was set
+against was wrong.
+
+**E35 understated stage 4, and by a lot.** Its table was run at 200 ticks and compared
+against E32's 1.05, which is a 700-tick figure. **Against the correct 200-tick baseline of
+1.37**, reality checks bring decay to 1.02–1.07. That is not "nowhere near 1"; it is
+substantial damping that I mismeasured into looking like none.
+
+One caveat survives the correction and matters: at low stock the damping works by **pinning
+belief high** rather than settling it. An empty market implies scarcity, so everyone
+converges on believing it, the price stops moving because nobody is changing their mind, and
+the run never settles within 10% of normal (peak 178, settled 0%). **Damping and settling
+are different things** and this separates them cleanly.
+
+### The rule for every future measurement
+
+**Swing decay is only comparable at equal run length.** Stage 4's gate is therefore:
+
+| | baseline, today's model | stage 4 must reach |
+| --- | --- | --- |
+| decay at **700 ticks** | **1.07** | below 1 |
+| settled at 700 ticks | 77% | no worse |
+| bubbles at 700 ticks | 52% | unchanged on an **empty** village |
+| E31's played session | 1.05, peak 156 | below 1 at the same length |
+
+And `swingDecay` should not be quoted at all below about ten swings. **That is now in the
+method rather than in anybody's memory**: `MarketStats.ENOUGH_SWINGS` is 10, and a shorter
+run returns empty rather than a number that reads like a measurement.
+
+**Decision.** No parameter changed. Two published comparisons withdrawn, the baseline
+restated per length, and stage 4's gate rewritten against 700-tick figures.
