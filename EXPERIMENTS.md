@@ -2203,3 +2203,54 @@ noticing until E29.
 
 **Decision.** No parameter changed. Tests added, a guarantee restated as a rate, and an old
 experiment annotated with the conditions it actually holds under.
+
+---
+
+## E31 — The first session where everything worked at once
+
+22 villagers, 708 ticks, **one lie**, planted at tick 4 into a villager with gossip 0.87.
+The first session played with a marked market, the E29 telling threshold and the E26
+observation weight all in place at the same time.
+
+| | with the lie | with no lie |
+| --- | --- | --- |
+| peak price | **156** (▲ +56%) | 109 (△ +9%) |
+| lowest price | **44** (▼ -56%) | 92 (▽ -8%) |
+| bubbles | **5** | 0 |
+| busts | **4** | 0 |
+| held the rumour | **19 of 22** | 0 |
+| evidence from gossip | **57%** | — |
+
+One lie, told once, to one villager. The village then spent 177 days going up and down:
+five separate bubbles and four busts, from 156 down to 44 and back. With the lie removed
+and everything else identical, the price never leaves 92 to 109 and **not one villager ever
+believes anything**.
+
+**What changed, and it was not the tuning.** Three things landed together and this is the
+first run with all of them:
+
+- **A marked market (stage 1).** Who counts as a trader is now a place rather than an
+  inference. The market opened on 261 of 708 ticks with a mean of 11.8 sellers against a
+  quorum of 6 — a real, well-populated market, where E17 to E19 were fighting a market of
+  six that kept falling below quorum.
+- **`tellThreshold` 0.25 (E29).** Gossip carries 57% of the evidence, against 24% in the
+  session that prompted that change. The rumour is spread by villagers, not by the price.
+- **`observationWeight` 0.28 (E26).** Peak 156 rather than the 172 that pinned an earlier
+  session against the 175 cap.
+
+**The aim mattered as much as the settings.** E27 predicted this: one lie into a talkative
+villager at the start beats four scattered ones. Here it is, with a single telling at tick 4
+reaching 19 of 22 villagers.
+
+**A bust deeper than the bubble, again.** The low of 44 is further from normal than the peak
+of 156, which E28 first recorded and `busts()` now counts. Four of them. A village that has
+been talked up gets talked down harder, because the fall is evidence of plenty on exactly
+the terms the climb was evidence of scarcity.
+
+**Five bubbles rather than one** is a longer run than any before — 177 days against 59 — and
+the loop does not settle. Whether that is right is a question worth asking: a real panic
+burns out, and this village oscillates for as long as it is left running. Nothing here
+measures how a bubble should decay over months, and nothing should be changed until
+something does.
+
+**Decision.** Nothing changed. This session is the one the dashboard now publishes.
