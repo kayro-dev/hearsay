@@ -41,6 +41,8 @@ disagree, the village is dying.
 | 4 | `/hearsay start` again | Refuses, telling you to stop first |
 | 5 | Watch for a minute | A price bar reading "Diamonds: no market yet"; no text above any head yet, because nobody has heard anything |
 | 5b | Keep watching | The bar shows a price once enough villagers have been seen meeting — a few ticks. It waits on positions, not on beliefs, so it can stay empty while a rumor is already spreading |
+| 5b2 | `/hearsay who` in a village of 20 | About four villagers carry a name — "Mira, the Town Crier" — and the rest carry none. A name on everybody would be a name on nobody |
+| 5b3 | Look at a named villager's plate | The name sits beside theirs in grey. Unnamed villagers show no gap where one would be |
 | 5c | `/hearsay who` | The bound villagers listed most talkative first, with a percentage, how far away each is, and which way to walk. Up to three of the talkers are outlined in the world for 30 seconds |
 | 5d | Look at the village | Every bound villager has their name and gossip percentage above their head, green at 60% or more. The name matches the list from 5c |
 | 5e | Walk to a glowing villager | The glow fades after about 30 seconds. Running `/hearsay who` again lights them up once more |

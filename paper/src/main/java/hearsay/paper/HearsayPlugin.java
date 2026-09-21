@@ -257,7 +257,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             names.put(id, session.nameOf(id));
             gossip.put(id, session.gossipOf(id));
         });
-        displays.showBeliefs(world, bodies, names, gossip, session.confidences(),
+        Map<Integer, String> labels = session.labels();
+        displays.showBeliefs(world, bodies, names, labels, gossip, session.confidences(),
                 session.asks(), Params.defaults().basePrice(),
                 showingSpots ? spots : Map.of());
         displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
@@ -574,14 +575,17 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
 
         player.sendMessage(Component.text("Who talks, most first. The glowing ones are worth "
                 + "walking to; their names are above their heads.", NamedTextColor.AQUA));
+        Map<Integer, String> labels = session.labels();
         List<Villager> toLight = new ArrayList<>();
         for (int id : byTalkativeness) {
             double gossip = session.gossipOf(id);
+            String label = labels.get(id);
             Villager body = here.get(id);
             String where = body == null ? " (gone)"
                     : " " + (int) body.getLocation().distance(player.getLocation())
                             + " blocks " + bearingFrom(player.getLocation(), body.getLocation());
-            player.sendMessage(Component.text("  " + session.nameOf(id) + "  "
+            player.sendMessage(Component.text("  " + session.nameOf(id)
+                    + (label == null ? "" : ", " + label) + "  "
                     + Math.round(gossip * 100) + "%  " + describeTalker(gossip) + where,
                     gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.GRAY));
             if (body != null && gossip >= TALKATIVE && toLight.size() < MOST_TO_LIGHT) {

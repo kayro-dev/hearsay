@@ -42,9 +42,15 @@ public final class BeliefReport {
                 throughWhom(belief));
     }
 
-    /** What they actually think, at the severity they heard it. */
+    /**
+     * What they actually think, at the severity they heard it.
+     *
+     * <p>Items are stored singular — the claim is about "diamond" — and pluralised here,
+     * the same way {@link Narrator} does it. A villager does not say "diamond are running
+     * short".
+     */
     private static String describe(Rumor version) {
-        String item = version.claim().item();
+        String item = version.claim().item() + "s";
         return switch (version.claim().type()) {
             case SCARCE -> switch (version.severity()) {
                 case 1 -> item + " are getting scarce";

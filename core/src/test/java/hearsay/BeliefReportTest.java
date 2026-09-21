@@ -53,6 +53,16 @@ class BeliefReportTest {
     }
 
     @Test
+    void villagersSpeakEnglish() {
+        // Claims name the item in the singular, so anything reading one back has to
+        // pluralise it. "diamond are running short" is nobody talking.
+        WorldState world = villageToldALie().finalState();
+
+        String said = findSomebodyWhoBelieves(world);
+        assertTrue(said.contains("diamonds"), "should say diamonds, not diamond: " + said);
+    }
+
+    @Test
     void itSaysWhereTheyHadItFrom() {
         WorldState world = villageToldALie().finalState();
 

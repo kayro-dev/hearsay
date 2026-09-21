@@ -133,15 +133,17 @@ final class Displays {
      * body is not a name.
      */
     void showBeliefs(World world, Map<Integer, Villager> bodies, Map<Integer, String> names,
-                     Map<Integer, Double> gossip, Map<Integer, Double> confidences,
+                     Map<Integer, String> labels, Map<Integer, Double> gossip,
+                     Map<Integer, Double> confidences,
                      Map<Integer, Integer> asks, int basePrice, Map<Integer, Spot> spotsToShow) {
         bodies.forEach((id, body) -> {
             if (!body.isValid()) {
                 removeLabel(world, id);
                 return;
             }
-            labelFor(world, id, body).text(labelText(names.get(id), gossip.get(id),
-                    confidences.get(id), asks.get(id), basePrice, spotsToShow.get(id)));
+            labelFor(world, id, body).text(labelText(names.get(id), labels.get(id),
+                    gossip.get(id), confidences.get(id), asks.get(id), basePrice,
+                    spotsToShow.get(id)));
         });
     }
 
@@ -154,8 +156,9 @@ final class Displays {
      * villager asking the ordinary price is white and says nothing, which is most of them
      * most of the time.
      */
-    private static Component labelText(String name, Double gossip, Double confidence,
-                                       Integer ask, int basePrice, Spot spot) {
+    private static Component labelText(String name, String label, Double gossip,
+                                       Double confidence, Integer ask, int basePrice,
+                                       Spot spot) {
         // The name, and what they would charge if it is not the ordinary price. Nothing
         // else. This used to carry four numbers at once - how talkative they are, what
         // they charge, the raw index, and how sure they were - and a player reading four
@@ -163,8 +166,13 @@ final class Displays {
         // somewhere better to be: how talkative they are is what /hearsay who is for and
         // what the green name says, the raw index is on the boss bar, and how sure they
         // are is what the glow says.
-        Component label = Component.text(name == null ? "?" : name,
+        Component plate = Component.text(name == null ? "?" : name,
                 gossip != null && gossip >= TALKATIVE ? NamedTextColor.GREEN : NamedTextColor.WHITE);
+        // Only a handful in any village carry a name, so it can afford to sit beside theirs
+        // rather than below it. A villager with no name shows no gap where one would be.
+        if (label != null) {
+            plate = plate.append(Component.text(", " + label, NamedTextColor.GRAY));
+        }
 
         if (ask != null) {
             PriceMood mood = PriceMood.of(ask, basePrice);
@@ -172,16 +180,16 @@ final class Displays {
             // are saying nothing most of the time. Only the ones who have been talked into
             // something carry a number, so a number means somebody believed something.
             if (mood != PriceMood.NORMAL) {
-                label = label.append(Component.newline())
+                plate = plate.append(Component.newline())
                         .append(Component.text(PriceMood.describe(ask, basePrice))
                                 .color(TextColor.fromHexString(mood.hex())));
             }
         }
         if (spot != null) {
-            label = label.append(Component.newline())
+            plate = plate.append(Component.newline())
                     .append(Component.text(spot.name(), NamedTextColor.AQUA));
         }
-        return label;
+        return plate;
     }
 
     /**

@@ -527,31 +527,42 @@ machinery already runs many worlds, so it can carry them.
 That is the argument for doing stage 3 at all. Stages 1 and 2 make the world richer; stage 3
 makes the question sharper, and a sharper question is worth more than a bigger world.
 
-## Between stages: personality labels — *proposed, not built*
+## Between stages: personality labels — **BUILT**
 
 A readable name for what a villager is like, from the three traits they already have. Purely
 a reading of `Traits`; it decides nothing and is worth no experiment.
 
-**The rules, which want agreeing before they are built.** One label per villager, picked by
-the first rule that matches, so a villager is never two things at once and the order is the
-priority:
+**The first proposal was wrong, and the arithmetic said so.** It gave a label to anybody past
+a fixed threshold of 0.2 or 0.8. With two tails on each of three traits that labels
+1 − 0.6³ ≈ 78% of a village, and measurement on the calibration seeds confirmed exactly 78%:
+a median of sixteen villagers in twenty carrying a name, which is a name on nobody.
 
-| Label | When | Why it is first |
-| --- | --- | --- |
-| **the Town Crier** | gossip ≥ 0.80 | The one the player most needs to find. It outranks everything |
-| **the Sceptic** | credulity ≤ 0.20 | A wall a rumour dies against, and worth knowing before you spend a lie on them |
-| **the Worrier** | credulity ≥ 0.80 | Believes the first thing they hear. The Crier's opposite number and just as useful |
-| **the Hoarder** | greed ≥ 0.80 | Prices high whatever they believe |
-| **the Quiet One** | gossip ≤ 0.20 | A rumour told here goes nowhere |
-| **the Haggler** | greed ≤ 0.20 | Prices low whatever they believe |
-| *(no label)* | none of the above | Most of the village. A label on everybody is a label on nobody |
+**Labels are relative and rationed instead.** Each name belongs to the single most extreme
+villager in *that* village for *that* trait, and a village supports only about one name per
+five people:
 
-**Three deliberate choices.** The thresholds are 0.2 and 0.8, so about a fifth of villagers
-carry a label at all and it keeps meaning something. Gossip outranks credulity because who
-*spreads* a rumour matters more than who believes it — E8 put the planter at about a third
-of the variance and E27 showed what aiming badly costs. And nothing is labelled by what it
-believes, only by what it is: beliefs change every day, and a name that changed with them
-would be useless for choosing whom to tell.
+| | |
+| --- | --- |
+| **How many** | `max(1, villagers / 5)` — four in a village of twenty, one in a hamlet |
+| **First** | the Town Crier, always, out of turn. Whoever talks most is who the player needs |
+| **Then** | the most extreme remaining traits, ranked by distance from 0.5 |
+| **Floor** | 0.70 high or 0.30 low, so a village of mild people is left unnamed |
+| **Never** | two villagers with one name, or one villager with two |
+
+The names are the Town Crier and the Quiet One for gossip, the Worrier and the Sceptic for
+credulity, the Hoarder and the Haggler for greed.
+
+**Why gossip goes first**: who *spreads* a rumour matters more than who believes it. E8 put
+the planter at about a third of the variance, and E27 showed a single well-aimed lie beating
+four scattered ones. **Why nothing is named for what it believes**: beliefs change every
+day, and a name that changed with them would be useless for the one thing a player needs it
+for, which is choosing whom to tell.
+
+**A measurement worth keeping.** The floor barely does anything at twenty villagers — the
+maximum of twenty uniform draws averages about 0.95, so it clears 0.70, 0.80 and 0.85
+alike, and removing it entirely changes nothing. It earns its keep only in small villages,
+and the rationing is what does the real work. That is worth knowing, because it means
+raising the floor is not a lever on how many names a village carries; the divisor is.
 
 **Where it shows.** Beside the percentage in `/hearsay who`, and on the second line of the
 villager's name plate. Not replacing the gossip figure, which is the number the player acts

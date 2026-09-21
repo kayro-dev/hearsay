@@ -6,6 +6,7 @@ import hearsay.ClaimType;
 import hearsay.MeetingSource;
 import hearsay.ObservedMeeting;
 import hearsay.Params;
+import hearsay.Personality;
 import hearsay.PlantRumor;
 import hearsay.PlayerTraded;
 import hearsay.ProximityPairing;
@@ -184,6 +185,11 @@ final class VillageSession {
                      java.util.NavigableSet<Integer> witnesses) {
         simulation.schedule(new PlayerTraded(simulation.state().tick() + 1,
                 villagerId, count, emeralds, witnesses));
+    }
+
+    /** Who in this village answers to what. Reads the world; changes nothing. */
+    Map<Integer, String> labels() {
+        return Personality.of(simulation.state());
     }
 
     /** What this villager would tell you if you asked. Reads the world; changes nothing. */
