@@ -32,18 +32,31 @@ public final class DashboardPage {
      * @param withLie    the village as it happened
      * @param withoutLie the same village, same seed, same everything, with the lie removed
      */
+    /**
+     * How long after a lie a bubble may still be laid at its door. A month, as
+     * {@code CalibrationTest} counts it, so the page and the tests make the same claim.
+     */
+    public static final int WITHIN_DAYS = 30;
+
     public static String render(long seed, int ticks, Params params, Claim claim,
-                                MarketStats withLie, MarketStats withoutLie) {
-        return render(seed, ticks, params, claim, withLie, withoutLie, null);
+                                MarketStats withLie, MarketStats withoutLie, long lieToldAt) {
+        return render(seed, ticks, params, claim, withLie, withoutLie, null, lieToldAt);
     }
 
     /**
      * @param footprint the four-way split of who moved the price, or null when nobody
      *                  traded and there is nothing to split
      */
+    /**
+     * @param lieToldAt the tick the first lie was planted, or 0 if none was. Bubbles are
+     *                  only credited to it within {@link #WITHIN_DAYS} of it: E38 measured
+     *                  that 22 points of what an unwindowed count attributed to a lie
+     *                  happened more than a month later, by which time a village has had
+     *                  time to talk itself into anything
+     */
     public static String render(long seed, int ticks, Params params, Claim claim,
                                 MarketStats withLie, MarketStats withoutLie,
-                                Footprint footprint) {
+                                Footprint footprint, long lieToldAt) {
         StringBuilder out = new StringBuilder();
         out.append("<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">")
            .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
@@ -62,14 +75,19 @@ public final class DashboardPage {
         // out that it means 38% dear, and the whole index is built so 100 is normal.
         priceFact(out, "Peak, with the lie", withLie.peakPrice(), params.basePrice());
         priceFact(out, "Peak, without it", withoutLie.peakPrice(), params.basePrice());
-        fact(out, "Bubbles", withLie.bubbles().size() + " / " + withoutLie.bubbles().size());
+        fact(out, "Bubbled within " + WITHIN_DAYS + " days of the lie",
+                said(withLie.bubbleWithin(lieToldAt, WITHIN_DAYS).isPresent())
+                        + " / " + said(withoutLie.bubbleWithin(lieToldAt, WITHIN_DAYS).isPresent()));
+        fact(out, "Bubbles at any point in the run",
+                withLie.bubbles().size() + " / " + withoutLie.bubbles().size());
         fact(out, "Busts", withLie.busts().size() + " / " + withoutLie.busts().size());
         fact(out, "Held the rumour", peakHolders(withLie) + " of " + params.villagers());
         fact(out, "Evidence from gossip", withLie.shareFromGossip().isPresent()
                 ? Math.round(withLie.shareFromGossip().getAsDouble() * 100) + "%" : "—");
         out.append("</section>");
 
-        out.append("<p class=\"verdict\">").append(verdict(withLie, withoutLie)).append("</p>");
+        out.append("<p class=\"verdict\">").append(verdict(withLie, withoutLie, lieToldAt))
+           .append("</p>");
 
         out.append("<h2>The price</h2>");
         out.append("<p class=\"sub\">Gold is what happened. Grey is the same village with the "
@@ -112,13 +130,34 @@ public final class DashboardPage {
         return out.toString();
     }
 
-    /** What the two runs together actually say, in a sentence. */
-    private static String verdict(MarketStats withLie, MarketStats withoutLie) {
+    private static String said(boolean yes) {
+        return yes ? "yes" : "no";
+    }
+
+    /**
+     * What the two runs together actually say, in a sentence.
+     *
+     * <p>Only a bubble inside the window counts as the lie's doing. A page that said "the
+     * lie caused a bubble" about something that happened five months later would be making
+     * a claim the numbers do not support.
+     */
+    private static String verdict(MarketStats withLie, MarketStats withoutLie, long lieToldAt) {
         int gap = withLie.peakPrice() - withoutLie.peakPrice();
+        // The counterfactual is the evidence: this village bubbled and the same village
+        // without the lie did not. The window's job is to catch a claim that cannot be
+        // pinned on the lie, not to overrule one that can — a village that reached its
+        // peak on day 102 with nineteen believers, against a twin with none, was caused by
+        // the lie however long it took.
         boolean bubbled = !withLie.bubbles().isEmpty();
         boolean bubbledAnyway = !withoutLie.bubbles().isEmpty();
+        boolean soonAfter = withLie.bubbleWithin(lieToldAt, WITHIN_DAYS).isPresent();
         if (bubbled && !bubbledAnyway) {
-            return "The lie caused a bubble. The same village, left alone, never had one.";
+            return soonAfter
+                    ? "The lie caused a bubble, within " + WITHIN_DAYS + " days of being "
+                            + "told. The same village, left alone, never had one."
+                    : "The lie caused a bubble. It took longer than " + WITHIN_DAYS
+                            + " days to arrive, but the same village left alone never had "
+                            + "one at all.";
         }
         if (bubbled) {
             return "Both villages bubbled, so this run does not show the lie causing it.";

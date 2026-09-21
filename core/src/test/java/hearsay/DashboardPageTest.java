@@ -20,7 +20,7 @@ class DashboardPageTest {
         Run withoutLie = Run.execute(seed, params, List.of(), TICKS);
         return DashboardPage.render(seed, TICKS, params, DIAMONDS_SCARCE,
                 MarketStats.of(withLie.log(), DIAMONDS_SCARCE),
-                MarketStats.of(withoutLie.log(), DIAMONDS_SCARCE));
+                MarketStats.of(withoutLie.log(), DIAMONDS_SCARCE), 1);
     }
 
     @Test
@@ -45,7 +45,7 @@ class DashboardPageTest {
         MarketStats withoutLie = MarketStats.of(
                 Run.execute(seed, params, List.of(), TICKS).log(), DIAMONDS_SCARCE);
 
-        String page = DashboardPage.render(seed, TICKS, params, DIAMONDS_SCARCE, withLie, withoutLie);
+        String page = DashboardPage.render(seed, TICKS, params, DIAMONDS_SCARCE, withLie, withoutLie, 1);
 
         assertTrue(page.contains(String.valueOf(withLie.peakPrice())),
                 "the peak with the lie is missing");
@@ -62,6 +62,9 @@ class DashboardPageTest {
         // Seeds 1165 and 2160 are the awkward ones: those villages bubble with nobody
         // lying to them, so "it bubbled" and "the lie caused it" come apart, and a page
         // that cannot tell them apart says something false about exactly those runs.
+        // The page also has to say when it happened, since a bubble months after the lie
+        // is a weaker claim than one a fortnight after it — but it is still the lie's,
+        // when the village without one never bubbled at all.
         for (long seed : new long[] {1001, 1002, 1003, 1165, 2160}) {
             Params params = Params.defaults();
             int planter = Run.execute(seed, params, List.of(), 1)
@@ -72,7 +75,7 @@ class DashboardPageTest {
             MarketStats withoutLie = MarketStats.of(
                     Run.execute(seed, params, List.of(), TICKS).log(), DIAMONDS_SCARCE);
             String page = DashboardPage.render(seed, TICKS, params, DIAMONDS_SCARCE,
-                    withLie, withoutLie);
+                    withLie, withoutLie, 1);
 
             boolean claimsCause = page.contains("The lie caused a bubble");
             boolean reallyCaused = !withLie.bubbles().isEmpty() && withoutLie.bubbles().isEmpty();
@@ -88,7 +91,7 @@ class DashboardPageTest {
                 Run.execute(7, params, List.of(), 8).log(), DIAMONDS_SCARCE);
 
         String page = assertDoesNotThrow(
-                () -> DashboardPage.render(7, 8, params, DIAMONDS_SCARCE, quiet, quiet));
+                () -> DashboardPage.render(7, 8, params, DIAMONDS_SCARCE, quiet, quiet, 1));
         assertTrue(page.contains("</html>"), "the page should be complete even when empty");
     }
 }

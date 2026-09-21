@@ -34,6 +34,15 @@ final class Dashboard {
     private Dashboard() {
     }
 
+    /** When the first lie was told, which is what a bubble is timed against. */
+    private static long firstLieAt(Run run) {
+        return run.inputs().stream()
+                .filter(input -> input instanceof PlantRumor)
+                .mapToLong(hearsay.Input::tick)
+                .min()
+                .orElse(0);
+    }
+
     static void write(String[] args) {
         Map<String, String> options = Options.parse(args);
         Path out = Path.of(options.getOrDefault("out", "build/dashboard.html"));
@@ -69,7 +78,7 @@ final class Dashboard {
                 DIAMONDS_SCARCE,
                 MarketStats.of(withLie.log(), DIAMONDS_SCARCE),
                 MarketStats.of(withoutLie.log(), DIAMONDS_SCARCE),
-                Footprint.of(withLie, DIAMONDS_SCARCE));
+                Footprint.of(withLie, DIAMONDS_SCARCE), firstLieAt(withLie));
 
         try {
             if (out.getParent() != null) {
