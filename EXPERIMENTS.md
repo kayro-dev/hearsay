@@ -1058,3 +1058,58 @@ meant. Every row held exactly 13 fields rather than 8, which made it repairable 
 loss, and the sweep above ran on the repaired file. Every file-writing format call in the
 project is now pinned to `Locale.ROOT`, with a test that writes a survey under a
 comma-decimal locale and reads it back.
+
+---
+
+## E14 — The wider range worked; the village is the problem now
+
+First session recorded at a range of ten blocks. 18 villagers, 544 ticks, one rumor.
+
+**The market fix did what E13 said it would.** Prices on 191 of 544 ticks, 35%, against 1%
+in E12 and 21% at three blocks in E13's sweep. The price moved for the first time in an
+in-game session, ranging 92 to 108 rather than sitting at 103 to 105.
+
+**And the rumor still went nowhere.** Nine tellings in 544 ticks, peaking at four villagers
+holding it and one believing it, then fading. Zero price observations.
+
+| | played | headless, same size and length |
+| --- | --- | --- |
+| meetings per villager per tick | 0.237 | 0.570 |
+| tellings | 9 | 143 |
+| price observations | 0 | 197 |
+| peak holders | 4 of 18 | 18 of 18 |
+| peak price | 108 | 165 |
+
+### Why
+
+The survey says what kind of village this was:
+
+| | count, of 18 |
+| --- | --- |
+| villagers with no workstation | 13 |
+| villagers with no bed | 10 |
+| **villagers with neither** | **9** |
+
+Half the village has nowhere to work and nowhere to sleep, so half the village does nothing
+but wander. They never gather, which is why this village meets at 0.237 per villager per
+tick against the model's 0.570 — less than half — where E10's dense village of 31 managed
+0.655 and out-talked the model.
+
+From there the chain is arithmetic. Few meetings give few tellings, nine of them. Few
+tellings give one believer. One believer cannot move a median: they ask 175 at full
+confidence, but the market averages 2.5 sellers and the rest ask 100, so the middle of the
+three is 100. The price therefore wanders between 92 and 108, and an observation needs it
+past 111 or under 90. It crossed neither line once in 544 ticks, so nothing was ever
+reinforced, and belief decayed exactly as it should.
+
+**This is not a parameter.** Every previous session pointed at something in the model — the
+quorum, the window, the mapping range — and each of those turned out to be real and was
+fixed. This one points at the village. Villagers with no bed and no workstation are not a
+village that a model of village gossip can say anything about, and no setting will make
+them behave like one.
+
+**Decision.** Nothing changed. What this needs is a village with beds and workstations for
+its villagers, not another sweep. E10 already showed what a dense village does to the
+gossip side: 0.655 meetings per villager per tick, better than the model. Put that village
+together with the ten-block range and the market that now opens on a third of ticks, and
+the loop has everything it needs for the first time.
