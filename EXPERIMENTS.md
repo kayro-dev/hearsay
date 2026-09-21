@@ -2071,3 +2071,74 @@ lie has to start from a village that has just convinced itself of the opposite.
 no notion of a bust, though this run had a larger one than its bubble; and the ratio of
 tellings to observations wants watching as a measure in its own right, since no sweep so far
 has looked at it.
+
+---
+
+## E29 — Making gossip the mechanism again, and a bug that was hiding behind the threshold
+
+E28 recorded 15 tellings against 94 price observations and no measure to hold it to. This
+adds one, sweeps against it, and corrects a hypothesis of mine along the way.
+
+**The measure.** `MarketStats.shareFromGossip()` is the share of the evidence in a run that
+came from one villager telling another, as against the price telling everyone at once. 1.0
+is a rumor that spread; 0.0 is a village that watched the market. `busts()` is added
+beside `bubbles()` at the same time, since E28's bust was bigger than its bubble and went
+uncounted.
+
+**My hypothesis was wrong.** I expected `observationWeight` 0.28 to be too high for villages
+of this size. It is not the lever at all:
+
+| observationWeight | headless share from gossip | 24v played | 25v played | 26v played |
+| --- | --- | --- | --- | --- |
+| 0.20 | 0.43 | 0.22 | 0.59 | 0.73 |
+| 0.24 | 0.40 | 0.21 | 0.47 | 0.74 |
+| 0.28 (then) | 0.38 | 0.24 | 0.48 | 0.68 |
+| 0.32 | 0.41 | 0.55 | 0.51 | 0.60 |
+
+Flat within noise across the whole range, and at 0.20 the session that prompted the question
+still reads 0.22. Weighing the market less does not make anyone gossip more; it only makes
+the same gossip worth proportionally more, and the tellings never happened either way.
+
+**The lever is `tellThreshold`, which E21 had already pointed at for another reason.**
+
+| tellThreshold | headless share | bursts | quiet | 24v | 25v | 26v |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0.40 (then) | 0.38 | 36% | 0% | 0.24 / 125 | 0.48 / 128 | 0.73 / 145 |
+| 0.35 | 0.42 | 37% | 0% | 0.17 / 122 | 0.43 / 127 | 0.64 / 148 |
+| 0.30 | 0.47 | 38% | 0% | 0.29 / 123 | 0.67 / 123 | 0.74 / 162 |
+| **0.25** | **0.53** | **45%** | **0%** | **0.45 / 127** | **0.63 / 130** | **0.66 / 153** |
+
+E21 measured that a freshly heard rumor lands near 0.4 and decays under it within about two
+days, after which it is never repeated. The consequence was not only a low price; it was
+that the market had to do all the convincing. At 0.25 the chain has room to live: gossip
+becomes the majority of the evidence headless, and the session that prompted this goes from
+0.24 to 0.45.
+
+**Adopted: `tellThreshold` 0.25.** Villagers now repeat things they are only a quarter sure
+of, which is what people do. Validated on held-back seeds 2001-2200: the lie still moves the
+price in 198 of 200 paired worlds, the median gap rises from +19 to +21, and bubbles caused
+only by the lie go from 63 to 68. The burst rate of 45% sits inside the 25-60% band, so
+`CalibrationTest` is unchanged, and quiet villages still burst 0% of the time on the
+calibration seeds.
+
+**One nuance about that guarantee, since it came up in the same run.** On the wider seed set
+2001-2200, one paired world in 200 bubbles *without* the lie while its partner does not.
+That is true at 0.40 as well as 0.25, so it is not a regression, but the guarantee is
+"0% on the hundred calibration seeds", not "never on any seed". About half a percent of
+villages do talk themselves into it unaided.
+
+### A real bug, hiding behind the old threshold
+
+Lowering the threshold made `RumorStats` throw. A rumor born of somebody reading the market
+price had no family registered — `familyOf` was filled in for planted and mutated rumors and
+not for observed ones — so the first time such a rumor was *told on*, the lookup returned
+null. It had been unreachable for as long as observed beliefs sat below the telling
+threshold and were never repeated. Fixed, with a regression test checked by putting the bug
+back.
+
+It is worth noting how it surfaced. No sweep found it, and no test caught it; it appeared
+because a parameter moved and made a path reachable for the first time. Every experiment
+before this one ran with that path dead.
+
+**Decision.** Adopted: `tellThreshold` 0.25, `shareFromGossip()`, `busts()`, and the
+`RumorStats` fix. Nothing else changed, and the quiet-village guarantee is untouched.

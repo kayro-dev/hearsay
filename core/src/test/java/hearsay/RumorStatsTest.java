@@ -20,6 +20,24 @@ class RumorStatsTest {
     }
 
     @Test
+    void aRumorBornOfThePriceCanBeToldOnLikeAnyOther() {
+        // A real defect, found when E29 lowered the telling threshold. A rumor started by
+        // somebody reading the market price had no family registered, so the moment one was
+        // repeated to anyone the report threw. It stayed hidden only because observed
+        // beliefs used to sit below the threshold and were never passed on.
+        Run run = Run.execute(42, Params.defaults().withMixing(1.0),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 10)), 400);
+
+        boolean anyObserved = run.log().stream().anyMatch(e -> e instanceof PriceObserved);
+        assertTrue(anyObserved, "this fixture should have somebody reading the price");
+
+        RumorStats stats = RumorStats.of(run.log()); // threw before the fix
+        for (int family : stats.families()) {
+            assertNotNull(stats.daily(family), "family " + family + " has no days");
+        }
+    }
+
+    @Test
     void believingIsAlwaysASubsetOfHavingHeard() {
         RumorStats stats = RumorStats.of(aRun(200).log());
         int family = stats.families().first();

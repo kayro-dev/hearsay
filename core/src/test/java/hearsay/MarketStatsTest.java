@@ -151,6 +151,55 @@ class MarketStatsTest {
     }
 
     @Test
+    void everyCountedBustFellAwayAndCameBackUp() {
+        // E28: the village fell to 73 from a base of 100 after its bubble deflated, and
+        // nothing counted that at all. A deflating bubble overshoots, because the fall is
+        // read as evidence of plenty on the same terms the climb was read as scarcity.
+        MarketStats stats = afterARumor();
+
+        assertFalse(stats.busts().isEmpty(), "this run should bust as well as bubble");
+        for (Bubble bust : stats.busts()) {
+            assertTrue(bust.peakPrice() < Bubble.TROUGH_BELOW, "did not fall away: " + bust);
+            assertTrue(bust.recoveryPrice() > Bubble.BACK_ABOVE, "did not come back: " + bust);
+            assertTrue(bust.recoveryTick() > bust.peakTick(), "came back before it fell");
+        }
+    }
+
+    @Test
+    void aBustIsNotCountedUntilThePriceComesBack() {
+        // The same rule bubbles are held to. A price still on the floor when the run ends
+        // is a village that got poorer, not one that panicked and recovered.
+        MarketStats stats = afterARumor();
+
+        for (Bubble bust : stats.busts()) {
+            assertTrue(bust.recoveryPrice() > Bubble.BACK_ABOVE,
+                    "a bust that never came back was counted: " + bust);
+        }
+    }
+
+    @Test
+    void theShareFromGossipSeparatesARumorSpreadingFromAPriceBeingWatched() {
+        MarketStats stats = afterARumor();
+
+        assertTrue(stats.tellings() > 0, "somebody should have told somebody");
+        double share = stats.shareFromGossip().orElseThrow();
+        assertEquals(stats.tellings() / (double) (stats.tellings() + stats.priceReadings()),
+                share, 1e-12);
+        assertTrue(share >= 0 && share <= 1, "a share outside 0 to 1: " + share);
+    }
+
+    @Test
+    void aRunWhereNothingIsEverSaidOrReadHasNoShareToReport() {
+        MarketStats quiet = MarketStats.of(
+                Run.execute(7, Params.defaults().withMixing(1.0), List.of(), 40).log(),
+                DIAMONDS_SCARCE);
+
+        assertEquals(0, quiet.tellings());
+        assertTrue(quiet.shareFromGossip().isEmpty(),
+                "with nothing said and nothing read there is no share, not a zero");
+    }
+
+    @Test
     void everyCountedBubbleRanUpAndCameBackDown() {
         MarketStats stats = afterARumor();
 

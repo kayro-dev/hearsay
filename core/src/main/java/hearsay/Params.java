@@ -4,7 +4,11 @@ package hearsay;
  * Every tuning knob in one place. Together with the seed and the input events, a Params
  * value is the full recipe for a run: save those three and the run can be reproduced.
  *
- * @param tellThreshold       a belief weaker than this is not worth mentioning
+ * @param tellThreshold       a belief weaker than this is not worth mentioning. Low on
+ *                            purpose: people repeat things they only half believe, and at
+ *                            0.4 a freshly heard rumor fell under it within two days and
+ *                            was never passed on again, which left the market doing nearly
+ *                            all the convincing (E29)
  * @param repeatWeight        how much evidence a source already in the listener's chain
  *                            carries, next to 1.0 for an independent one
  * @param contradictionFactor multiplier when the listener believes the opposite claim
@@ -139,7 +143,7 @@ public record Params(
     public static final double MIXING = 0.05;
 
     public static Params defaults() {
-        return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
+        return new Params(0.25, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
                 100, 0.75, 0.28, 0.10, 0.20, 0.030, 0.86, 0.25, 0, MeetingSource.SIMULATED,
                 Simulation.VILLAGER_COUNT, MIXING);
     }

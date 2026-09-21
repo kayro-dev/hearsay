@@ -28,10 +28,12 @@ public final class MarketStats {
     private final Long halfBelievingAt;
     private final int villagers;
     private final List<int[]> priceSeries; // {tick, price}, in order
+    private final int tellings;
+    private final int priceReadings;
 
     private MarketStats(Claim claim, double believeThreshold, List<DayOfTrading> daily,
                         int peakPrice, Long halfBelievingAt, List<int[]> priceSeries,
-                        int villagers) {
+                        int villagers, int tellings, int priceReadings) {
         this.claim = claim;
         this.believeThreshold = believeThreshold;
         this.daily = daily;
@@ -39,6 +41,8 @@ public final class MarketStats {
         this.halfBelievingAt = halfBelievingAt;
         this.priceSeries = priceSeries;
         this.villagers = villagers;
+        this.tellings = tellings;
+        this.priceReadings = priceReadings;
     }
 
     public static MarketStats of(List<Event> log, Claim claim) {
@@ -55,10 +59,18 @@ public final class MarketStats {
         int day = 0;
         Long halfBelievingAt = null;
         List<int[]> priceSeries = new ArrayList<>();
+        int tellings = 0;
+        int priceReadings = 0;
 
         for (Event event : log) {
             mirror.apply(event);
 
+            if (event instanceof RumorTold told && mirror.rumor(told.keptRumorId()).claim().equals(claim)) {
+                tellings++;
+            }
+            if (event instanceof PriceObserved read && read.claim().equals(claim)) {
+                priceReadings++;
+            }
             if (event instanceof MarketPriceSet priced) {
                 priceSeries.add(new int[] {(int) priced.tick(), priced.price()});
                 peakPrice = Math.max(peakPrice, priced.price());
@@ -78,7 +90,7 @@ public final class MarketStats {
             }
         }
         return new MarketStats(claim, believeThreshold, daily, peakPrice, halfBelievingAt,
-                priceSeries, mirror.villagers().size());
+                priceSeries, mirror.villagers().size(), tellings, priceReadings);
     }
 
     private static int holders(WorldState state, Claim claim) {
@@ -182,6 +194,63 @@ public final class MarketStats {
                 found.add(new Bubble(peak, peakAt, price, tick,
                         (tick - peakAt) / (double) TICKS_PER_DAY));
                 climbing = false;
+            }
+        }
+        return found;
+    }
+
+    /** How many times somebody was told this claim by another villager. */
+    public int tellings() { return tellings; }
+
+    /** How many times somebody read this claim out of the market price instead. */
+    public int priceReadings() { return priceReadings; }
+
+    /**
+     * What share of the evidence in this run came from one villager telling another, as
+     * against the price telling everyone at once. Empty when neither ever happened.
+     *
+     * <p>Worth its own measure because a run can reach the same peak either way, and the
+     * two are not the same story. This project is about a rumor spreading; a village that
+     * arrived at the same price by watching the market has done something else, and no
+     * sweep before E29 would have noticed the difference. E28 ran at 0.14 here while E26
+     * ran at 0.50, on peaks that looked comparable.
+     */
+    public java.util.OptionalDouble shareFromGossip() {
+        int both = tellings + priceReadings;
+        return both == 0 ? java.util.OptionalDouble.empty()
+                : java.util.OptionalDouble.of(tellings / (double) both);
+    }
+
+    /**
+     * Every bust: each excursion under {@link Bubble#TROUGH_BELOW} that later came back
+     * over {@link Bubble#BACK_ABOVE}.
+     *
+     * <p>The mirror of {@link #bubbles()}, and it exists because the loop runs both ways.
+     * A price that has been talked up gets talked down again past where it started, since
+     * a falling price is evidence of plenty on exactly the terms a rising one was evidence
+     * of scarcity. Reported as a {@link Bubble} with its trough where a bubble has its
+     * peak, so the two read the same way round.
+     */
+    public List<Bubble> busts() {
+        List<Bubble> found = new ArrayList<>();
+        boolean falling = false;
+        int trough = Integer.MAX_VALUE;
+        long troughAt = 0;
+
+        for (int[] point : priceSeries) {
+            long tick = point[0];
+            int price = point[1];
+            if (price < Bubble.TROUGH_BELOW) {
+                if (!falling || price < trough) {
+                    trough = price;
+                    troughAt = tick;
+                }
+                falling = true;
+            } else if (falling && price > Bubble.BACK_ABOVE) {
+                found.add(new Bubble(trough, troughAt, price, tick,
+                        (tick - troughAt) / (double) TICKS_PER_DAY));
+                falling = false;
+                trough = Integer.MAX_VALUE;
             }
         }
         return found;

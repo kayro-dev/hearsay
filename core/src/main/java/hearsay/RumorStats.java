@@ -103,6 +103,24 @@ public final class RumorStats {
                     conversionsBy.put(e.rumorId(), new TreeMap<>());
                 }
                 case RumorMutated e -> familyOf.put(e.rumorId(), familyOf.get(e.parentId()));
+                // A rumor born of somebody reading the market price starts a family of its
+                // own, exactly as a planted one does. Only the first villager to reach a
+                // given conclusion creates it; everyone after joins the family already
+                // there, which is why this checks before registering. Missing this was a
+                // real defect rather than an omission: once such a rumor was told on, the
+                // lookup below found no family and threw. It stayed hidden while the
+                // telling threshold was high enough that observed beliefs were never
+                // repeated, and E29 lowered it.
+                case PriceObserved e -> {
+                    if (!familyOf.containsKey(e.rumorId())) {
+                        familyOf.put(e.rumorId(), e.rumorId());
+                        claims.put(e.rumorId(), e.claim());
+                        daily.put(e.rumorId(), new ArrayList<>());
+                        lifetimeDays.put(e.rumorId(), new ArrayList<>());
+                        everHeardBy.put(e.rumorId(), new TreeSet<>());
+                        conversionsBy.put(e.rumorId(), new TreeMap<>());
+                    }
+                }
                 default -> { }
             }
 
@@ -117,6 +135,9 @@ public final class RumorStats {
 
             if (event instanceof RumorPlanted planted) {
                 everHeardBy.get(planted.rumorId()).add(planted.villagerId());
+            }
+            if (event instanceof PriceObserved read) {
+                everHeardBy.get(familyOf.get(read.rumorId())).add(read.villagerId());
             }
             if (event instanceof RumorTold told) {
                 everHeardBy.get(family).add(told.listenerId());
