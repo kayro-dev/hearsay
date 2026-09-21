@@ -1151,3 +1151,61 @@ number of bound villagers still present falls, and `/hearsay status` says so pla
 some are missing. MANUAL_TESTS.md gained an instruction to set the difficulty to peaceful
 before recording: hostile mobs empty a village faster than a rumor can cross it, and no
 amount of tuning distinguishes a villager who is quiet from one who is dead.
+
+---
+
+## E16 — Villagers only ever talk to their nearest neighbour
+
+A healthy village at last: 21 villagers, peaceful, 472 ticks, every one of them present on
+every single tick. It gossips better than the model — 0.598 meetings per villager per tick
+against 0.570 — the market opens on 33% of ticks, and the rumor still went nowhere. Eleven
+tellings, four holders, one believer, no observations, price 93 to 108.
+
+Everything previously blamed is ruled out. The village is intact, it has beds and
+workstations, it meets more than the model does, its meeting network is as broad as the
+model's (18.4 distinct partners each against 20.0), and the villager who was told gets more
+chances than the model's does: 40 meetings in the first 40 ticks against 24.
+
+### Where it breaks
+
+| | told the biggest talker, played | headless, same size |
+| --- | --- | --- |
+| tellings by the villager who was told | 21 | 22 |
+| tellings by anybody else | **8** | **181** |
+| distinct villagers who heard it first-hand | **6** | 10 |
+| median confidence on first hearing | **0.36** | 0.45 |
+| of those, above the 0.4 telling threshold | 2 | 6 of 10 |
+
+The villager who is told does the same amount of telling in both. What differs is everything
+after: 8 second-hand tellings against 181.
+
+Twenty-one tellings reached only six distinct people. `ProximityPairing` gives each villager
+their *nearest* free partner, and in a real village the nearest person is the same person
+tick after tick: the busiest pairs in this session met 126, 119, 70 and 65 times. The
+headless model shuffles whoever is at a spot before pairing them, so partners rotate.
+
+So the rumor is told over and over to the same handful, while the teller's own confidence
+decays. By the time it reaches somebody new, it lands at 0.36 — under the threshold to be
+passed on — where the model's first hearings land at 0.45.
+
+### Rebuilding the same session with partners that rotate
+
+Same positions, same spots, same everything but who pairs with whom among those in range.
+
+| pairing | meetings | tellings | holders | peak price | observations |
+| --- | --- | --- | --- | --- | --- |
+| nearest | 2962 | 39 | 11 | 112 | 17 |
+| rotating, seed 1 | 2949 | 42 | 12 | 112 | 18 |
+| rotating, seed 2 | 2945 | 76 | 19 | **138** | **205** |
+| rotating, seed 3 | 2953 | 107 | 19 | **164** | 155 |
+
+Two of the three rotations light the feedback loop that has never once run in a played
+session. The number of meetings barely moves; who they are between is what matters.
+
+**Decision.** Nothing changed yet. Proposed: pair villagers by shuffling those within range
+rather than by taking the nearest, which is what the headless model has always done, seeded
+from the session seed and the tick so a run stays reproducible. The result is recorded as
+inputs either way, so replay and counterfactuals are unaffected.
+
+Worth noting it is not a guaranteed fix: one of the three rotations behaved exactly like
+nearest. It turns a village that cannot spread a rumor into one that sometimes can.
