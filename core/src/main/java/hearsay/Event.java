@@ -8,7 +8,7 @@ package hearsay;
 public sealed interface Event permits
         TickStarted, VillagerCreated, VillagerMoved, VillagersMet,
         RumorPlanted, RumorMutated, RumorTold, DayEnded,
-        MarketNoiseSet, MarketPriceSet, PriceObserved, TradeSeen {
+        MarketNoiseSet, MarketPriceSet, PriceObserved, TradeSeen, StockChecked {
 
     long tick();
 

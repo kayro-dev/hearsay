@@ -66,6 +66,9 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
     /** The confidence at which a villager counts as believing it, per VISUAL_LANGUAGE.md. */
     private static final double BELIEVES = 0.5;
 
+    /** Four simulation ticks to the day, as core counts them. */
+    private static final int TICKS_PER_DAY = 4;
+
     /** A market a player would pace out without thinking about it. */
     private static final double DEFAULT_MARKET_RADIUS = 8.0;
 
@@ -267,6 +270,12 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         priceTheCounters(bodies);
         if (market != null) {
             displays.showMarketEdge(world, market);
+            // Once a day rather than every tick. Looking in a chest is something a villager
+            // does now and then, and counting every container in the market ten times a
+            // minute would be work for nothing.
+            if (session.tick() % TICKS_PER_DAY == 0) {
+                session.reportStock(Stock.visible(world, market, org.bukkit.Material.DIAMOND));
+            }
         }
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 

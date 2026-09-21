@@ -47,6 +47,12 @@ package hearsay;
  * @param witnessWeight       the same, for a villager who only watched it happen. Seeing a
  *                            thing yourself and seeing somebody else see it are different
  *                            amounts of evidence
+ * @param checkWeight         how far toward what the village visibly has one look moves a
+ *                            villager's belief. The only rule here that pulls rather than
+ *                            pushes, and the only one that can damp a swing
+ * @param emptyEvidence       what a sight made of absence is worth against one made of
+ *                            presence. A full chest proves there are diamonds; an empty one
+ *                            proves only that none are in that chest
  * @param mixing              the chance a villager joins the village-wide pool for a
  *                            meeting rather than only meeting their own neighbourhood.
  *                            At 1.0 there are no neighbourhoods and the village is
@@ -76,7 +82,9 @@ public record Params(
         int villagers,
         double mixing,
         double tradeWeight,
-        double witnessWeight) {
+        double witnessWeight,
+        double checkWeight,
+        double emptyEvidence) {
 
     public Params {
         requireFraction(tellThreshold, "tellThreshold");
@@ -104,6 +112,8 @@ public record Params(
         requireFraction(mixing, "mixing");
         requireFraction(tradeWeight, "tradeWeight");
         requireFraction(witnessWeight, "witnessWeight");
+        requireFraction(checkWeight, "checkWeight");
+        requireFraction(emptyEvidence, "emptyEvidence");
         if (marketWindowTicks < 0) {
             throw new IllegalArgumentException(
                     "marketWindowTicks cannot be negative, was " + marketWindowTicks);
@@ -160,10 +170,18 @@ public record Params(
     public static final double TRADE_WEIGHT = 0.28;
     public static final double WITNESS_WEIGHT = 0.14;
 
+    /**
+     * How far toward what they can see one look moves a villager, and how much an empty
+     * village counts against a full one. Provisional until E35 sweeps them.
+     */
+    public static final double CHECK_WEIGHT = 0.30;
+    public static final double EMPTY_EVIDENCE = 0.25;
+
     public static Params defaults() {
         return new Params(0.25, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
                 100, 0.75, 0.28, 0.10, 0.20, 0.030, 0.86, 0.25, 0, MeetingSource.SIMULATED,
-                Simulation.VILLAGER_COUNT, MIXING, TRADE_WEIGHT, WITNESS_WEIGHT);
+                Simulation.VILLAGER_COUNT, MIXING, TRADE_WEIGHT, WITNESS_WEIGHT,
+                CHECK_WEIGHT, EMPTY_EVIDENCE);
     }
 
     // Tuning one knob should not mean restating the other eleven, and a sweep that did
@@ -173,69 +191,69 @@ public record Params(
         return new Params(value, repeatWeight, contradictionFactor, dailyDecay, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withDailyDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, value, forgetThreshold,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withForgetThreshold(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay, value,
                 mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withMutationChance(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, value, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withPriceSensitivity(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, value,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withObservationWeight(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
-                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                value, observationThreshold, fullMoveSize, marketNoise, noiseDecay, marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withNoiseDecay(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, value,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withObservationThreshold(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, value, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withFullMoveSize(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, value, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withMarketNoise(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, value, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     /** The same settings with meetings coming from outside instead of being simulated. */
@@ -243,19 +261,43 @@ public record Params(
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, value, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, value, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     /**
      * How many sellers the market needs, for this village. Never fewer than two, because
      * one villager alone is not a market, and never more than the village holds.
      */
+    public Params withPlantedConfidence(double value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, value, basePrice, priceSensitivity,
+                observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing,
+                tradeWeight, witnessWeight, checkWeight, emptyEvidence);
+    }
+
+    public Params withCheckWeight(double value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
+                observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing,
+                tradeWeight, witnessWeight, value, emptyEvidence);
+    }
+
+    public Params withEmptyEvidence(double value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
+                observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing,
+                tradeWeight, witnessWeight, checkWeight, value);
+    }
+
     public Params withTradeWeight(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
                 marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing,
-                value, witnessWeight);
+                value, witnessWeight, checkWeight, emptyEvidence);
     }
 
     public Params withWitnessWeight(double value) {
@@ -263,14 +305,14 @@ public record Params(
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
                 marketQuorumFraction, marketWindowTicks, meetingSource, villagers, mixing,
-                tradeWeight, value);
+                tradeWeight, value, checkWeight, emptyEvidence);
     }
 
     public Params withMixing(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, value, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers, value, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     /**
@@ -295,7 +337,7 @@ public record Params(
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, value, meetingSource, villagers, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, value, meetingSource, villagers, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     /** The same settings for a village of a different size. */
@@ -303,7 +345,7 @@ public record Params(
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
                 observationWeight, observationThreshold, fullMoveSize, marketNoise, noiseDecay,
-                marketQuorumFraction, marketWindowTicks, meetingSource, value, mixing, tradeWeight, witnessWeight);
+                marketQuorumFraction, marketWindowTicks, meetingSource, value, mixing, tradeWeight, witnessWeight, checkWeight, emptyEvidence);
     }
 
     private static void requireFraction(double value, String name) {

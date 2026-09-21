@@ -26,11 +26,11 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 5";
+    private static final String HEADER = "hearsay-recipe 6";
 
     private static final java.util.Set<String> READABLE_HEADERS =
             java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3",
-                    "hearsay-recipe 4", HEADER);
+                    "hearsay-recipe 4", "hearsay-recipe 5", HEADER);
 
     private RecipeFile() {
     }
@@ -110,7 +110,9 @@ public final class RecipeFile {
                 + " villagers=" + p.villagers()
                 + " mixing=" + p.mixing()
                 + " tradeWeight=" + p.tradeWeight()
-                + " witnessWeight=" + p.witnessWeight();
+                + " witnessWeight=" + p.witnessWeight()
+                + " checkWeight=" + p.checkWeight()
+                + " emptyEvidence=" + p.emptyEvidence();
     }
 
     private static Params readParams(String text) {
@@ -149,7 +151,13 @@ public final class RecipeFile {
                 values.containsKey("tradeWeight")
                         ? number(values, "tradeWeight") : Params.TRADE_WEIGHT,
                 values.containsKey("witnessWeight")
-                        ? number(values, "witnessWeight") : Params.WITNESS_WEIGHT);
+                        ? number(values, "witnessWeight") : Params.WITNESS_WEIGHT,
+                // Written before anybody could look at a chest, so no check ever happened
+                // in them and the weights cannot change what they replay to.
+                values.containsKey("checkWeight")
+                        ? number(values, "checkWeight") : Params.CHECK_WEIGHT,
+                values.containsKey("emptyEvidence")
+                        ? number(values, "emptyEvidence") : Params.EMPTY_EVIDENCE);
     }
 
     /**
@@ -189,6 +197,8 @@ public final class RecipeFile {
             // would replay to a different village.
             case PlayerTraded t -> "trade " + t.tick() + " " + t.villagerId() + " "
                     + t.count() + " " + t.emeralds() + " " + join(t.witnesses());
+            case RealityChecked c -> "saw " + c.tick() + " " + c.villagerId() + " "
+                    + c.item() + " " + c.sawHowMany();
         };
     }
 
@@ -220,6 +230,8 @@ public final class RecipeFile {
                     Integer.parseInt(parts[4]), Integer.parseInt(parts[5]));
             case "seen" -> new VillagerSeen(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Spot.valueOf(parts[3]));
+            case "saw" -> new RealityChecked(Long.parseLong(parts[1]),
+                    Integer.parseInt(parts[2]), parts[3], Integer.parseInt(parts[4]));
             case "trade" -> new PlayerTraded(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
                     Integer.parseInt(parts[4]), split(parts.length > 5 ? parts[5] : ""));

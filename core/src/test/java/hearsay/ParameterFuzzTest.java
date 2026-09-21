@@ -46,7 +46,9 @@ class ParameterFuzzTest {
                 2 + fuzz.nextInt(Simulation.MOST_VILLAGERS - 1),
                 fraction(),                     // mixing
                 fraction(),                     // tradeWeight
-                fraction());                    // witnessWeight
+                fraction(),                     // witnessWeight
+                fraction(),                     // checkWeight
+                fraction());                    // emptyEvidence
     }
 
     private double fraction() {
@@ -75,6 +77,12 @@ class ParameterFuzzTest {
                 }
                 inputs.add(new PlayerTraded(2 + fuzz.nextInt(TICKS - 2), trader,
                         1 + fuzz.nextInt(64), 1 + fuzz.nextInt(64), watching));
+            }
+            // Villagers looking at what the village has, which reaches the only rule in
+            // the model that can lower a confidence rather than raise it.
+            for (int look = 0; look < fuzz.nextInt(6); look++) {
+                inputs.add(new RealityChecked(2 + fuzz.nextInt(TICKS - 2),
+                        fuzz.nextInt(params.villagers()), Simulation.DIAMOND, fuzz.nextInt(80)));
             }
             inputs.sort(java.util.Comparator.comparingLong(Input::tick));
 

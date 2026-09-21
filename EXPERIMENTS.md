@@ -2423,3 +2423,68 @@ re-runs, and the saturation starts meaning what it says.
 a reality check has to be a standing fact about supply, because an event this light cannot
 hold a village's attention. The bulk-sale grouping is fixed first, since every future
 measurement of selling depends on the count being right.
+
+---
+
+## E35 — Reality checks built, and the success test was wrong
+
+Stage 4 built: a villager standing in the market looks once a day at how many diamonds are
+in containers there, and their belief is **pulled toward** what they can see rather than
+shoved away from where it was.
+
+```
+new = old + weight × (whatTheStockImplies − old)
+```
+
+The only rule in the model that contracts. Everything else — a telling, a price, a sale —
+only adds, and only the nightly fading takes any back, which is why E32 found the swings
+growing and never settling. This one knows which way is down.
+
+### What a chest by the market does
+
+Forty seeds, one lie, `checkWeight` 0.30, villagers in the market looking once a day:
+
+| diamonds visible | peak | decay | settled | lie-caused bubbles |
+| --- | --- | --- | --- | --- |
+| 0 | 178 | 1.02 | 0% | 0% |
+| 8 | 170 | 1.03 | 0% | 0% |
+| 16 | 149 | 1.07 | 55% | 80% |
+| **32** | **113** | 2.24 | 40% | **5%** |
+| 64 | 113 | 2.24 | 40% | 5% |
+
+**Stocking a chest works.** A village that can see half a stack peaks at 113 where the same
+village with an empty market reaches 178. The player now has a verb they did not have: fill
+a chest to calm a panic, empty one to invite it. That is a thing done to the world rather
+than said to a villager, which is what this stage was for.
+
+**But the success test as written is not the right test, and the numbers show why.**
+
+The gate was *decay below 1, settles, lie-caused bubbles unchanged*. At 32 diamonds visible
+the bubbles collapse from 80% to 5% — which by that gate is a failure, the "damping became
+muting" trap named in advance. **It is not muting.** A village that can see thirty-two
+diamonds and is told they are gone *ought* to disbelieve it. The lie fails because the lie
+is false and the evidence is there, which is the entire point of building reality checks.
+
+The old gate assumed a damper that could not also refute. This one refutes, so the criterion
+has to become conditional:
+
+| | the gate should be |
+| --- | --- |
+| an empty village, lied to | the lie still causes its bubbles against none without it |
+| a stocked village, lied to | the lie fails, **and fails because of the stock** — checked by removing the checks and seeing the bubble return |
+
+**The decay figure is unreliable at small amplitudes.** At 32 diamonds it reads 2.24, which
+looks catastrophic and means almost nothing: the swings there are a few points around
+normal, and a ratio between two tiny numbers is noise. `swingDecay` needs a minimum
+amplitude before it is worth quoting, and quoting it here without that caveat would be the
+sort of number that embarrasses a report later.
+
+**What is not yet answered**, and what the next sweep is for: whether a *partly* stocked
+village — the interesting case, where the lie is exaggerated rather than false — settles
+below 1 with its bubbles intact. The 16-diamond row hints at it, with 80% bubbles and 55%
+settling, and it wants forty more seeds and the two parameters swept before anything is
+adopted.
+
+**Decision.** Nothing adopted. `checkWeight` 0.30 and `emptyEvidence` 0.25 stand as
+provisional defaults, unswept, and the gate is rewritten above before the sweep that would
+settle them.

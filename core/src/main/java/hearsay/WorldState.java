@@ -89,6 +89,15 @@ public final class WorldState {
                 villager(e.villagerId()).believe(new Belief(about.claim(), e.newConfidence(),
                         Belief.SEEN, e.tick(), e.rumorId(), chain));
             }
+            case StockChecked e -> {
+                tick = e.tick();
+                Belief had = villager(e.villagerId()).belief(e.claim());
+                // Only ever adjusts a belief already held, so there is always one here.
+                // Who told them and what it passed through are left exactly as they were:
+                // looking at a chest changes how sure you are, not where you heard it.
+                villager(e.villagerId()).believe(new Belief(e.claim(), e.newConfidence(),
+                        had.sourceId(), e.tick(), e.rumorId(), had.chain()));
+            }
             case MarketNoiseSet e -> {
                 tick = e.tick();
                 marketNoiseLevel = e.level();

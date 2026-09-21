@@ -10,6 +10,7 @@ import hearsay.Personality;
 import hearsay.PlantRumor;
 import hearsay.PlayerTraded;
 import hearsay.ProximityPairing;
+import hearsay.RealityChecked;
 import hearsay.RecipeFile;
 import hearsay.Sighting;
 import hearsay.SurveyFile;
@@ -229,6 +230,22 @@ final class VillageSession {
     /** What this villager would tell you if you asked. Reads the world; changes nothing. */
     List<String> whatTheyHeard(int villagerId) {
         return BeliefReport.of(simulation.state(), villagerId);
+    }
+
+    /**
+     * Tells the villagers standing in the market how much the village has to hand.
+     *
+     * <p>Only those in the market: a villager asleep at the other end of the village has
+     * not looked at anything. Scheduled for the tick that has not happened yet, like every
+     * other input.
+     */
+    void reportStock(int howMany) {
+        long nextTick = simulation.state().tick() + 1;
+        simulation.state().villagers().forEach((id, villager) -> {
+            if (villager.spot() == Spot.MARKET) {
+                simulation.schedule(new RealityChecked(nextTick, id, Simulation.DIAMOND, howMany));
+            }
+        });
     }
 
     /** Which bound villager this body is, or null if it is not one of ours. */

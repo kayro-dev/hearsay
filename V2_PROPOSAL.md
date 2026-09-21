@@ -436,7 +436,7 @@ pocket.
 
 ---
 
-## Stage 4 — something true to be wrong about — *next, designed below*
+## Stage 4 — something true to be wrong about — **BUILT** (E35), gate rewritten
 
 E32 measured that the swings grow by about 5% each and the village never settles. E33 and
 E34 then established *why* the obvious fix does not work, which is what this design is built

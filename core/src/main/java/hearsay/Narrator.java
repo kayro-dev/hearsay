@@ -90,6 +90,18 @@ public final class Narrator {
                             + " (" + e.askingVillagers() + " selling).");
                 }
             }
+            case StockChecked e -> {
+                double before = confidenceIn(e.villagerId(), e.claim());
+                mirror.apply(e);
+                if (Math.abs(e.newConfidence() - before) > 0.005) {
+                    lines.add(prefix(e.tick()) + name(e.villagerId())
+                            + (e.newConfidence() < before ? " looks at what the village has"
+                                                          : " sees how little there is")
+                            + " and is " + (e.newConfidence() < before ? "less" : "more")
+                            + " sure (" + percent(before) + " \u2192 "
+                            + percent(e.newConfidence()) + ").");
+                }
+            }
             case TradeSeen e -> {
                 double before = confidenceIn(e.villagerId(), e.claim());
                 mirror.apply(e);

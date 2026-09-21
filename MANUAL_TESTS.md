@@ -71,6 +71,10 @@ disagree, the village is dying.
 | 8f | **Sell into a panic at a busy smith.** Wait for the price to climb, then sell 16 diamonds to a smith with several villagers standing around | The action bar names the smith and says how many saw it. Watch those villagers' asking prices fall over the next few ticks |
 | 8g | **Sell into a panic at an isolated smith.** The same, to a smith standing alone | The action bar says 1 saw it. The effect should be smaller and slower, because only the trader learned anything |
 | 8h | `/hearsay stop`, then dashboard the session | "Who moved the price" splits the lie's contribution from your selling's, and says plainly that these are the same trades priced against each timeline, not what you would have made |
+| 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |
+| 9b | Plant a rumour and wait several days | It should struggle. A village that can see a stack of diamonds is hard to convince they are gone |
+| 9c | Crouch-right-click a villager who did believe it | Their confidence falls day by day while the chest is there |
+| 9d | Empty the chest and keep going | The same rumour now takes hold. Stocking a chest calms a panic; emptying one invites it |
 | 7 | Wait one tick (10s) | **Gold** text above that villager: `Diamonds scarce? 100%`. Gold because they are certain — you told them. Grey is for villagers who have merely heard it from someone else |
 | 8 | Watch that villager walk | The label stays over their head as they move, with no lag and without being left behind at a workstation |
 | 9 | Break their workstation so they wander | The label follows, and the villager still walks about normally — the label rides them, so watch that it has not affected their behaviour |

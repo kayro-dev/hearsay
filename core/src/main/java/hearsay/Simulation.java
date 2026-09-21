@@ -206,6 +206,9 @@ public final class Simulation {
                 // but everyone who saw it learns that there were diamonds to sell, in a
                 // village that may have been told there are none.
                 case PlayerTraded t -> watchGoodsChangeHands(tick, t);
+                // A villager looked at what the village actually has, and let it pull on
+                // what they believed.
+                case RealityChecked c -> checkAgainstReality(tick, c);
                 case ObservedMeeting m -> {
                     record(new VillagerMoved(tick, m.a(), m.spot()));
                     record(new VillagerMoved(tick, m.b(), m.spot()));
@@ -461,6 +464,61 @@ public final class Simulation {
             }
             int rumorId = had == null ? state.nextRumorId() : had.rumorId();
             record(new TradeSeen(tick, witnessId, plenty, rumorId, after, traded));
+        }
+    }
+
+    /**
+     * How much of a thing has to be within reach before the village reads it as plenty.
+     *
+     * <p>A constant rather than a knob, so the sweep that fits the two check parameters
+     * stays two-dimensional. Thirty-two diamonds is half a stack and a great deal more than
+     * a village that believes they are gone should be able to see.
+     */
+    private static final int PLENTY_SEEN = 32;
+
+    /**
+     * A villager measures what they believe against what they can see.
+     *
+     * <p><strong>This is the only rule in the model that pulls rather than pushes</strong>,
+     * and that is the whole of why it exists. Every other piece of evidence adds — a
+     * telling, a price, a sale all push confidence up, and only the daily fading takes any
+     * back. A quantity made of shoves and fading has no level to come to rest at, which is
+     * what E32 measured when it found the swings growing by 5% each and never settling, and
+     * what E34 confirmed when the strongest sale in a whole session moved a belief by four
+     * thousandths.
+     *
+     * <p>So this moves confidence a fraction of the way <em>toward</em> what the stock
+     * implies, rather than a step away from wherever it was. Repeated, that is a
+     * contraction: it converges on the truth instead of wandering, and the distance from it
+     * shrinks geometrically. It is the only rule here that knows which way is down.
+     *
+     * <p>It adjusts beliefs the villager already holds and never invents one. A villager
+     * with nothing to be corrected about is not corrected into a new opinion by the sight
+     * of a chest, which would make a stocked market a way of starting a panic about plenty.
+     */
+    private void checkAgainstReality(long tick, RealityChecked check) {
+        Villager villager = state.villager(check.villagerId());
+        double share = Math.min(1.0, check.sawHowMany() / (double) PLENTY_SEEN);
+
+        // Presence is strong evidence and absence is weak: a full chest proves there are
+        // diamonds, an empty one proves only that none are in that chest. So a sight made
+        // mostly of absence carries a fraction of the weight.
+        double weight = params.checkWeight()
+                * (share + (1 - share) * params.emptyEvidence());
+
+        for (ClaimType type : ClaimType.values()) { // declaration order, never hash order
+            Claim claim = new Claim(check.item(), type);
+            Belief held = villager.belief(claim);
+            if (held == null) {
+                continue;
+            }
+            double implied = type == ClaimType.SCARCE ? 1 - share : share;
+            double after = held.confidence() + weight * (implied - held.confidence());
+            if (Math.abs(after - held.confidence()) < 1e-9) {
+                continue; // they already believed what they can see
+            }
+            record(new StockChecked(tick, check.villagerId(), claim, held.rumorId(),
+                    Math.clamp(after, 0.0, 1.0)));
         }
     }
 
