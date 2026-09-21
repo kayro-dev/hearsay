@@ -1350,3 +1350,52 @@ model sits on a knife edge where the loop either just fails to start or just doe
 the two obvious ways to push it over both work by letting noise do what the lie is supposed
 to do. The next thing to understand is the discrepancy above, because a model this sensitive
 to a handful of meetings is not one to tune further until it is understood.
+
+---
+
+## E19 — The rebuild was wrong, and the median was the wall
+
+**Correction to E18.** The unexplained 137-against-107 gap was my analysis, not the
+simulation. The rebuild scripts wrote a `VillagerSeen` only when a villager's surveyed spot
+*changed*, on the reasoning that an unchanged sighting is a no-op. It is not. An
+`ObservedMeeting` moves both participants to the meeting spot unconditionally, so a villager
+who meets someone at a stall is left standing at the market in the world state. The plugin
+reports every villager every tick, which puts them back the moment they are seen elsewhere.
+Thinning those repeats away left villagers stranded wherever they last spoke to anyone, and
+a market quietly filled up with people who had walked off. Same inputs, repeats removed:
+peak 107 with no observations becomes peak 137 with 115 observations and a bubble.
+
+Everything reconstructed from the survey now reproduces the session exactly: 3840 of 3840
+meetings, and 13318 of 13319 spots, the one exception being a villager at 10.0 blocks from
+a workstation where the recorded distance rounds the other way. That one flip changes
+nothing. **The session's real answer is 107.**
+
+Redone from the recorded inputs, with nothing rebuilt:
+
+| session | market is | with the lies | with no lie at all |
+| --- | --- | --- | --- |
+| 701 ticks, 5 lies, 19 villagers | workstations only | peak 107, 0 obs | **peak 107, 0 obs** |
+| | the whole village | peak 134, 165 obs, 2 bubbles | peak 134, 197 obs, 1 bubble |
+| 472 ticks, 1 lie, 21 villagers | workstations only | peak 108, 0 obs | **peak 108, 0 obs** |
+| | the whole village | peak 135, 131 obs, 1 bubble | peak 135, 131 obs, 1 bubble |
+
+The village-wide market is rejected again and more cleanly than in E18: identical prices
+with and without the lie, to the point. But the left-hand column is the finding. **The lie
+changes the price by nothing at all.** Not weakly, not marginally — the same 107, the same
+zero observations, whether five people were lied to or nobody was.
+
+**Why, and it is not a tuning problem.** The price is the median ask of whoever is standing
+in the market. In the best session 13 of 19 villagers ended up holding the rumor, but the
+market at any moment is about 12 people and roughly half of them hold it. A median is
+decided by the villager in the middle, and the villager in the middle is a non-believer
+asking the base price. Belief can reach nearly everyone in the village and still move the
+median by zero, because the median does not count how strongly anyone feels, only which
+side of the middle they fall.
+
+Every fix tried since E13 — the quorum as a fraction, the wider radius, the rotation, the
+sightings, the threshold — was downstream of this. They all changed how many villagers
+believe. None of them could change a median that was never going to move until believers
+were a majority of the people standing in the market at once.
+
+**Decision.** Nothing changed; this is a change to the price rule and wants proposing first.
+Defaults untouched.
