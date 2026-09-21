@@ -1202,10 +1202,25 @@ Same positions, same spots, same everything but who pairs with whom among those 
 Two of the three rotations light the feedback loop that has never once run in a played
 session. The number of meetings barely moves; who they are between is what matters.
 
-**Decision.** Nothing changed yet. Proposed: pair villagers by shuffling those within range
-rather than by taking the nearest, which is what the headless model has always done, seeded
-from the session seed and the tick so a run stays reproducible. The result is recorded as
-inputs either way, so replay and counterfactuals are unaffected.
+**Decision.** Adopted. `ProximityPairing` now shuffles those within range, seeded by the
+caller, and the plugin reseeds every tick from the session seed. A run still reproduces from
+its recipe, since meetings are recorded as inputs either way.
 
-Worth noting it is not a guaranteed fix: one of the three rotations behaved exactly like
-nearest. It turns a village that cannot spread a rumor into one that sometimes can.
+Measured again through the real code afterwards, separating the pairing from who was told:
+
+| planter | pairing | tellings | heard by | holders | peak price | observations |
+| --- | --- | --- | --- | --- | --- | --- |
+| Mira, gossip 0.45 | nearest | 4 | 3 | 3 | 108 | 0 |
+| Mira, gossip 0.45 | rotating | 8-9 | 2-4 | 3-4 | 108 | 0 |
+| Lark, gossip 0.96 | nearest | 40 | 8 | 9 | 128 | 14 |
+| Lark, gossip 0.96 | rotating | 35-50 | 7-13 | 11-18 | 112-147 | 19-152 |
+
+Rotating roughly doubles the telling and widens who hears it, and it does not rescue a
+quiet planter: Mira never gets past one believer however the pairing falls. The session that
+prompted all this had been planted in Mira, because the plugin plants in whoever is nearest
+and there is no way to tell a talker from a quiet villager by looking at them.
+
+So a second change, which E8 already argued for without anyone acting on it: `/hearsay who`
+lists the bound villagers by how much they talk, and `/hearsay rumor` now says how talkative
+the villager you told is and warns when they are not. Who you tell is worth about a third of
+whether a rumor takes hold, and until now the player had no way to influence it.

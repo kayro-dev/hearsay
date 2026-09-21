@@ -11,6 +11,7 @@ import hearsay.RecipeFile;
 import hearsay.Sighting;
 import hearsay.SurveyFile;
 import hearsay.Run;
+import hearsay.Seeds;
 import hearsay.Simulation;
 import hearsay.Spot;
 import hearsay.VillagerSeen;
@@ -130,7 +131,11 @@ final class VillageSession {
         positions.forEach((id, where) -> standing.add(
                 new ProximityPairing.Position(id, where.getX(), where.getY(), where.getZ())));
 
-        for (ProximityPairing.Encounter encounter : ProximityPairing.pairsWithin(standing, TALKING_RANGE)) {
+        // A different shuffle every tick, derived from the session seed, so who talks to
+        // whom rotates and the run still reproduces from its own recipe.
+        long shuffle = Seeds.branch(seed, (int) nextTick);
+        for (ProximityPairing.Encounter encounter
+                : ProximityPairing.pairsWithin(standing, TALKING_RANGE, shuffle)) {
             Spot a = spots.getOrDefault(encounter.a(), SpotMapper.ANYWHERE_ELSE);
             Spot b = spots.getOrDefault(encounter.b(), SpotMapper.ANYWHERE_ELSE);
             // Two villagers in bed are in two beds, not one room. The headless model skips
@@ -172,6 +177,11 @@ final class VillageSession {
             }
         }
         return held;
+    }
+
+    /** How much this villager talks, which decides whether a rumor told to them travels. */
+    double gossipOf(int villagerId) {
+        return simulation.state().villager(villagerId).traits().gossip();
     }
 
     String nameOf(int villagerId) {

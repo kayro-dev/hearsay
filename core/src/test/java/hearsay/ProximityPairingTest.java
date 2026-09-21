@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 class ProximityPairingTest {
@@ -13,10 +14,16 @@ class ProximityPairingTest {
         return new ProximityPairing.Position(id, x, 64, z);
     }
 
+    /** A handful of villagers standing close enough to all talk to each other. */
+    private static List<ProximityPairing.Position> aHuddle() {
+        return List.of(at(0, 0, 0), at(1, 1, 0), at(2, 2, 0), at(3, 3, 0),
+                at(4, 0, 1), at(5, 1, 1));
+    }
+
     @Test
     void villagersStandingTogetherArePaired() {
         List<ProximityPairing.Encounter> pairs = ProximityPairing.pairsWithin(
-                List.of(at(0, 0, 0), at(1, 2, 0)), 6);
+                List.of(at(0, 0, 0), at(1, 2, 0)), 6, 1);
 
         assertEquals(List.of(new ProximityPairing.Encounter(0, 1)), pairs);
     }
@@ -24,65 +31,89 @@ class ProximityPairingTest {
     @Test
     void villagersTooFarApartAreNot() {
         assertEquals(List.of(), ProximityPairing.pairsWithin(
-                List.of(at(0, 0, 0), at(1, 20, 0)), 6));
+                List.of(at(0, 0, 0), at(1, 20, 0)), 6, 1));
     }
 
     @Test
     void rangeIsMeasuredInThreeDimensions() {
-        // Ten blocks straight up is out of range even though they share a footprint.
         List<ProximityPairing.Position> stacked = List.of(
                 new ProximityPairing.Position(0, 0, 64, 0),
                 new ProximityPairing.Position(1, 0, 74, 0));
 
-        assertEquals(List.of(), ProximityPairing.pairsWithin(stacked, 6));
+        assertEquals(List.of(), ProximityPairing.pairsWithin(stacked, 6, 1));
     }
 
     @Test
     void nobodyIsPairedTwiceInOneTick() {
-        // Four villagers in a huddle, all within range of each other.
-        List<ProximityPairing.Encounter> pairs = ProximityPairing.pairsWithin(
-                List.of(at(0, 0, 0), at(1, 1, 0), at(2, 2, 0), at(3, 3, 0)), 6);
-
-        List<Integer> seen = new ArrayList<>();
-        for (ProximityPairing.Encounter pair : pairs) {
-            seen.add(pair.a());
-            seen.add(pair.b());
+        for (long seed = 1; seed <= 20; seed++) {
+            List<Integer> seen = new ArrayList<>();
+            for (ProximityPairing.Encounter pair : ProximityPairing.pairsWithin(aHuddle(), 6, seed)) {
+                seen.add(pair.a());
+                seen.add(pair.b());
+            }
+            assertEquals(seen.size(), seen.stream().distinct().count(),
+                    "somebody was paired twice on seed " + seed);
         }
-        assertEquals(seen.size(), seen.stream().distinct().count(),
-                "somebody was paired twice: " + pairs);
-        assertEquals(2, pairs.size());
     }
 
     @Test
     void anOddVillagerOutMeetsNobody() {
-        List<ProximityPairing.Encounter> pairs = ProximityPairing.pairsWithin(
-                List.of(at(0, 0, 0), at(1, 1, 0), at(2, 2, 0)), 6);
-
-        assertEquals(1, pairs.size());
+        assertEquals(1, ProximityPairing.pairsWithin(
+                List.of(at(0, 0, 0), at(1, 1, 0), at(2, 2, 0)), 6, 1).size());
     }
 
     @Test
     void theAnswerDoesNotDependOnTheOrderPositionsArriveIn() {
-        List<ProximityPairing.Position> village = new ArrayList<>(List.of(
-                at(3, 8, 1), at(7, 0, 0), at(1, 1, 1), at(9, 9, 0), at(5, 30, 30)));
-        List<ProximityPairing.Encounter> expected = ProximityPairing.pairsWithin(village, 6);
+        List<ProximityPairing.Position> village = new ArrayList<>(aHuddle());
+        List<ProximityPairing.Encounter> expected = ProximityPairing.pairsWithin(village, 6, 7);
 
-        for (int shuffle = 0; shuffle < 5; shuffle++) {
+        for (int shuffle = 1; shuffle <= 5; shuffle++) {
             List<ProximityPairing.Position> jumbled = new ArrayList<>(village);
-            Collections.rotate(jumbled, shuffle + 1);
-            assertEquals(expected, ProximityPairing.pairsWithin(jumbled, 6),
+            Collections.rotate(jumbled, shuffle);
+            assertEquals(expected, ProximityPairing.pairsWithin(jumbled, 6, 7),
                     "the pairing changed when the positions arrived in a different order");
         }
-        assertFalse(expected.isEmpty());
     }
 
     @Test
-    void theLowerIdTakesTheNearerPartner() {
-        // 0 is closer to 1 than to 2, so 0 pairs with 1 and 2 is left over.
-        List<ProximityPairing.Encounter> pairs = ProximityPairing.pairsWithin(
-                List.of(at(0, 0, 0), at(1, 1, 0), at(2, 5, 0)), 6);
+    void theSameSeedAlwaysGivesTheSamePairing() {
+        assertEquals(ProximityPairing.pairsWithin(aHuddle(), 6, 42),
+                ProximityPairing.pairsWithin(aHuddle(), 6, 42));
+    }
 
-        assertEquals(List.of(new ProximityPairing.Encounter(0, 1)), pairs);
+    @Test
+    void whoTalksToWhomRotatesAsTheSeedChanges() {
+        // The whole point. With nearest-partner pairing a villager's partner never changed,
+        // so a rumor was told to the same handful over and over while it decayed, and never
+        // reached anybody new while it was still worth repeating.
+        TreeSet<String> partnersOfZero = new TreeSet<>();
+        for (long seed = 1; seed <= 40; seed++) {
+            for (ProximityPairing.Encounter pair : ProximityPairing.pairsWithin(aHuddle(), 6, seed)) {
+                if (pair.a() == 0) {
+                    partnersOfZero.add(String.valueOf(pair.b()));
+                } else if (pair.b() == 0) {
+                    partnersOfZero.add(String.valueOf(pair.a()));
+                }
+            }
+        }
+        assertTrue(partnersOfZero.size() >= 3,
+                "villager 0 only ever talked to " + partnersOfZero + " across 40 ticks");
+    }
+
+    @Test
+    void aPartnerIsAlwaysSomebodyWithinRange() {
+        // Shuffling decides who among the people near you, never who is far away.
+        List<ProximityPairing.Position> spread = List.of(
+                at(0, 0, 0), at(1, 2, 0), at(2, 4, 0), at(3, 100, 0), at(4, 102, 0));
+
+        for (long seed = 1; seed <= 20; seed++) {
+            for (ProximityPairing.Encounter pair : ProximityPairing.pairsWithin(spread, 6, seed)) {
+                boolean bothNear = pair.a() <= 2 && pair.b() <= 2;
+                boolean bothFar = pair.a() >= 3 && pair.b() >= 3;
+                assertTrue(bothNear || bothFar,
+                        "paired across 100 blocks on seed " + seed + ": " + pair);
+            }
+        }
     }
 
     @Test

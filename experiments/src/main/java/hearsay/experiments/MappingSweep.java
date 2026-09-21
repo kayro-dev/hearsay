@@ -124,7 +124,8 @@ public final class MappingSweep {
                     inputs.add(new VillagerSeen(tick.getKey(), sighting.villagerId(), spot));
                 }
             }
-            for (ProximityPairing.Encounter met : ProximityPairing.pairsWithin(standing, talkingRange)) {
+            for (ProximityPairing.Encounter met : ProximityPairing.pairsWithin(
+                    standing, talkingRange, hearsay.Seeds.branch(played.seed(), tick.getKey().intValue()))) {
                 Spot a = spots.getOrDefault(met.a(), SpotMapper.ANYWHERE_ELSE);
                 Spot b = spots.getOrDefault(met.b(), SpotMapper.ANYWHERE_ELSE);
                 if (a == Spot.HOME && b == Spot.HOME) {

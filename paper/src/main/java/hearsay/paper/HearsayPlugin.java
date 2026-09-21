@@ -121,6 +121,7 @@ public final class HearsayPlugin extends JavaPlugin {
             case "start" -> start(player, args);
             case "rumor", "rumour" -> plant(player, args);
             case "status" -> status(player);
+            case "who" -> who(player);
             case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
@@ -290,8 +291,20 @@ public final class HearsayPlugin extends JavaPlugin {
             return;
         }
         session.plantRumorIn(nearest, type);
+        double gossip = session.gossipOf(nearest);
         player.sendMessage(Component.text("You tell " + session.nameOf(nearest)
                 + " that diamonds are " + type.name().toLowerCase() + ".", NamedTextColor.GOLD));
+
+        // Who you tell is worth about a third of whether a rumor takes hold, and gossip
+        // predicts it: see E8. Telling a quiet villager is a wasted session, and there is
+        // no way to tell one from another by looking.
+        player.sendMessage(Component.text(session.nameOf(nearest) + " is "
+                + describeTalker(gossip) + " (gossip " + Math.round(gossip * 100) + "%).",
+                gossip >= 0.6 ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+        if (gossip < 0.6) {
+            player.sendMessage(Component.text("A quieter villager than you want. "
+                    + "/hearsay who lists the talkers.", NamedTextColor.YELLOW));
+        }
     }
 
     private Integer nearestBoundVillager(Player player) {
@@ -320,6 +333,45 @@ public final class HearsayPlugin extends JavaPlugin {
                 : "Spots hidden.", NamedTextColor.AQUA));
         if (session != null && world != null && !showingSpots) {
             displays.removeEverything(world);
+        }
+    }
+
+    private static String describeTalker(double gossip) {
+        if (gossip >= 0.8) {
+            return "the village gossip";
+        }
+        if (gossip >= 0.6) {
+            return "talkative";
+        }
+        if (gossip >= 0.35) {
+            return "not much of a talker";
+        }
+        return "nearly silent";
+    }
+
+    /**
+     * Lists the bound villagers by how much they talk, so a rumor can be planted in
+     * somebody who will pass it on. Nothing about a villager shows this from the outside.
+     */
+    private void who(Player player) {
+        if (session == null) {
+            player.sendMessage(Component.text("Nothing bound.", NamedTextColor.RED));
+            return;
+        }
+        Map<Integer, Villager> here = whoIsAround();
+        List<Integer> byTalkativeness = new ArrayList<>(session.bodies().keySet());
+        byTalkativeness.sort((a, b) -> Double.compare(session.gossipOf(b), session.gossipOf(a)));
+
+        player.sendMessage(Component.text("Who talks, most first. Stand by one and "
+                + "/hearsay rumor diamonds scarce.", NamedTextColor.AQUA));
+        for (int id : byTalkativeness) {
+            double gossip = session.gossipOf(id);
+            Villager body = here.get(id);
+            String where = body == null ? " (gone)" : " " + (int) body.getLocation().distance(
+                    player.getLocation()) + " blocks away";
+            player.sendMessage(Component.text("  " + session.nameOf(id) + "  "
+                    + Math.round(gossip * 100) + "%  " + describeTalker(gossip) + where,
+                    gossip >= 0.6 ? NamedTextColor.GREEN : NamedTextColor.GRAY));
         }
     }
 
