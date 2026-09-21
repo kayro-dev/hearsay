@@ -355,6 +355,14 @@ much a witnessed sale convinces the ones who merely saw it. They are different q
 one is about a price you paid, the other about goods you saw — and they interact, so they are
 swept as a pair rather than one after the other. Both against the quiet-village guarantee.
 
+**The index becomes a price, and gets its name.** Until now the 100-is-normal number has had
+no unit, so the player is shown only the change and the word for it — "138" is 138 of
+nothing, and calling it a price would imply emeralds it did not mean. Once a diamond has an
+emerald figure on a counter, the number in the world **is** emeralds, and the boss bar says
+`Diamonds  ▲ +38%  alarmed · 11 emeralds`. The 100-based scale stays as the internal unit
+and keeps the name index in the dashboard and the experiments, where it is read by somebody
+comparing runs rather than somebody buying something.
+
 **Trade menus are rebuilt once a tick**, in the same place the displays are, from the
 villager's own asking price — not the market price. A villager who believes the lie pays
 more than one who does not, which is visible, explicable, and gives the player a reason to

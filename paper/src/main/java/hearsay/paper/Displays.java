@@ -73,10 +73,17 @@ final class Displays {
      * Moves the price bar. The bar's fill runs from half the base price to twice it, so a
      * bubble visibly climbs rather than pinning at either end.
      *
-     * <p>The change leads and the index follows in grey, because 138 says nothing until
-     * you have worked out it means 38% dear. Colour and wording come from
-     * {@link PriceMood}, which the dashboard reads too, so the bar and the page never
-     * disagree about what counts as a panic.
+     * <p>The change and a word for it, and nothing else. The raw index used to follow in
+     * grey, and it was earning very little: "138" has no unit, so no honest label can be
+     * put on it — it is a scale, not a currency, and calling it a price would imply
+     * emeralds it does not mean. The change says the same thing in a unit everyone has,
+     * and the bar's own fill already shows the level.
+     *
+     * <p>When real trades arrive the number becomes emeralds, and then it belongs here
+     * again, with "price" as its name because that is what it will be.
+     *
+     * <p>Colour and wording come from {@link PriceMood}, which the dashboard reads too, so
+     * the bar and the page never disagree about what counts as a panic.
      */
     void showPrice(int price, int basePrice) {
         float lowest = basePrice * 0.5f;
@@ -90,8 +97,8 @@ final class Displays {
                 .color(NamedTextColor.GRAY)
                 .append(Component.text(PriceMood.describe(price, basePrice))
                         .color(TextColor.fromHexString(mood.hex())))
-                .append(Component.text("   " + mood.label().toLowerCase(java.util.Locale.ROOT)
-                        + " · index " + price, NamedTextColor.GRAY)));
+                .append(Component.text("   " + mood.label().toLowerCase(java.util.Locale.ROOT),
+                        NamedTextColor.GRAY)));
     }
 
     /**

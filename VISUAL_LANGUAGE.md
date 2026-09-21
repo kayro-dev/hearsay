@@ -16,8 +16,17 @@ player the opposite of what is happening. Rising runs warm the way an alarm does
 ## Price
 
 The index is built so **100 is normal**, which makes the raw number the less useful half of
-the story. The change leads everywhere — boss bar, floating text, dashboard — and the index
-follows in grey.
+the story. **The change is what the player is shown**, everywhere: boss bar, above heads,
+dashboard headline.
+
+The raw number is not shown in the world at all. It has no unit — "138" is 138 of nothing —
+so no honest label can be put on it: it is a scale, not a currency, and calling it a price
+would imply emeralds it does not mean. The dashboard still prints it beside the change,
+because that is an analysis document and a reader there wants the absolute, and it is called
+an index there because that is what it is.
+
+**When real trades arrive this changes.** The number becomes emeralds, it belongs in the
+world again, and it is called a price — because then that is what it will be.
 
 | Band | Reads as | Colour | Arrow | Where it starts |
 | --- | --- | --- | --- | --- |

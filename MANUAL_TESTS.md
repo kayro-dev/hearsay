@@ -44,7 +44,7 @@ disagree, the village is dying.
 | 5c | `/hearsay who` | The bound villagers listed most talkative first, with a percentage, how far away each is, and which way to walk. Up to three of the talkers are outlined in the world for 30 seconds |
 | 5d | Look at the village | Every bound villager has their name and gossip percentage above their head, green at 60% or more. The name matches the list from 5c |
 | 5e | Walk to a glowing villager | The glow fades after about 30 seconds. Running `/hearsay who` again lights them up once more |
-| 5f | Look at the boss bar before any lie | `Diamonds  · 0%  normal · index 100`, white. The change leads, the index follows in grey |
+| 5f | Look at the boss bar before any lie | `Diamonds  · 0%  normal`, white. No raw number: it has no unit until diamonds are traded for emeralds |
 | 5g | Look at any villager's name plate before any lie | Their name and nothing else. A villager asking the ordinary price has nothing to say |
 | 5g2 | Plant a rumour, wait a tick, look again | The villager you told now carries a second line, `▲ +38%` or similar, in the rising colours. A number above a head means somebody believed something |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
