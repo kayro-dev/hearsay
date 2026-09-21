@@ -7,7 +7,7 @@ Three stages, in this order, because each one is useless without the one before 
 
 ---
 
-## Stage 1 — a market you can walk into
+## Stage 1 — a market you can walk into — **BUILT**
 
 `/hearsay market set <radius>` marks a region around where the player is standing. Any
 villager inside it counts as `Spot.MARKET`, whatever their workstation says.
@@ -32,6 +32,12 @@ from E13 — but as new sessions rather than as re-runs.
 **Why first.** E13 to E19 were all downstream of not knowing who was in the market. A
 region answers that by fiat instead of by inference, and it is the one change here that
 makes the existing model more honest rather than bigger.
+
+**As built.** `MarketRegion` in core is the geometry, with a radius between 2 and 64 blocks
+and height included — a villager in a cellar under the square is not at the market, and a
+flat circle would say they were. `/hearsay market set|clear` marks it, the edge is drawn as
+a ring of particles once a tick, and `Whereabouts.spotOf` lets the region win over the
+workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ---
 
@@ -84,11 +90,67 @@ version goes to 5.
 - A new question no experiment covers: **does belief about one item leak into another?**
   It should not, and a sweep should confirm it does not before any of this is trusted.
 
-**A risk worth stating now.** Four items at 8, 2, 1 and 1 emeralds means three of them have
-almost no price resolution. A 30% move on bread is a third of an emerald, and Minecraft
-trades in whole items. Either prices become ratios reported against a finer internal index,
-or the cheap goods cannot bubble at all. **I would fit the indices first and only then
-decide how they map to emeralds.**
+### Price resolution, solved the way vanilla already solves it
+
+The problem: four items at 8, 2, 1 and 1 emeralds means three of them have almost no room to
+move. A 30% rise on bread is a third of an emerald, and Minecraft trades whole items.
+
+Vanilla has the answer already, and it is worth copying rather than inventing around.
+**A trade has two sides, and which side carries the price depends on which is worth more.**
+
+| Kind | Trade reads | A rise shows as |
+| --- | --- | --- |
+| **Expensive goods** (diamond, gold) | *n emeralds → 1 item* | the emerald count going up: 8 → 11 |
+| **Cheap goods** (bread, iron) | *1 emerald → n items* | the item count coming **down**: 6 bread → 4 bread |
+
+So bread at **6 per emerald** is normal, and **4 per emerald is +50%**, which is a visible,
+whole-number change that needs no fractional emerald. The index stays continuous internally
+and is rounded only at the point of display, so the simulation keeps its resolution and the
+trade menu is always a whole number of things.
+
+This also fixes something the current model papers over. Rounding a continuous index to a
+whole number of items is **lossy in a way that matters at the cheap end**: between 6 and 5
+bread per emerald there is a 20% step, so small price moves on cheap goods are invisible
+until they are large enough to cross one. That is not a flaw to be engineered away — it is
+what a real market with coarse denominations does — but it means **cheap goods will bubble
+less readily than dear ones**, and a sweep must measure that rather than assume the four
+items behave alike.
+
+**What this adds to stage 2's work.** `Params` gains, per item, a normal price *and* which
+way round the trade goes. The display rule — emeralds up, or items down — belongs beside
+`PriceMood` in core, since the dashboard and the trade menu must agree about what "+50%"
+means for bread.
+
+### Vanilla's own price adjustments, on trades Hearsay manages
+
+Minecraft already moves trade prices for two reasons of its own: **demand**, which raises the
+price of a trade the player has used heavily and decays back over time, and **reputation**,
+which lowers prices for a player a village likes and raises them for one it does not.
+
+Both would be operating on the same number Hearsay is trying to set, and **the recommendation
+is to disable both on managed trades** — but the trade-offs are real and worth stating.
+
+| | Disabling vanilla's adjustments | Leaving them on |
+| --- | --- | --- |
+| **The claim** | The price is belief plus noise, and nothing else. A counterfactual answers cleanly | The price is belief plus noise plus demand plus reputation, and the counterfactual can no longer say which moved it |
+| **Determinism** | Preserved. Every input is recorded | Vanilla's demand lives in the villager entity, not in the recipe. A replayed session would not reproduce, which breaks the project's central guarantee |
+| **What the player feels** | One mechanism, legible: prices move because the village believes something | Two mechanisms fighting, and the stronger one is invisible. A player who trades heavily would see prices rise and reasonably conclude their lie worked |
+| **Realism** | A village that has never heard of supply | Vanilla's demand is genuinely a supply effect, and losing it makes the economy thinner |
+| **Effort** | Set the trade's demand and price multiplier to zero each time it is rebuilt, and leave unmanaged trades alone | None |
+
+**The determinism row is the one that decides it.** Vanilla's demand is state held on the
+villager entity and not in the recipe, so a session with it enabled could not be replayed,
+and replay is the thing this whole project is built on. Everything else is a preference;
+that one is a contradiction.
+
+**The honest cost.** Hearsay's economy then has no supply side at all: prices move because
+people believe things, never because anyone ran out. That is a fair description of what this
+project models, and it should be said plainly in the README rather than left for someone to
+discover. **Stage 2 should not silently become an economics simulator.** If a supply effect
+is ever wanted, it belongs in the model as a recorded event, not borrowed from the entity.
+
+**Unmanaged trades are left completely alone.** A villager's other offers keep vanilla's
+behaviour, so nothing about the rest of the game changes.
 
 ---
 
@@ -124,6 +186,37 @@ player who can start a panic by buying bread twice is a bug, not a feature.
 
 ---
 
+### "What did the lie earn me"
+
+Once trades are input events, the counterfactual can price the player's own conduct. With
+the lie and without it, over the same recorded trades:
+
+```
+You bought 14 diamonds and sold 60 bread.
+
+  With the lie          you spent 96 emeralds and took 71
+  Without it            you would have spent 112 and taken 58
+
+  The lie earned you    +29 emeralds
+```
+
+**The caveat goes in the output, not in a footnote.** The counterfactual holds the player's
+trades fixed: it asks what those same purchases would have cost in a village nobody had lied
+to. It does **not** ask what the player would have done differently, because a player who
+saw different prices would have traded differently, and the model has no way to guess how.
+So the wording is *"the same trades, at the prices an honest village would have offered"*,
+never *"what you would have made"*.
+
+That distinction is the difference between a real counterfactual and a fantasy, and putting
+it in the sentence rather than in small print is the point. A figure that quietly means
+something narrower than it sounds is worse than no figure.
+
+**What it needs.** Nothing beyond stage 3: the trades are already inputs, both timelines
+already run, and the arithmetic is a sum over `PlayerTraded` events priced against each
+timeline's index. It is the cheapest output in this document and probably the most
+convincing, because it turns "the price index reached 138" into a number in the player's
+pocket.
+
 ## What this does to the project's claim
 
 Today the counterfactual answers one question: what would this village have done if nobody
@@ -136,7 +229,7 @@ makes the question sharper, and a sharper question is worth more than a bigger w
 
 ## Order of work
 
-1. Stage 1, which is small and makes the existing measurements honest.
+1. ~~Stage 1, which is small and makes the existing measurements honest.~~ **Built.**
 2. Play sessions in a real marketplace and re-measure the in-game figures.
 3. Stage 2's indices, fitted before any emerald mapping is chosen.
 4. Stage 3, with the trade-evidence sweep done before it is enabled by default.

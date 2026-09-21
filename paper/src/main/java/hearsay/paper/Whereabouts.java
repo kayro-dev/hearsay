@@ -1,5 +1,6 @@
 package hearsay.paper;
 
+import hearsay.MarketRegion;
 import hearsay.Sighting;
 import hearsay.Spot;
 import hearsay.SpotMapper;
@@ -24,9 +25,23 @@ final class Whereabouts {
     private Whereabouts() {
     }
 
-    /** Where this villager counts as standing, for the simulation's purposes. */
-    static Spot spotOf(Villager villager) {
-        return SpotMapper.spotFor(placeOf(villager.getLocation()),
+    /**
+     * Where this villager counts as standing, for the simulation's purposes.
+     *
+     * <p>A marked market wins over anything their workstation says. Somebody standing in
+     * the market square is at the market whether they are a farmer, a librarian or out of
+     * work, which is the point of marking it: the alternative is inferring the market from
+     * job sites, and E13 to E19 were all downstream of that inference being wrong.
+     *
+     * @param market the marked region, or null if the player has not marked one
+     */
+    static Spot spotOf(Villager villager, MarketRegion market) {
+        Location standing = villager.getLocation();
+        if (market != null
+                && market.contains(standing.getX(), standing.getY(), standing.getZ())) {
+            return Spot.MARKET;
+        }
+        return SpotMapper.spotFor(placeOf(standing),
                 remembered(villager, MemoryKey.HOME),
                 remembered(villager, MemoryKey.JOB_SITE),
                 kindOfWorkstation(villager));

@@ -50,6 +50,15 @@ Names are always shown, in **green at 60% gossip or more**, white below. That is
 — it is a fact about the villager, fixed at creation — so it deliberately uses a colour the
 price bands never use.
 
+## The market
+
+A marked market is drawn as a ring of `END_ROD` particles at its edge, once per simulation
+tick rather than continuously. Bone white — the colour of an ordinary price — because the
+market itself has no opinion. What happens inside it is what has the opinion.
+
+It is a fact to be checked occasionally, not something that should be glowing at the player
+all evening.
+
 ## Telling
 
 When one villager tells another, in this order:

@@ -55,5 +55,6 @@ logged so any crash can be replayed and compared against a counterfactual.
 - The player-facing colours, icons and sounds are defined in VISUAL_LANGUAGE.md, and the
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.
-- Current milestone: v2, proposed in V2_PROPOSAL.md. Stage 1 first: a marked market region,
-  which is a plugin change and touches core not at all.
+- Current milestone: v2, proposed in V2_PROPOSAL.md. Stage 1, the marked market region, is
+  built; next is playing sessions in a real marketplace and re-measuring the in-game
+  figures before stage 2's per-item indices are fitted.

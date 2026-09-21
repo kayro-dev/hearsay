@@ -3,6 +3,7 @@ package hearsay.paper;
 import hearsay.Bearing;
 import hearsay.Bubble;
 import hearsay.ClaimType;
+import hearsay.MarketRegion;
 import hearsay.Params;
 import hearsay.RecipeFile;
 import hearsay.Simulation;
@@ -59,6 +60,9 @@ public final class HearsayPlugin extends JavaPlugin {
     /** The confidence at which a villager counts as believing it, per VISUAL_LANGUAGE.md. */
     private static final double BELIEVES = 0.5;
 
+    /** A market a player would pace out without thinking about it. */
+    private static final double DEFAULT_MARKET_RADIUS = 8.0;
+
     /** The gossip level worth walking across the village for. */
     private static final double TALKATIVE = 0.6;
 
@@ -76,6 +80,13 @@ public final class HearsayPlugin extends JavaPlugin {
     private UUID watcher;
     private World world;
     private boolean showingSpots;
+
+    /**
+     * The marked market, or null. Not part of the recipe on purpose: it decides which
+     * sightings get reported, and the sightings are what a session records, so a run
+     * reproduces without the region needing to exist.
+     */
+    private MarketRegion market;
 
     /** Villagers /hearsay who is outlining in green, which the belief glow must not fight. */
     private final java.util.Set<UUID> lit = new java.util.LinkedHashSet<>();
@@ -136,10 +147,12 @@ public final class HearsayPlugin extends JavaPlugin {
             case "rumor", "rumour" -> plant(player, args);
             case "status" -> status(player);
             case "who" -> who(player);
+            case "market" -> market(player, args);
             case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
-                    "/hearsay start [seed] | rumor diamonds scarce | status | stop"));
+                    "/hearsay start [seed] | rumor diamonds scarce | who | market set <radius>"
+                    + " | status | stop"));
         }
         return true;
     }
@@ -202,7 +215,7 @@ public final class HearsayPlugin extends JavaPlugin {
         Map<Integer, Spot> spots = new LinkedHashMap<>();
         bodies.forEach((id, body) -> {
             positions.put(id, body.getLocation());
-            spots.put(id, Whereabouts.spotOf(body));
+            spots.put(id, Whereabouts.spotOf(body, market));
         });
 
         session.survey(session.tick() + 1, bodies);
@@ -223,6 +236,9 @@ public final class HearsayPlugin extends JavaPlugin {
         displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
                 bodies, session.confidences(), lit);
         displays.fadeMarks(world);
+        if (market != null) {
+            displays.showMarketEdge(world, market);
+        }
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
         for (Telling telling : tellings) {
@@ -470,6 +486,55 @@ public final class HearsayPlugin extends JavaPlugin {
 
     private static String bearingFrom(Location from, Location to) {
         return Bearing.of(to.getX() - from.getX(), to.getZ() - from.getZ());
+    }
+
+    /**
+     * Marks the ground the player is standing on as the market, or says where it is.
+     *
+     * <p>Anyone inside counts as being at the market from the next tick, whatever their
+     * workstation says. Nothing about the simulation changes: the region only decides what
+     * the plugin reports having seen.
+     */
+    private void market(Player player, String[] args) {
+        String what = args.length > 1 ? args[1].toLowerCase() : "show";
+        switch (what) {
+            case "set" -> {
+                double radius;
+                try {
+                    radius = args.length > 2 ? Double.parseDouble(args[2]) : DEFAULT_MARKET_RADIUS;
+                } catch (NumberFormatException e) {
+                    player.sendMessage(Component.text("That is not a radius: " + args[2],
+                            NamedTextColor.RED));
+                    return;
+                }
+                Location here = player.getLocation();
+                try {
+                    market = new MarketRegion(here.getX(), here.getY(), here.getZ(), radius);
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage(Component.text(e.getMessage(), NamedTextColor.RED));
+                    return;
+                }
+                player.sendMessage(Component.text("The market is here, " + market.diameter()
+                        + " blocks across. Anyone standing in it is a trader from the next "
+                        + "tick, whatever they do for a living.", NamedTextColor.GREEN));
+            }
+            case "clear" -> {
+                market = null;
+                player.sendMessage(Component.text("No marked market. Who counts as a trader "
+                        + "goes back to being guessed from workstations.", NamedTextColor.YELLOW));
+            }
+            default -> {
+                if (market == null) {
+                    player.sendMessage(Component.text("No market marked. Stand where you want "
+                            + "it and /hearsay market set " + (int) DEFAULT_MARKET_RADIUS,
+                            NamedTextColor.GRAY));
+                    return;
+                }
+                player.sendMessage(Component.text("The market is " + market.diameter()
+                        + " blocks across, centred on " + (int) market.x() + ", "
+                        + (int) market.y() + ", " + (int) market.z(), NamedTextColor.AQUA));
+            }
+        }
     }
 
     private void status(Player player) {

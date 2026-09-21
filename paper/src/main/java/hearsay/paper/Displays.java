@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import hearsay.ClaimType;
+import hearsay.MarketRegion;
 import hearsay.PriceMood;
 import hearsay.Spot;
 
@@ -191,6 +192,26 @@ final class Displays {
                     (listener.getY() - teller.getY()) * along + 1.4,
                     (listener.getZ() - teller.getZ()) * along);
             world.spawnParticle(particle, point, 1, 0.04, 0.04, 0.04, 0);
+        }
+    }
+
+    /**
+     * A ring of particles around the marked market, so the player can see where it is.
+     *
+     * <p>Drawn once per simulation tick rather than continuously: the boundary is a fact
+     * to be checked occasionally, not something that should be glowing at you all evening.
+     * Bone white, the colour of an ordinary price, because the market itself has no
+     * opinion — what happens inside it is what has the opinion.
+     */
+    void showMarketEdge(World world, MarketRegion market) {
+        int steps = Math.max(24, (int) (market.radius() * 4));
+        for (int step = 0; step < steps; step++) {
+            double around = step * 2 * Math.PI / steps;
+            world.spawnParticle(Particle.END_ROD,
+                    market.x() + Math.cos(around) * market.radius(),
+                    market.y() + 0.4,
+                    market.z() + Math.sin(around) * market.radius(),
+                    1, 0, 0, 0, 0);
         }
     }
 
