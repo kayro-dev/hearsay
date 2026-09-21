@@ -234,9 +234,64 @@ me" becomes a number they can feel.
 | --- | --- |
 | **Managed** | one trade per eligible villager: *1 diamond → n emeralds*, n from the index |
 | **Eligible** | bound villagers with a smith profession: Armorer, Toolsmith, Weaponsmith |
-| **Added, not replaced** | the vanilla trade exists on ~5% of Toolsmiths, so it is normally created. Where it exists, it is overwritten |
+| **Level** | **Novice.** See below |
+| **Vanilla's Expert toolsmith trade** | **replaced, not joined.** See below |
 | **Untouched** | every other trade on every villager, including all the diamond-gear sales |
 | **Vanilla adjustments** | demand and reputation set to zero on this trade only, for the determinism reason above |
+| **Uses** | vanilla's `maxUses` and restocking, unchanged. See below |
+
+#### Professions and levels
+
+**The three smiths, and no one else.** Armorer, Toolsmith and Weaponsmith are the professions
+that plausibly want diamonds, and they are the three vanilla already associates with them. A
+librarian buying diamonds would need explaining; a weaponsmith doing it needs none. Villagers
+with no profession cannot trade at all and are simply not eligible — they still contribute an
+ask to the index, because having an opinion about a price requires no counter.
+
+**Offered at Novice, which is a deliberate break from vanilla.** Vanilla puts its diamond
+purchase at Expert, the fourth of five levels, which takes a great deal of trading to reach.
+Gating Hearsay's offer the same way would mean most sessions had no tradeable villager at all,
+and a research instrument whose measurements depend on first levelling up a villager is not
+an instrument. Novice makes it available the moment a village is bound.
+
+The cost is honest and should be in the README beside the price: **Hearsay's diamond trade is
+not vanilla's, neither in what it pays nor in when it appears.** The alternative — Apprentice,
+say, as a compromise — buys a little fidelity for a lot of friction in every session, and
+fidelity to vanilla was never what this project was for.
+
+**Replacing vanilla's Expert trade rather than sitting beside it.** Two trades buying the
+same diamond at different prices would let the player take whichever is better, and that is
+not a game-balance worry but a measurement one:
+
+- The player's actual receipts would come from a mixture of a Hearsay price and a fixed
+  vanilla price, so **"what did the lie earn me" could no longer be attributed cleanly**.
+- Vanilla's fixed 1 emerald would sit under Hearsay's price as a **floor**. It only bites
+  below an index of about 12, which E31 never reached — but a floor that has not bitten yet
+  is still a floor, and a bust measurement with an invisible bottom is worse than no
+  measurement.
+
+So where the vanilla trade exists it is overwritten, and where it does not it is created. One
+diamond-buying trade per villager, one price, one thing to attribute.
+
+#### Caps on what the village will pay
+
+**At minimum, vanilla's own limits, unchanged.** A `MerchantRecipe` has `maxUses`, and
+villagers restock at their workstation twice a day. That is already a cap: a panicking village
+will pay its inflated price a fixed number of times and then stop until it restocks. It costs
+nothing to adopt, it is behaviour players already understand, and it stops the obvious
+exploit of standing at one villager and selling a stack of diamonds into a single panic.
+
+**A finite village purse — a pool of emeralds the village can pay out, which empties — belongs
+in stage 4, not here.** The reason is not that it is a bad idea. It is that **a purse is
+itself a damping mechanism**: as it empties, payouts fall, the price falls, and the swing
+shrinks. Introducing it in stage 3 would put a second damper in the model at the exact moment
+stage 4 sets out to measure whether reality checks damp anything. The result would be
+uninterpretable — decay below 1, and no way to say which mechanism did it.
+
+So: vanilla limits in stage 3, and the purse held back as a **stage 4 candidate to be
+measured on its own**, after reality checks have been given their chance. If reality checks
+bring decay under 1 by themselves, the purse may not be wanted at all. If they do not, it is
+the next thing to try, and it will be testable precisely because it was kept out of the way.
 
 **The normal price is 8 emeralds, not vanilla's 1.** Vanilla prices a diamond at one emerald,
 which is absurd on its face and leaves no room to move — at 1 emerald a 30% panic is
@@ -266,6 +321,40 @@ That is the hook.
    paid as evidence, through the same combining rule `PriceObserved` uses.
 4. `RecipeFile` writes it as an input line. Format version 6.
 
+#### Selling into the panic, and what the neighbours make of it
+
+A player who sells diamonds is **doing something in public**, and what they are doing is
+producing diamonds in a village that believes there are none. Villagers who witness it have
+seen evidence — not of a price, but of the world — and it points the other way: **abundance**.
+
+This is the mechanic that lets a bubble be punctured by the person who started it. Talk the
+village into a panic, sell into it, and the selling itself is the counter-evidence that ends
+the panic. Whether that is satisfying or merely fiddly is a question for playing it; whether
+it is *right* is not in doubt, because the alternative is a village that watches a player
+empty a shulker box of diamonds onto the counter and goes on believing there are none.
+
+**How it works, reusing what is already there.** E25 built witnessed provenance: a telling is
+one event heard by everyone standing there, and each listener's chain records who was present.
+A public sale is the same shape. The villagers within the talking range of the trade witness
+it, and each takes it as evidence of `ABUNDANT` — weighted by how many diamonds changed
+hands, since one diamond is a curiosity and a stack is a glut.
+
+It belongs in no chain and starts no rumour family, for the same reason a reality check will
+not: **it was not told to anyone.** Nobody can exaggerate it in the retelling, because there
+was no retelling.
+
+**This is stage 4 arriving early, and that is an argument for it rather than against.** A sale
+witnessed is a reality check with a very narrow aperture — the one piece of true supply the
+player can produce on demand. Building it in stage 3 means the damping idea gets tested
+cheaply, on one mechanism, before stage 4 commits to the general case. If witnessed selling
+alone moves E32's decay figure, that is the strongest possible evidence that reality checks
+are the right answer. If it does not, stage 4 starts with something important already known.
+
+**Two weights, swept together.** How much a trade convinces the villager who made it, and how
+much a witnessed sale convinces the ones who merely saw it. They are different questions —
+one is about a price you paid, the other about goods you saw — and they interact, so they are
+swept as a pair rather than one after the other. Both against the quiet-village guarantee.
+
 **Trade menus are rebuilt once a tick**, in the same place the displays are, from the
 villager's own asking price — not the market price. A villager who believes the lie pays
 more than one who does not, which is visible, explicable, and gives the player a reason to
@@ -283,7 +372,9 @@ arrive the same way, and the machinery needs no change.
 | --- | --- |
 | **None of E1–E32** | Nothing about how villagers gossip, move or price changes. A headless run has no player in it, so every sweep stands |
 | `CalibrationTest` | Unchanged, and must stay passing: it is the proof that adding a player did not disturb the village |
-| **New: trade evidence** | How much a trade convinces, swept as `observationWeight` was, against the quiet-village rate. **A player who can start a panic by buying twice is a bug** |
+| **New: trade evidence** | How much a trade convinces the villager who made it, swept as `observationWeight` was, against the quiet-village rate. **A player who can start a panic by buying twice is a bug** |
+| **New: witnessed selling** | How much a public sale convinces the villagers who saw it. Swept **as a pair** with the above, since one is about a price paid and the other about goods seen, and they interact |
+| **New: does selling puncture a bubble?** | The oscillation measures from E32, on a session where the player sells into the peak. This is stage 4's question asked early, with one mechanism instead of the general case |
 | **New: the player's own footprint** | Paired worlds with the trades kept and the lie removed, to check the lie is still separable from the buying. If it is not, the headline claim is in trouble and better found in a sweep than in a session |
 
 **What must not change.** The quiet-village rate, the burst band, and the paired-worlds
@@ -381,9 +472,22 @@ guarantee and the paired-worlds separation must hold exactly as they do now. **D
 swing is not the same as muting the village**, and only running both sets of measures
 together can tell them apart.
 
+**What stage 3 will already have told us.** Witnessed selling is a reality check with a very
+narrow aperture, and stage 3 builds it. By the time this stage starts, the oscillation
+measures will already have been run on a village that can be contradicted by one thing. If
+that alone moved E32's decay below 1, this stage is a generalisation of something known to
+work. If it did not, this stage begins knowing that a single narrow channel of truth is not
+enough — which is worth more than starting blind.
+
 **Experiments to re-run.** All of the calibration, because this changes how belief moves.
 `CalibrationTest`'s band, the quiet-village rate, and E29's gossip share would all need
 re-deriving on a village that can now be contradicted by the world.
+
+**The purse, held over from stage 3.** A finite pool of emeralds the village can pay out is
+a damping mechanism in its own right, and was deliberately kept out of stage 3 so it could
+not confound this stage's measurement. It is the next thing to try if reality checks do not
+bring decay under 1 on their own, and it is testable on its own terms precisely because it
+was kept out of the way.
 
 ## What this does to the project's claim
 
