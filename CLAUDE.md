@@ -55,6 +55,12 @@ logged so any crash can be replayed and compared against a counterfactual.
 - The player-facing colours, icons and sounds are defined in VISUAL_LANGUAGE.md, and the
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.
-- Current milestone: v2, proposed in V2_PROPOSAL.md. Stage 1, the marked market region, is
-  built; next is playing sessions in a real marketplace and re-measuring the in-game
-  figures before stage 2's per-item indices are fitted.
+- Current milestone: v2, proposed in V2_PROPOSAL.md, taken depth first rather than breadth
+  first. Stage 1 (the marked market) is built. Next is stage 3, real diamond trades, then
+  stage 4, reality checks, and only then stage 2, more goods. The stage numbers are names
+  rather than an order: goods come last because stage 4 changes how belief moves, so any
+  good calibrated before it would be calibrated twice.
+- Stage 4 is not done when it is built but when it works: swing decay below 1 and the lie
+  still causing its bubbles, against E32's baseline of 1.05, never settling, 5 bubbles to 0.
+  Damping the swings must never become muting the village, and only running the oscillation
+  measures beside the paired-worlds separation can tell those apart.

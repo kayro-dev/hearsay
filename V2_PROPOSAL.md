@@ -3,7 +3,33 @@
 Proposal only. No code, no defaults changed. The calibrated settings from E1–E30 stay as
 they are; nothing is retuned without a sweep, and each stage says which sweeps it invalidates.
 
-Three stages, in this order, because each one is useless without the one before it.
+### The order, and why it is not the numbering
+
+The stages keep the numbers they were first given, because E28, E31 and E32 refer to them
+by those numbers and rewriting history to tidy a document is a bad trade. **The numbers are
+names. This is the order:**
+
+| | Stage | Why here |
+| --- | --- | --- |
+| 1st | **1 — a marked market** *(built)* | Small, and it made every existing measurement honest |
+| 2nd | **3 — real trades, diamonds only** | Depth before breadth. One good, taken all the way to the player's hands |
+| 3rd | **4 — reality checks** | Damping needs a true supply to damp against, and stage 3 is what creates one |
+| 4th | **2 — more goods** | Only once the model is damped |
+
+**Why goods come last.** Every good added before stage 4 is a good whose market parameters
+must be fitted, and stage 4 changes how belief moves, so all of it would be fitted twice.
+Four goods calibrated before damping is four calibrations thrown away. One good taken to the
+end tells us whether the idea works at all, and that is worth more than four goods that
+half-work.
+
+**The gate between the second and third.** Stage 4 is not finished when it is built; it is
+finished when **swing decay is below 1 and the lie still causes its bubbles** — E32's
+baseline of 1.05, never settling, with 5 bubbles against 0. Goods do not begin until both
+hold.
+
+---
+
+Each stage is useless without the ones before it.
 
 ---
 
@@ -41,7 +67,7 @@ workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ---
 
-## Stage 2 — more than one thing to be wrong about
+## Stage 2 — more than one thing to be wrong about — *fourth, after the model is damped*
 
 A price index per item, each with a normal price in emeralds:
 
@@ -154,7 +180,7 @@ behaviour, so nothing about the rest of the game changes.
 
 ---
 
-## Stage 3 — trades that actually happen
+## Stage 3 — trades that actually happen — *next*
 
 Belief-driven prices change villagers' real trade menus, and a player trading with a
 villager comes back into the simulation as an input event.
@@ -183,6 +209,87 @@ move the price, or did I move it by buying?**
 One new experiment is needed before this ships: how much evidence a trade carries, swept the
 way `observationWeight` was in E24 and E29, against the same quiet-village guarantee. A
 player who can start a panic by buying bread twice is a bug, not a feature.
+
+### The concrete plan
+
+#### Which trade Hearsay takes over
+
+Checked against the wiki rather than assumed, because the answer changes the design:
+**vanilla villagers do not sell raw diamonds at all.** Three professions sell *enchanted
+diamond gear* — Armorer, Toolsmith, Weaponsmith — and exactly one trade anywhere in the game
+buys raw diamonds: the **Toolsmith at Expert level, 1 diamond for 1 emerald, and it appears
+on only about 5% of them.**
+
+That settles the direction. **Hearsay manages the buy side: the villager buys diamonds and
+pays emeralds.** The alternative — villagers selling diamonds — would make diamonds
+renewable and quietly rewrite the game's economy, which is far too large a side effect for a
+rumour simulator. Buying changes nothing about what exists in the world; it changes what
+somebody will pay for it.
+
+It also gives the player the right verb. A scarcity panic means **the village will pay more
+for diamonds**, so the player sells into the panic they started, and "what did the lie earn
+me" becomes a number they can feel.
+
+| | |
+| --- | --- |
+| **Managed** | one trade per eligible villager: *1 diamond → n emeralds*, n from the index |
+| **Eligible** | bound villagers with a smith profession: Armorer, Toolsmith, Weaponsmith |
+| **Added, not replaced** | the vanilla trade exists on ~5% of Toolsmiths, so it is normally created. Where it exists, it is overwritten |
+| **Untouched** | every other trade on every villager, including all the diamond-gear sales |
+| **Vanilla adjustments** | demand and reputation set to zero on this trade only, for the determinism reason above |
+
+**The normal price is 8 emeralds, not vanilla's 1.** Vanilla prices a diamond at one emerald,
+which is absurd on its face and leaves no room to move — at 1 emerald a 30% panic is
+unrepresentable. 8 is what the concept doc says a diamond is worth and what E1–E32 were all
+calibrated at. It should be said plainly in the README that Hearsay's diamond trade is not
+vanilla's.
+
+**A decision to name rather than bury.** The index is set by every villager standing in the
+market, but only smiths will have a counter. Those are different populations. The proposal
+keeps them different on purpose: the price is *the village's opinion*, and the smiths are
+merely the ones who trade on it. The alternative — only smiths contribute an ask — would
+shrink the market back to the handful of villagers E17 to E19 spent five experiments
+fighting. If binding finds no smith at all, `/hearsay start` should say so, the way it
+already warns about village size.
+
+#### How a player trade becomes an input
+
+Paper fires [`PlayerTradeEvent`](https://jd.papermc.io/paper/1.21.11/io/papermc/paper/event/player/PlayerTradeEvent.html)
+when a player trades with a villager, carrying the villager and the `MerchantRecipe` used.
+That is the hook.
+
+1. The event fires. The plugin checks the villager is bound and the recipe is the managed one.
+2. It schedules `PlayerTraded(nextTick, villagerId, DIAMOND, emeralds, count)` the way
+   `/hearsay rumor` schedules a `PlantRumor` today — on the tick that has not happened yet,
+   never mid-tick, so inputs always arrive at a tick boundary.
+3. The next `step()` turns it into an event, and the villager treats the price they just
+   paid as evidence, through the same combining rule `PriceObserved` uses.
+4. `RecipeFile` writes it as an input line. Format version 6.
+
+**Trade menus are rebuilt once a tick**, in the same place the displays are, from the
+villager's own asking price — not the market price. A villager who believes the lie pays
+more than one who does not, which is visible, explicable, and gives the player a reason to
+shop around. Rebuilding on a tick rather than continuously also means a menu the player has
+open cannot change under their hands mid-trade.
+
+**Determinism.** The player is outside the simulation and their trades are inputs, so a
+played session still reproduces from seed + params + inputs. This is the arrangement
+`MeetingSource.EXTERNAL` already established for meetings; trades are the second thing to
+arrive the same way, and the machinery needs no change.
+
+#### Which experiments re-run
+
+| Experiment | Why |
+| --- | --- |
+| **None of E1–E32** | Nothing about how villagers gossip, move or price changes. A headless run has no player in it, so every sweep stands |
+| `CalibrationTest` | Unchanged, and must stay passing: it is the proof that adding a player did not disturb the village |
+| **New: trade evidence** | How much a trade convinces, swept as `observationWeight` was, against the quiet-village rate. **A player who can start a panic by buying twice is a bug** |
+| **New: the player's own footprint** | Paired worlds with the trades kept and the lie removed, to check the lie is still separable from the buying. If it is not, the headline claim is in trouble and better found in a sweep than in a session |
+
+**What must not change.** The quiet-village rate, the burst band, and the paired-worlds
+separation. A player who trades heavily should be able to move the price — that is the
+point — but a village nobody lied to and nobody traded with must behave exactly as it does
+today.
 
 ---
 
@@ -219,7 +326,7 @@ pocket.
 
 ---
 
-## Stage 4 — something true to be wrong about
+## Stage 4 — something true to be wrong about — *third*
 
 E32 measured what E31 only suggested: the swings grow by about 5% each, and the village
 never settles. The cause is structural rather than a setting. **Every piece of evidence a
