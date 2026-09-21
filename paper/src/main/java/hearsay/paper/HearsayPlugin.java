@@ -274,7 +274,10 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             // does now and then, and counting every container in the market ten times a
             // minute would be work for nothing.
             if (session.tick() % TICKS_PER_DAY == 0) {
-                session.reportStock(Stock.visible(world, market, org.bukkit.Material.DIAMOND));
+                // Nothing reported when there is nothing to look in: a bare market square
+                // is not proof that the village has no diamonds.
+                Stock.visible(world, market, org.bukkit.Material.DIAMOND)
+                        .ifPresent(session::reportStock);
             }
         }
         session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));

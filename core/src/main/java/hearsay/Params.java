@@ -172,9 +172,16 @@ public record Params(
 
     /**
      * How far toward what they can see one look moves a villager, and how much an empty
-     * village counts against a full one. Provisional until E35 sweeps them.
+     * village counts against a full one.
+     *
+     * <p><strong>Zero by default.</strong> E37 found the village already settles on its own
+     * — to within a point of normal, in four runs out of five — so there was nothing for
+     * these to damp, and turning them up pins the price to whatever is in the chest instead
+     * of letting the rumour decide it. The mechanism is built, tested and inert, and wants
+     * justifying as a way of making a lie refutable rather than as a fix for an oscillation
+     * that was not happening.
      */
-    public static final double CHECK_WEIGHT = 0.30;
+    public static final double CHECK_WEIGHT = 0.0;
     public static final double EMPTY_EVIDENCE = 0.25;
 
     public static Params defaults() {

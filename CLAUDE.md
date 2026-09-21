@@ -62,9 +62,12 @@ logged so any crash can be replayed and compared against a counterfactual.
   1. measure the selling — a played session plus a headless sweep of both trade weights,
      reported as an E-number. Does witnessed selling alone bring decay below 1 while the lie
      still causes its bubbles? The no-lie timeline's price effect reported separately.
-  2. stage 4, reality checks. Design proposed before built. Passes only when decay is below
-     1, the price settles before the run ends, and lie-caused bubbles are unchanged. If it
-     fails, the village purse is the next damper and is measured on its own.
+  2. ~~stage 4, reality checks, as a damper~~ — built, then turned off. E37 found the
+     village already settles on its own once decay is measured from the largest swing
+     rather than from the start, so there was nothing to damp. Inert at checkWeight 0.
+     Swing decay and the quiet-village rate are both length-dependent and must only be
+     compared between runs of the same length; MarketStats.ENOUGH_SWINGS enforces the
+     minimum.
   3. stage 2, more goods, only after stage 4 passes.
 - Player-facing features built between stages must not touch the simulation's decisions or
   the calibration, and each needs a test proving it read-only, so no experiment re-runs.

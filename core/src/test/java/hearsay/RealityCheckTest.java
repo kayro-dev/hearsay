@@ -11,6 +11,14 @@ class RealityCheckTest {
 
     private static final Claim SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
+    /**
+     * Looking is off by default since E37, which found nothing for it to damp. These tests
+     * are about what the rule does when it is switched on, so they switch it on.
+     */
+    private static Params looking() {
+        return Params.defaults().withCheckWeight(0.30).withDailyDecay(1.0);
+    }
+
     private static Run believedThenLooked(int stock, int looks) {
         List<Input> inputs = new ArrayList<>();
         inputs.add(new PlantRumor(1, SCARCE, 1, 0));
@@ -18,7 +26,7 @@ class RealityCheckTest {
             inputs.add(new RealityChecked(2 + look, 0, Simulation.DIAMOND, stock));
         }
         // No fading in the way: this is about what looking does, not what the night does.
-        return Run.execute(42, Params.defaults().withDailyDecay(1.0), inputs, 2 + looks);
+        return Run.execute(42, looking(), inputs, 2 + looks);
     }
 
     @Test
@@ -67,7 +75,7 @@ class RealityCheckTest {
         // chest. Started from exactly half-sure, so both sights have the same distance to
         // close and only the weight can separate them — comparing unequal gaps would pass
         // on the gap alone, as an earlier version of this test did.
-        Params params = Params.defaults().withDailyDecay(1.0).withPlantedConfidence(0.5);
+        Params params = looking().withPlantedConfidence(0.5);
         double movedByPlenty = Math.abs(0.5 - Run.execute(42, params, List.of(
                 new PlantRumor(1, SCARCE, 1, 0),
                 new RealityChecked(2, 0, Simulation.DIAMOND, 64)), 3)
@@ -86,7 +94,7 @@ class RealityCheckTest {
     void lookingNeverInventsABeliefNobodyHeld() {
         // Otherwise a stocked market would be a way of starting a panic about plenty, and
         // a village nobody lied to could be talked into something by a chest.
-        Run run = Run.execute(42, Params.defaults(), List.of(
+        Run run = Run.execute(42, looking(), List.of(
                 new RealityChecked(2, 0, Simulation.DIAMOND, 64),
                 new RealityChecked(3, 0, Simulation.DIAMOND, 0)), 4);
 
@@ -96,13 +104,26 @@ class RealityCheckTest {
 
     @Test
     void whoToldThemIsNotRewrittenByWhatTheySaw() {
-        Run told = Run.execute(42, Params.defaults().withDailyDecay(1.0), List.of(
+        Run told = Run.execute(42, looking(), List.of(
                 new PlantRumor(1, SCARCE, 1, 0),
                 new RealityChecked(2, 0, Simulation.DIAMOND, 64)), 3);
 
         Belief after = told.finalState().villager(0).belief(SCARCE);
         assertEquals(Belief.NO_SOURCE, after.sourceId(),
                 "looking at a chest changes how sure you are, not where you heard it");
+    }
+
+    @Test
+    void lookingIsOffUntilSomebodyTurnsItOn() {
+        // E37: the village already settles to within a point of normal on its own, so there
+        // was nothing for this to damp, and turning it up pins the price to whatever is in
+        // the chest instead of letting the rumour decide it. Built, tested and inert.
+        Run run = Run.execute(42, Params.defaults(), List.of(
+                new PlantRumor(1, SCARCE, 1, 0),
+                new RealityChecked(2, 0, Simulation.DIAMOND, 64)), 3);
+
+        assertTrue(run.log().stream().noneMatch(e -> e instanceof StockChecked),
+                "with checkWeight at zero, looking should change nobody's mind");
     }
 
     @Test

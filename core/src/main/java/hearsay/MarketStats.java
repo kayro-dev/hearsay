@@ -362,6 +362,43 @@ public final class MarketStats {
     }
 
     /**
+     * The same ratio, measured only over the legs after the largest one.
+     *
+     * <p>A run's early swings are small because the rumour is still building, and including
+     * them makes every long run look like it is winding up — E36 measured the same model at
+     * 2.22 over ten days and 1.07 over a hundred and seventy-five for exactly that reason.
+     * Starting from the peak asks the question that actually matters: <em>once it had got
+     * as bad as it was going to get, did it calm down?</em>
+     *
+     * @return empty when there are not enough legs after the largest to say
+     */
+    public java.util.OptionalDouble swingDecayAfterPeak(int minimumMove) {
+        List<Swing> legs = swings(minimumMove);
+        int largest = 0;
+        for (int i = 1; i < legs.size(); i++) {
+            if (legs.get(i).amplitude() > legs.get(largest).amplitude()) {
+                largest = i;
+            }
+        }
+        List<Swing> after = legs.subList(largest, legs.size());
+        if (after.size() < ENOUGH_SWINGS) {
+            return java.util.OptionalDouble.empty();
+        }
+        double logSum = 0;
+        int counted = 0;
+        for (int i = 1; i < after.size(); i++) {
+            int before = after.get(i - 1).amplitude();
+            int now = after.get(i).amplitude();
+            if (before > 0 && now > 0) {
+                logSum += Math.log(now / (double) before);
+                counted++;
+            }
+        }
+        return counted == 0 ? java.util.OptionalDouble.empty()
+                : java.util.OptionalDouble.of(Math.exp(logSum / counted));
+    }
+
+    /**
      * The tick after which the price never again leaves the given band around normal.
      *
      * <p>Measured from the end backwards, so it answers "when did it settle and stay

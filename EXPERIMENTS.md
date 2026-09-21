@@ -2555,3 +2555,74 @@ run returns empty rather than a number that reads like a measurement.
 
 **Decision.** No parameter changed. Two published comparisons withdrawn, the baseline
 restated per length, and stage 4's gate rewritten against 700-tick figures.
+
+---
+
+## E37 — The village was already settling, and the checks pin it instead
+
+Sweeping reality checks at 700 ticks, stocked and empty separately, with decay measured
+both from the start and **from the largest swing onward**. Thirty seeds each.
+
+### The baseline, and it changes everything
+
+| checkWeight 0 (nobody looks) | |
+| --- | --- |
+| peak | 135 |
+| decay, whole run | **1.07** |
+| **decay after the largest swing** | **0.91** |
+| settled within 10% | **80%** |
+| mean price, last quarter | **100.8** |
+| bubbles caused by the lie | 63% |
+
+**The village already calms down.** Measured from the peak — once it has got as bad as it is
+going to get — the swings shrink by 9% each, four villages in five settle within 10% of
+normal, and the average price over the last quarter of the run is **100.8**, which is normal
+to within a point.
+
+**E32's premise was an artefact of where the measurement started.** "Decay 1.05, winding up,
+never settles" was the build-up being averaged in with the aftermath: early swings are small
+while the rumour spreads, so every ratio after them looks like growth. The village was never
+winding up. It rises, peaks, and comes home.
+
+That is the finding, and it was the suggestion to measure from the largest swing that
+produced it. Everything built on the old reading needs re-reading, this entry included.
+
+### What the checks actually do
+
+| checkWeight | diamonds visible | peak | late decay | settled | price, last quarter | bubbles | lie's effect |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | — | 135 | 0.91 | **80%** | **100.8** | 63% | +20 |
+| 0.15 | 0 | 167 | 0.97 | 0% | 146.2 | 0% | +47 |
+| 0.30 | 0 | 185 | 0.98 | **0%** | **169.2** | 0% | +58 |
+| 0.30 | 8 | 176 | 0.98 | 0% | 156.6 | 0% | +52 |
+| 0.30 | 32 | 113 | 0.96 | 30% | **48.8** | 6% | +6 |
+| 0.45 | 32 | 112 | 0.98 | 36% | 53.8 | 3% | +5 |
+
+**They do not damp. They pin.** Every row with checks in it ends further from normal than
+the row without them: an empty market holds the price at 169, a stocked one holds it at 49.
+The late decay creeps *toward* 1 rather than below it, which is what a price held still
+looks like — not a village calming down, but one that has stopped changing its mind.
+
+The mechanism does exactly what it was designed to do, and what it was designed to do turns
+out to be the wrong thing. Belief is drawn toward a fixed implied value and then held there,
+so the price becomes a function of what is in the chest rather than of what anybody said.
+**The rumour stops mattering**, which the lie's-effect column shows from both directions: +58
+where the chest is empty and the lie merely agrees with it, +6 where the chest is full and
+the lie is contradicted.
+
+### A third measurement that is also length-dependent
+
+Quiet villages burst in **6%** of seeds at 700 ticks, against the 0.33% E30 measured at 200.
+Longer runs have more chances to talk themselves into something. That figure needs quoting
+with its length too, and E30's guarantee should be read as "0.33% over fifty days" rather
+than as a property of the model.
+
+**Decision.** Reality checks are **not adopted as a damper**, because there is nothing to
+damp: the village already settles to 100.8 on its own. `checkWeight` is set to **0** by
+default, which leaves the mechanism built, tested and inert.
+
+What it might still be for is a different question from the one it was built to answer —
+making a lie *refutable*, so that a village with visible diamonds can disbelieve a rumour
+about their absence. That is worth having and the 32-diamond rows show it working. But it is
+a feature about truth, not a fix for an oscillation that was never happening, and it should
+be justified on its own terms rather than inherited from a mismeasurement.

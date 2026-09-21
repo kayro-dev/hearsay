@@ -436,7 +436,18 @@ pocket.
 
 ---
 
-## Stage 4 — something true to be wrong about — **BUILT** (E35), gate rewritten
+## Stage 4 — something true to be wrong about — **BUILT and turned off** (E35, E37)
+
+> **E37 withdrew the reason for this stage.** Measured from the largest swing rather than
+> from the start of the run, the village already settles: swings shrink by 9% each, four in
+> five settle within 10% of normal, and the mean price over the last quarter is 100.8.
+> E32's "never settles" was the build-up being averaged in with the aftermath. There was
+> nothing to damp.
+>
+> The mechanism is built, tested and inert at `checkWeight` 0. What it might still be good
+> for is **making a lie refutable** — a village that can see thirty-two diamonds disbelieving
+> a rumour that they are gone — which the sweep shows working. That is a feature about truth
+> and wants justifying on its own terms, not inherited from a mismeasurement.
 
 E32 measured that the swings grow by about 5% each and the village never settles. E33 and
 E34 then established *why* the obvious fix does not work, which is what this design is built
