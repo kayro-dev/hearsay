@@ -48,10 +48,11 @@ disagree, the village is dying.
 | 5g | Look at any villager's name plate | A second line with what they would charge, as a change: `· 0%  100` while nobody believes anything |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
 | 5h | `/hearsay market` before marking one | "No market marked", and who counts as a trader is still guessed from workstations |
-| 5i | Stand in an open square, `/hearsay market set 8` | "The market is here, 16 blocks across". A ring of white particles appears at its edge each tick |
+| 5i | Stand in an open square, `/hearsay market 8` | "The market is here, 16 blocks across". A ring of white particles appears at its edge each tick |
 | 5j | Watch a villager walk into the ring | From the next tick their name plate reads `MARKET` with `/hearsay debug` on, whatever their workstation is. A farmer in the square is a trader |
-| 5k | `/hearsay market set 1` and `set 100` | Both refused with the allowed range. A market nobody can stand in two of, or one the size of the village, is a mistake |
-| 5l | `/hearsay market clear` | The ring goes, and spots go back to being read from workstations |
+| 5k | `/hearsay market set 8` | The same as 5i. Both forms work, because a bare number cannot mean anything else |
+| 5l | `/hearsay market 1` and `market 100` | Both refused with the allowed range. A market nobody can stand in two of, or one the size of the village, is a mistake |
+| 5m | `/hearsay market clear` | The ring goes, and spots go back to being read from workstations |
 | 6a | Plant a rumour, then wait a tick | The villager you told is outlined **warm orange**. Villagers who have merely heard it are outlined **grey**. Everyone else has no outline at all |
 | 6b | Watch a whisper happen | A trail of **flame** particles from teller to listener for about a second, and a chime. Warm particles for scarcity; a rumour that diamonds are *abundant* draws **soul fire** in cool blue with a lower chime |
 | 6c | Watch someone cross into believing | A `❗` in the panic red appears above them for one tick, with a higher chime. It appears once per villager, not on every repetition |

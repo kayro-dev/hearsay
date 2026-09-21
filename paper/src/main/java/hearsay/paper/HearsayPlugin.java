@@ -151,8 +151,8 @@ public final class HearsayPlugin extends JavaPlugin {
             case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
-                    "/hearsay start [seed] | rumor diamonds scarce | who | market set <radius>"
-                    + " | status | stop"));
+                    "/hearsay start [seed] | rumor diamonds scarce | who | market <radius>"
+                    + " | market clear | status | stop"));
         }
         return true;
     }
@@ -497,13 +497,18 @@ public final class HearsayPlugin extends JavaPlugin {
      */
     private void market(Player player, String[] args) {
         String what = args.length > 1 ? args[1].toLowerCase() : "show";
-        switch (what) {
+        // "/hearsay market 8" is what a person types, and a bare number cannot mean
+        // anything else, so it means the same as "set 8". Insisting on the word would be
+        // the command telling the player they had typed it wrong when they had not.
+        boolean bareRadius = what.matches("-?\\d+(\\.\\d+)?");
+        switch (bareRadius ? "set" : what) {
             case "set" -> {
+                String given = bareRadius ? args[1] : (args.length > 2 ? args[2] : null);
                 double radius;
                 try {
-                    radius = args.length > 2 ? Double.parseDouble(args[2]) : DEFAULT_MARKET_RADIUS;
+                    radius = given == null ? DEFAULT_MARKET_RADIUS : Double.parseDouble(given);
                 } catch (NumberFormatException e) {
-                    player.sendMessage(Component.text("That is not a radius: " + args[2],
+                    player.sendMessage(Component.text("That is not a radius: " + given,
                             NamedTextColor.RED));
                     return;
                 }
@@ -526,8 +531,8 @@ public final class HearsayPlugin extends JavaPlugin {
             default -> {
                 if (market == null) {
                     player.sendMessage(Component.text("No market marked. Stand where you want "
-                            + "it and /hearsay market set " + (int) DEFAULT_MARKET_RADIUS,
-                            NamedTextColor.GRAY));
+                            + "it and /hearsay market " + (int) DEFAULT_MARKET_RADIUS
+                            + " — that is the radius in blocks.", NamedTextColor.GRAY));
                     return;
                 }
                 player.sendMessage(Component.text("The market is " + market.diameter()
