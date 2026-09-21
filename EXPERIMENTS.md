@@ -1527,3 +1527,88 @@ takes over, and it is the only thing in conflict.
 
 **Decision.** Nothing changed. Defaults stand at 0.40 and 0.92 pending a call on whether the
 band or the village gives way.
+
+---
+
+## E22 — The worlds differ in mixing, not in any parameter
+
+E21 ended with a proposed retune to 0.30/0.95. Rejected before adoption: it takes both
+played sessions to about 170 against a hard cap of 175, trading a village that never takes
+off for one that always saturates. This entry diagnoses the difference instead.
+
+**Hypothesis.** Real villagers are clustered, so inside a belief's roughly two-day life above
+the tell threshold they hear from few independent sources, while headless mixing delivers
+confirmations fast enough to compound.
+
+**Measured in both worlds.** A window of 8 ticks is two days. A telling counts as
+independent when the teller is not already in the listener's belief chain, which is exactly
+the case the evidence rule gives full weight rather than `repeatWeight`.
+
+| world | distinct partners per 2 days | independent share of tellings | second independent source before decay drops the belief under the threshold |
+| --- | --- | --- | --- |
+| model, mean of 10 seeds | **4.17** | 69-71% | **49%** |
+| played, 21 villagers, 632 ticks | **2.12** | 45.6% | **13%** (2 of 16) |
+| played, 19 villagers, 701 ticks | **2.45** | 61.0% | **5%** (1 of 20) |
+
+**The hypothesis holds.** A real villager meets about half as many distinct people in the
+window, a smaller share of what they hear is independent, and the compounding step — a
+second independent confirmation arriving while the belief is still strong enough to matter —
+happens **five to ten times less often**. Belief in the model compounds; belief in the
+village decays before its second source arrives. That is the whole gap, and it is structural.
+
+**No decay value bridges it.** Sweeping between the two endpoints rather than jumping:
+
+| dailyDecay | session A peak | session B peak | half-believing | quiet bursts | headless peak median |
+| --- | --- | --- | --- | --- | --- |
+| 0.920 (today) | 121 | 133 | 62% | 0% | 159 |
+| 0.925 | 121 | 128 | 71% | 0% | 165 |
+| 0.930 | 122 | 134 | 79% | 0% | 169 |
+| 0.935 | 122 | 130 | 89% | 0% | 172 |
+| 0.940 | 136 | 131 | 93% | 0% | 176 |
+| 0.945 | 131 | 128 | 96% | 0% | 178 |
+| 0.950 | 131 | 133 | 96% | 0% | 180 |
+
+The played columns are flat inside their own noise across the whole range, while headless
+half-believing runs 62% to 96% and the headless median peak climbs to within four of the
+cap. **Decay saturates the model without helping the village**, which is the retune rejected
+above, arrived at from the other direction. There is no value to adopt here.
+
+**Why no parameter could.** `pickSpot` is an independent weighted roll per villager per
+tick, with no memory of where that villager was or who they are, and `holdMeetings` shuffles
+everyone at a spot and pairs them uniformly. That is a perfectly mixed population by
+construction. Real villagers have one fixed bed and one fixed workstation and shuttle
+between them, so two villagers at the same end of the village meet constantly and two at
+opposite ends essentially never do. Mixing is not a knob in the model; it is an assumption
+baked into the movement rule.
+
+### Proposal, not implemented
+
+**Neighbourhoods, with mixing as the one new parameter.** At creation each villager is given
+a neighbourhood from the movement stream. `holdMeetings` pairs within (spot, neighbourhood)
+rather than within spot, and a new parameter `mixing` is the chance a villager is drawn into
+the village-wide pool instead of their own neighbourhood. `mixing = 1` reproduces today's
+behaviour exactly, so the change is a generalisation rather than a replacement and every
+existing log still replays.
+
+`mixing` is then fitted so the model's distinct-partners-per-two-days matches the traces,
+about 2.1 to 2.5 rather than 4.17 — fitted against recorded surveys, not guessed. This is
+trace-driven calibration used to fit one structural parameter, rather than to replace the
+model, which matters because paired worlds and counterfactuals need a model that can run
+without a recording.
+
+Rejected alternatives: **stickiness toward a preferred workstation** raises repeat
+encounters but barely lowers distinct partners, since everyone at the market still mixes
+uniformly, and it is disjoint social circles that the traces show. **Replacing headless
+calibration with the traces outright** overfits to two villages and leaves the counterfactual
+machinery with no model to run.
+
+**A caveat worth stating in advance.** Making the model mix like the village will lower
+headless half-believing at today's parameters, because that is the mechanism being removed.
+The 50-85% band would have to be re-derived on the faithful model. It is entirely possible
+the honest outcome is that the model comes to agree with the village — that a rumor told to
+a clustered population of twenty rarely compounds — in which case the in-game price ceiling
+is a true property of a village this size, and a visible bubble needs a bigger or denser
+village rather than a different number.
+
+**Decision.** Nothing changed. Defaults stand at 0.40 and 0.92. The quiet-village guarantee
+is untouched and measured at 0% in every row above.
