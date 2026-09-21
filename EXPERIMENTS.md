@@ -1966,5 +1966,7 @@ E24, E25 and here is measuring `observationWeight` alone. The clustering is vali
 by the structural measures: partners per two days, meetings per tick, and the confirmation
 rate against its bootstrap interval.
 
-**Decision.** Nothing changed. `observationWeight` stays 0.32 pending a call on 0.28, which
-is what the three sessions together now argue for.
+**Decision. Adopted: `observationWeight` 0.28.** All three recorded sessions burst, none
+saturates, and the no-lie column stays at 107-108 throughout. Headless it reads 36% bursts
+against the 25-60% band and 0% quiet, so `CalibrationTest` holds unchanged. The quiet-village
+guarantee is untouched.

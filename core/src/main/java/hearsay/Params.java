@@ -119,9 +119,11 @@ public record Params(
      *
      * <p>{@code observationWeight} is the touchy one: a change of 0.05 either way moves the
      * half-believing rate by twenty points or more, so it wants re-validating rather than
-     * nudging. It was raised to 0.32 in E24, once the village was clustered: the market
-     * price is the only evidence that crosses neighbourhood lines, and a clustered village
-     * needs it to carry more. 0.35 and above starts bursting villages nobody lied to.
+     * nudging. It was raised once the village was clustered, because the market price is the
+     * only evidence that crosses neighbourhood lines and a clustered village needs it to
+     * carry more. 0.34 and above starts bursting villages nobody lied to, and E26 settled
+     * on 0.28 rather than 0.32 because 0.32 pins a village of twenty-six against the price
+     * cap: the weight was fitted on villages of about twenty and does not transfer upward.
      */
     /**
      * Villagers to a neighbourhood. Fitted in E23 against recorded position traces, not
@@ -138,7 +140,7 @@ public record Params(
 
     public static Params defaults() {
         return new Params(0.4, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,
-                100, 0.75, 0.32, 0.10, 0.20, 0.030, 0.86, 0.25, 0, MeetingSource.SIMULATED,
+                100, 0.75, 0.28, 0.10, 0.20, 0.030, 0.86, 0.25, 0, MeetingSource.SIMULATED,
                 Simulation.VILLAGER_COUNT, MIXING);
     }
 
