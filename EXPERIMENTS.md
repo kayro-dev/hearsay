@@ -1970,3 +1970,46 @@ rate against its bootstrap interval.
 saturates, and the no-lie column stays at 107-108 throughout. Headless it reads 36% bursts
 against the 25-60% band and 0% quiet, so `CalibrationTest` holds unchanged. The quiet-village
 guarantee is untouched.
+
+---
+
+## E27 — Who hears it first, on the first session run under the new defaults
+
+25 villagers, 346 ticks, 4 lies, the first session played on the E26 build
+(`observationWeight` 0.28, `mixing` 0.05, witnessed provenance).
+
+| | with the 4 lies | with no lie at all |
+| --- | --- | --- |
+| peak price | **128** (tick 261) | 105 |
+| holders | 19 of 25 | 0 |
+| tellings | 29 | 0 |
+| bubbles | 0 | 0 |
+
+The lie moved the price by 23 and reached three quarters of the village, but stopped two
+short of the 130 a bubble needs. The interesting part is why, and it is not a parameter.
+
+**Where the lies went.** The four went to villagers with gossip 0.49, 0.40 and **0.04** at
+ticks 5 to 7, and to the most talkative villager in the village, gossip **0.96**, at tick
+236 of 346. The peak came at tick 261, immediately after that last one. Three early lies
+into quiet villagers did almost nothing; one late lie into a talker did all of it, with only
+a quarter of the run left to work in.
+
+**The same session, replayed with only the timing changed:**
+
+| | peak | bubbles | tellings |
+| --- | --- | --- | --- |
+| as played, the talker hears it at tick 236 | 128 | 0 | 29 |
+| **the same four lies, the talker hears it at tick 5** | **156** | **1** | **91** |
+| **one lie only, into the talker, at tick 5** | **147** | **1** | **46** |
+
+**One well-aimed lie beats four badly-aimed ones.** A single rumor told to the right villager
+at the start bursts the price; four told mostly to quiet people does not, and tripling the
+tellings is what the aim buys, not the count.
+
+This is E8 arriving from the other direction. That experiment measured luck at about 65% and
+the choice of planter at about 35% across 5,040 runs, and this is what that 35% looks like
+inside one village: 29 tellings against 91, from the same rumor in the same place, told
+first to someone else.
+
+**Decision.** Nothing changed; no parameter is implicated. What it changes is how the plugin
+should be used, and `/hearsay who` exists precisely to make this choice rather than guess it.
