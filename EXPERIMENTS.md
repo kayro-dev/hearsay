@@ -1909,3 +1909,62 @@ model behind it was wrong; the choice now rests on a model that is not.
 
 **Decision.** Adopted: witnessed provenance. `mixing` stays 0.05, `observationWeight` stays
 0.32, the band stays 25-60%, and the quiet-village guarantee is untouched at 0%.
+
+---
+
+## E26 — The first session that worked, and a size the weight was never fitted on
+
+A played session of 26 villagers, 236 ticks, 6 lies. **It ran on the jar built before E23**,
+so none of the clustering, witnessed provenance or the new observation weight was in it:
+its recipe says `observationWeight=0.25` and carries no `mixing` field at all.
+
+**It is the first session where the whole thing worked.**
+
+| | with the 6 lies | with no lie at all |
+| --- | --- | --- |
+| peak price | **145** (tick 90) | 107 |
+| lowest price | 69 | 93 |
+| bubbles | **1** | 0 |
+| holders | 23 of 26 | 0 |
+| tellings | 111 | 0 |
+
+A bubble that ran up to 145, came back down through the base to 69, and would not have
+happened at all without the lie. The average-ask rule from E20 did this on its own; what
+changed on the player's side was the **village size**, 26 against the 19 and 21 of every
+earlier attempt. E23 predicted exactly this — that a visible bubble needs a bigger village
+rather than a different number — and it is the one prediction here that was made before
+the fact rather than after.
+
+**The 98 at the start is the noise, working as designed.** At tick 2 the market read 98 with
+a noise level of −0.015, no believers at all and seven sellers, all asking the base price.
+The first lie was planted at tick 4. A village with nothing to believe wobbles a few percent
+either way, which is what makes a bubble measurable against something.
+
+**A caution the earlier sessions could not show.** `observationWeight` was chosen in E24 and
+confirmed in E25 against sessions of 19 and 21 villagers. Against all three sessions at once:
+
+| observationWeight | 26 villagers | 21 villagers | 19 villagers |
+| --- | --- | --- | --- |
+| 0.25 (what it played at) | 145 / 107 | 121 / 108 | 133 / 107 |
+| **0.28** | **151 / 107** | **134 / 108** | **133 / 107** |
+| 0.30 | 169 / 107 | 143 / 108 | 149 / 107 |
+| 0.32 (today's default) | **172** / 107 | 138 / 108 | 138 / 107 |
+| 0.34 | **172** / 107 | 146 / 108 | 145 / 107 |
+
+The no-lie column is 107 or 108 at every weight and every size, so the quiet-village
+guarantee holds on recorded inputs as well as on seeds. But **0.32 pins a village of 26 to
+172 against a cap of 175**, which is the saturation rejected in E22. The weight was fitted
+on villages of about twenty and does not transfer upward.
+
+0.28 bursts all three sessions, separates the lie in all three, and saturates none. Headless
+it reads 36% bursts, 0% quiet, inside the 25-60% band.
+
+**A limitation of every played-session check so far, stated plainly.** A recorded session
+runs in `MeetingSource.EXTERNAL`, where the plugin supplies the meetings and `holdMeetings`
+never runs — so `mixing` has no effect on any of them. Every played-session column in E23,
+E24, E25 and here is measuring `observationWeight` alone. The clustering is validated only
+by the structural measures: partners per two days, meetings per tick, and the confirmation
+rate against its bootstrap interval.
+
+**Decision.** Nothing changed. `observationWeight` stays 0.32 pending a call on 0.28, which
+is what the three sessions together now argue for.
