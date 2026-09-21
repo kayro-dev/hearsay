@@ -68,7 +68,11 @@ logged so any crash can be replayed and compared against a counterfactual.
      Swing decay and the quiet-village rate are both length-dependent and must only be
      compared between runs of the same length; MarketStats.ENOUGH_SWINGS enforces the
      minimum.
-  3. stage 2, more goods, only after stage 4 passes.
+  3. **stage 2, more goods — next.** No longer waiting on stage 4: E37 measured the
+     baseline already meeting the gate stage 4 was to have achieved.
+- Figures that are shares of runs move with run length and must not be compared across
+  lengths. The quiet-village rate is 0.19 bursts per 100 village-days [0.10-0.29] (E38),
+  and a bubble is only laid at a lie's door within thirty days of it.
 - Player-facing features built between stages must not touch the simulation's decisions or
   the calibration, and each needs a test proving it read-only, so no experiment re-runs.
 - Stage 4 is not done when it is built but when it works: swing decay below 1 and the lie

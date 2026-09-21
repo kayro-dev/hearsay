@@ -599,3 +599,40 @@ to be a deliberate choice, and the tuning experiments should measure what it doe
 
 Gradle project, `core` as pure Java 21, a tick loop whose randomness all comes from one
 seeded `Random`, and a test that the same seed gives the same result. CI on every push.
+
+## Week 8 — measuring the measurements
+
+Built stage 1 (a marked market region), stage 3 (villagers buying diamonds at
+belief-driven prices, player trades as input events) and stage 4 (reality checks), then
+turned stage 4 off again.
+
+Three published figures turned out to be artefacts of how they were measured rather than
+facts about the model.
+
+**The oscillation was not real.** E32 reported swing decay of 1.05 and concluded the
+village was winding up and never settling; stage 4 was designed to damp it. Measured from
+the largest swing onward instead of from the start of the run, the same village reads 0.91,
+settles within 10% of normal in 80% of runs, and ends at a mean price of 100.8. Early
+swings are small while a rumour is still spreading, so averaging them in makes every long
+run look like it is growing. E32's conclusion is withdrawn and stage 4 is inert at
+`checkWeight` 0.
+
+**Swing decay is only comparable between runs of the same length.** The same model reads
+2.22 over ten days, 1.37 over fifty and 1.07 over a hundred and seventy-five. Two published
+comparisons were withdrawn for ignoring this, and `MarketStats.ENOUGH_SWINGS` now refuses
+to answer below ten legs.
+
+**The quiet-village guarantee was a share, and shares move with length.** 0.33% of seeds
+over fifty days, 6% over a hundred and seventy-five — the same model. Restated as a rate:
+**0.19 bursts per 100 village-days, 95% interval 0.10 to 0.29**, measured over thirty
+thousand village-days.
+
+**And a lie was being credited with bubbles that happened months later.** `CalibrationTest`
+counted a bubble anywhere in the run. Windowed to thirty days after the lie, the separation
+is 38% against 0% for villages nobody lied to, where unwindowed it was 60% against 8%.
+
+Built alongside: personality labels, "what have you heard?" on a crouch-click, percent
+change as the price headline, glow by what a villager knows, and particle trails for
+whispers.
+
+Stage 4 is no longer a prerequisite for anything. More goods is next.

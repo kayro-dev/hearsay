@@ -2288,6 +2288,13 @@ normal on the way past".
 | 6 | ▼ −23% | ▲ +34% | 57% | 33 |
 | 9 | ▲ +42% | ▼ −45% | 87% | 20 |
 
+> **Withdrawn at E37.** The 1.05 below is measured from the start of the run, so it averages
+> the build-up in with the aftermath: early swings are small while the rumour is still
+> spreading, and every ratio after them reads as growth. Measured from the largest swing
+> onward the same village reads **0.91**, settles within 10% of normal in four runs out of
+> five, and ends at a mean price of 100.8. **The village was never winding up.** The
+> conclusion below, and the hypothesis it supported, do not stand.
+
 **A ratio of 1.05 is the finding.** Above 1 the village is winding up, not calming down.
 Not dramatically — 5% a swing is slow — but it is the wrong side of 1, and over 177 days it
 took the swings from 39% to 87%. Nothing in the model damps them, and the numbers say so
@@ -2306,6 +2313,9 @@ proposes to fix.
 
 **Decision.** Nothing changed and nothing tuned. The oscillation is now a measurement rather
 than an impression, and these four numbers are what any damping mechanism has to beat.
+
+*(That decision stood for two entries. E37 withdrew it: measured from the peak there was no
+oscillation to beat.)*
 
 ---
 
@@ -2626,3 +2636,78 @@ making a lie *refutable*, so that a village with visible diamonds can disbelieve
 about their absence. That is worth having and the 32-diamond rows show it working. But it is
 a feature about truth, not a fix for an oscillation that was never happening, and it should
 be justified on its own terms rather than inherited from a mismeasurement.
+
+---
+
+## E38 — Rates rather than shares, and a window on what the lie can be blamed for
+
+Two of this project's headline figures were shares of runs, and both moved when the run
+length moved. Restated so they cannot.
+
+### Quiet villages, as a rate
+
+Sixty villages nobody lied to, five hundred days each — thirty thousand village-days:
+
+| | |
+| --- | --- |
+| bursts | 56 |
+| **rate** | **0.19 per 100 village-days** |
+| 95% interval | **0.10 to 0.29** |
+
+That is the figure to quote. "0.33% of seeds" (E30) and "6% of seeds" (E37) were the same
+model measured over fifty days and a hundred and seventy-five; a rate per hundred days is
+the same number in both and does not need a footnote about how long anyone watched.
+
+### A month is how long a lie may be blamed for something
+
+`bubbleWithin` has existed since the market window work and `CalibrationTest` was not using
+it, so a bubble a hundred and fifty days after the lie counted as caused by it. Over 175-day
+runs, sixty seeds:
+
+| | any time in the run | within 30 days of the lie |
+| --- | --- | --- |
+| villages that were lied to | **60%** | **38%** |
+| villages nobody lied to | 8% | **0%** |
+
+**Twenty-two points of what was credited to the lie happened more than a month after it**,
+by which time the village has had time to talk itself into anything. And the windowed
+comparison is far cleaner than the unwindowed one: **38% against 0%**, where without a window
+it is 60% against 8%.
+
+`CalibrationTest` now counts only bubbles within thirty days of the lie. On the calibration
+seeds at fifty days the rate is 43% windowed against 45% unwindowed — a small change there,
+because a fifty-day run has little room for a late bubble, which is exactly why the fault
+went unnoticed. Quiet villages inside the window: **0 of 300**.
+
+**Decision.** `CalibrationTest` windowed; the band stays 25–60%, which 43% sits inside. The
+quiet-village guarantee is restated as a rate with an interval. No parameter changed.
+
+---
+
+## Reality checks, redesigned for later — *not built*
+
+E37 turned them off: there was nothing to damp, and switched on they pin the price to
+whatever is in the chest. The mechanism is still worth something, but not as it stands, and
+the fault is that it is symmetrical.
+
+**Reality should refute, never assert.**
+
+| what a villager sees | what it may do |
+| --- | --- |
+| stock that **contradicts** what they believe | lower their confidence, by attraction as now |
+| stock that **agrees** with what they believe | **nothing** |
+| an empty container | **nothing** |
+| no container at all | **nothing** (already true since E37) |
+
+Under the current rule an empty market is evidence of scarcity, so a bare village pins its
+own price at 169 and the rumour stops mattering. Under this one, seeing nothing tells you
+nothing: a villager who believes diamonds are gone and looks at an empty chest has learned
+that this chest is empty, which they knew.
+
+The asymmetry is the point. **Absence of a thing is not evidence of its absence everywhere**,
+but presence of it is proof it exists. A village can be talked into a shortage and then
+shown it is wrong; it cannot be talked out of plenty by a cupboard nobody stocked.
+
+That also removes the need for `emptyEvidence` — nothing is weighed against nothing —
+leaving one parameter to sweep instead of two. It wants justifying as a way of making a lie
+refutable, on its own terms, rather than as a fix for an oscillation that was not happening.

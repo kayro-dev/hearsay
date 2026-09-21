@@ -35,6 +35,16 @@ class CalibrationTest {
     // the model meets as few people as a played village, half-believing falls to 1%. What
     // survives as a measure of the loop working is how often the lie bursts the price,
     // measured at 39% on these seeds.
+    /**
+     * How long after a lie a bubble may still be laid at its door.
+     *
+     * <p>A month. Beyond that the village has had time to talk itself into anything, and
+     * E38 measured the difference: 60% of long runs bubble somewhere, 38% within thirty
+     * days of the lie. A claim with no window is a claim about the village's whole life.
+     */
+    private static final int WITHIN_DAYS = 30;
+
+    // Re-derived in E38 under the window. 43% on these seeds, against 45% unwindowed.
     private static final double AT_LEAST = 0.25;
     private static final double AT_MOST = 0.60;
 
@@ -69,7 +79,11 @@ class CalibrationTest {
     void aPlantedRumorBurstsThePriceInSomeSeedsButNotMost() {
         int burst = 0;
         for (long seed = FIRST_SEED; seed < FIRST_SEED + SEEDS; seed++) {
-            if (runVillage(seed, aRumorFor(seed)).bubble().isPresent()) {
+            // Within a month of the lie, not merely somewhere in the run. E38 found 60%
+            // of long runs bubble at some point and only 38% within thirty days of being
+            // lied to: the other twenty-two points are the village wandering on its own,
+            // and crediting them to the lie flatters it.
+            if (runVillage(seed, aRumorFor(seed)).bubbleWithin(1, WITHIN_DAYS).isPresent()) {
                 burst++;
             }
         }
@@ -87,14 +101,15 @@ class CalibrationTest {
     void villagesNobodyLiedToHardlyEverBurst() {
         List<Long> panicked = new ArrayList<>();
         for (long seed = FIRST_SEED; seed < FIRST_SEED + QUIET_SEEDS; seed++) {
-            if (runVillage(seed, List.of()).bubble().isPresent()) {
+            if (runVillage(seed, List.of()).bubbleWithin(1, WITHIN_DAYS).isPresent()) {
                 panicked.add(seed);
             }
         }
 
         assertTrue(panicked.size() <= MOST_THAT_MAY_BURST,
                 "villages nobody lied to are bursting: " + panicked.size() + " of "
-                        + QUIET_SEEDS + ", at seeds " + panicked + ". The measured rate is "
-                        + "about one in three hundred, so this is the loop starting itself.");
+                        + QUIET_SEEDS + ", at seeds " + panicked + ". E38 measured the rate "
+                        + "at 0.19 bursts per 100 village-days, so this is the loop "
+                        + "starting itself.");
     }
 }

@@ -13,9 +13,14 @@ names. This is the order:**
 | --- | --- | --- |
 | 1st | **1 — a marked market** *(built)* | Small, and it made every existing measurement honest |
 | 2nd | **3 — real trades, diamonds only** *(built, E33)* | Depth before breadth. One good, taken all the way to the player's hands |
-| 3rd | **measure the selling** | A played session and a headless sweep, before anything is built on top |
-| 4th | **4 — reality checks** | Proposed first. Damping needs a true supply to damp against |
-| 5th | **2 — more goods** | Only once stage 4 passes |
+| 3rd | **measure the selling** *(done, E34)* | A played session and a headless sweep |
+| 4th | ~~**4 — reality checks**~~ *(built, turned off, E37)* | There was nothing to damp. Not a prerequisite for anything |
+| 5th | **2 — more goods** | **Next.** No longer waiting on stage 4 |
+
+> **The gate that stood in front of stage 2 has been met by the baseline itself.** E37
+> measured decay after the peak at **0.91**, settling in 80% of runs, at a mean price of
+> 100.8, with the lie's bubbles intact at 38% against 0% for quiet villages (E38). Stage 4
+> was to have achieved that and the model was already doing it. **More goods is next.**
 
 **Nothing starts until the step before it is done and measured.** Each of these has a test
 it must pass, written down before it is built, and a stage that fails its test is not
@@ -78,7 +83,7 @@ workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ---
 
-## Stage 2 — more than one thing to be wrong about — *fourth, after the model is damped*
+## Stage 2 — more than one thing to be wrong about — **NEXT**
 
 A price index per item, each with a normal price in emeralds:
 
