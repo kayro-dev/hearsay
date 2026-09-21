@@ -93,6 +93,15 @@ final class VillageSession {
         return bodies.size();
     }
 
+    /**
+     * Whether the village exists yet. Villagers are created by the first tick like every
+     * other change, so for the first few seconds after binding there are bodies but no
+     * minds, and anything that asks about a villager will not find one.
+     */
+    boolean awake() {
+        return !simulation.state().villagers().isEmpty();
+    }
+
     UUID bodyOf(int villagerId) {
         return bodies.get(villagerId);
     }

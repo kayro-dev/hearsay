@@ -171,7 +171,10 @@ public final class HearsayPlugin extends JavaPlugin {
 
         lastSeenAlive = session.boundCount();
         long period = SECONDS_PER_TICK * GAME_TICKS_PER_SECOND;
-        ticking = getServer().getScheduler().runTaskTimer(this, this::tick, period, period);
+        // The first tick runs at once rather than in ten seconds' time. Villagers are
+        // created by a tick, like every other change, so until one has run there are
+        // bodies with nobody in them and every command that names a villager fails.
+        ticking = getServer().getScheduler().runTaskTimer(this, this::tick, 0L, period);
     }
 
     /** One simulation tick: look, report, advance, draw. */
@@ -276,9 +279,7 @@ public final class HearsayPlugin extends JavaPlugin {
     }
 
     private void plant(Player player, String[] args) {
-        if (session == null) {
-            player.sendMessage(Component.text("Nothing bound. /hearsay start first.",
-                    NamedTextColor.RED));
+        if (notReady(player)) {
             return;
         }
         ClaimType type = args.length > 2 && args[2].equalsIgnoreCase("abundant")
@@ -336,6 +337,21 @@ public final class HearsayPlugin extends JavaPlugin {
         }
     }
 
+    /** Says why nothing can be answered yet, if anything cannot. */
+    private boolean notReady(Player player) {
+        if (session == null) {
+            player.sendMessage(Component.text("Nothing bound. /hearsay start first.",
+                    NamedTextColor.RED));
+            return true;
+        }
+        if (!session.awake()) {
+            player.sendMessage(Component.text("The village is still waking up. Try again in "
+                    + "a moment.", NamedTextColor.YELLOW));
+            return true;
+        }
+        return false;
+    }
+
     private static String describeTalker(double gossip) {
         if (gossip >= 0.8) {
             return "the village gossip";
@@ -354,8 +370,7 @@ public final class HearsayPlugin extends JavaPlugin {
      * somebody who will pass it on. Nothing about a villager shows this from the outside.
      */
     private void who(Player player) {
-        if (session == null) {
-            player.sendMessage(Component.text("Nothing bound.", NamedTextColor.RED));
+        if (notReady(player)) {
             return;
         }
         Map<Integer, Villager> here = whoIsAround();
@@ -376,8 +391,7 @@ public final class HearsayPlugin extends JavaPlugin {
     }
 
     private void status(Player player) {
-        if (session == null) {
-            player.sendMessage(Component.text("Nothing bound.", NamedTextColor.RED));
+        if (notReady(player)) {
             return;
         }
         Map<Integer, Double> confidences = session.confidences();

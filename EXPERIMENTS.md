@@ -1224,3 +1224,64 @@ So a second change, which E8 already argued for without anyone acting on it: `/h
 lists the bound villagers by how much they talk, and `/hearsay rumor` now says how talkative
 the villager you told is and warns when they are not. Who you tell is worth about a third of
 whether a rumor takes hold, and until now the player had no way to influence it.
+
+---
+
+## E17 — Four short of a bubble
+
+The first played session where the rumor genuinely spread. 19 villagers, all present
+throughout, four rumors planted in villagers chosen for how much they talk.
+
+| | E16's session | **this one** |
+| --- | --- | --- |
+| tellings | 11 | **76** |
+| villagers holding the claim | 4 of 21 | **13 of 19** |
+| believers, at 0.5 or above | 1 | 3 |
+| price range | 93–108 | 93–107 |
+| price observations | 0 | **0** |
+
+Rotating partners and telling talkative villagers did what E16 said they would: telling went
+up sevenfold and two thirds of the village came to hold the claim. The price still did not
+move, and the loop still did not run.
+
+### Why, exactly
+
+At the moment of peak belief, the market held 12 sellers of 19. Six of them held the claim,
+at a median confidence of 0.19, which makes an ask of 114. The other six asked the base
+price of 100.
+
+The median of six asks at 100 and six at 114 is 107.
+
+An observation needs 111. The session's highest price was 107. **The market was one holder
+short of moving the median from 107 to 114, which would have crossed the threshold and
+started the feedback that everything else depends on.**
+
+That is not a model that is broken. It is a model sitting exactly on a knife edge, which
+usually means a number is mis-scaled rather than a mechanism being wrong.
+
+### The candidate
+
+`observationThreshold` is the last market parameter never swept. It was set to 0.10 in the
+week 5 design and has survived every sweep since because no sweep ever varied it: E5 swept
+`observationWeight` and `fullMoveSize` around it, E11 the window, E13 the mapping range.
+
+Three ways off the knife edge, in order of how much evidence stands behind them:
+
+- **Lower `observationThreshold`.** At 107 against a threshold of 111, a threshold of 5%
+  would have fired. The risk is that quiet villages become jumpy, which is exactly what the
+  E5a noise sweep measured and can measure again.
+- **Raise `priceSensitivity`**, so a holder at 0.19 asks more than 114. This moves every
+  price in the model, headless included, and would invalidate the calibration.
+- **Shrink the market**, so holders are the median sooner. The market is 64% of this
+  village at a ten-block range, against the 44% E13 measured on a different one and the
+  ~41% the headless model assumes.
+
+**Decision.** Nothing changed. Proposed: sweep `observationThreshold` against the recorded
+sessions and the headless model together, reporting the spontaneous-panic rate alongside,
+since the whole point of the threshold is to stop a village reading meaning into noise.
+
+Also fixed here: `/hearsay who` crashed with "No villager with id 0" when run in the first
+ten seconds after binding. Villagers are created by the first tick, like every other change,
+and the first tick was scheduled ten seconds out, so for those ten seconds there were bodies
+with nobody in them. The first tick now runs immediately, and every command that names a
+villager says the village is still waking up rather than throwing.
