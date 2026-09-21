@@ -62,11 +62,12 @@ disagree, the village is dying.
 | 6d | Let the price climb past 130 | The boss bar turns red and reads `▲ +30%` or more. Villagers who believe it show a warm change above their heads; villagers who do not still read `· 0%` |
 | 6e | Let a bubble deflate past 85 | The bar turns **blue** and reads `▼ -15%` or worse. Rising is never green and falling is never red: see VISUAL_LANGUAGE.md |
 | 6f | `/hearsay stop` | Every outline goes out, every name plate and mark disappears, and no villager is left glowing |
+| 8a0 | Right-click a smith **without** crouching | The ordinary trade menu opens. Asking must never get in the way of trading |
 | 8a | Find an Armorer, Toolsmith or Weaponsmith and open their trades | A trade buying 1 diamond for 8 emeralds, before anybody believes anything. Other villagers have no such trade |
 | 8b | Plant a rumour in that smith, wait a tick, reopen | The same trade now pays more. A smith who believes the lie pays more than one who does not — try two of them |
-| 8c | Right-click a villager with an **empty hand** | A chat line saying what they have heard, how sure they are in words, and who told them. A villager who has heard nothing says so |
-| 8d | Right-click the villager you planted the rumour in | "somebody told them so directly" — a planted rumour has no villager behind it |
-| 8e | Right-click one who heard it second-hand | "heard it from <name>", and once it has travelled, "after passing through N people" |
+| 8c | **Crouch** and right-click a villager | A chat line saying what they have heard, how sure they are in words, and who told them. A villager who has heard nothing says so |
+| 8d | Crouch-right-click the villager you planted the rumour in | "somebody told them so directly" — a planted rumour has no villager behind it |
+| 8e | Crouch-right-click one who heard it second-hand | "heard it from <name>", and once it has travelled, "after passing through N people" |
 | 8f | **Sell into a panic at a busy smith.** Wait for the price to climb, then sell 16 diamonds to a smith with several villagers standing around | The action bar names the smith and says how many saw it. Watch those villagers' asking prices fall over the next few ticks |
 | 8g | **Sell into a panic at an isolated smith.** The same, to a smith standing alone | The action bar says 1 saw it. The effect should be smaller and slower, because only the trader learned anything |
 | 8h | `/hearsay stop`, then dashboard the session | "Who moved the price" splits the lie's contribution from your selling's, and says plainly that these are the same trades priced against each timeline, not what you would have made |

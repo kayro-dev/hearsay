@@ -498,11 +498,13 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
     }
 
     /**
-     * Right-clicking a villager with an empty hand asks them what they have heard.
+     * Crouching and right-clicking a villager asks them what they have heard.
      *
-     * <p>Empty hand on purpose: a full hand is how you trade, and a player holding diamonds
-     * in front of a smith means to sell them. Asking is what you do when you are not doing
-     * anything else.
+     * <p>Crouching, not an empty hand. An empty hand is exactly how a player opens a trade
+     * menu, so asking on an empty hand meant nobody could trade at all — the ask cancelled
+     * the trade before it opened. Crouch-to-interact-differently is the idiom the game
+     * already uses everywhere, and it leaves plain right-click doing what it has always
+     * done.
      *
      * <p>Cancelled so the trade screen does not open on top of the answer. Nothing here
      * touches the simulation — it reads beliefs the village already holds — so no
@@ -514,8 +516,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                 || !(event.getRightClicked() instanceof Villager body)) {
             return;
         }
-        if (!event.getPlayer().getInventory().getItemInMainHand().getType().isAir()) {
-            return; // they are holding something, so they mean to trade
+        if (!event.getPlayer().isSneaking()) {
+            return; // a plain right-click is how you trade, and always was
         }
         Integer id = session.idOf(body.getUniqueId());
         if (id == null || notReady(event.getPlayer())) {
