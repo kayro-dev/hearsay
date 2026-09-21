@@ -1046,9 +1046,10 @@ market.
 that differ little otherwise, which is more noise than signal at this sample size. The
 direction is clear and the size of the effect is not.
 
-**Decision.** Nothing changed. Proposed: raise `SpotMapper.AT_A_PLACE` from 3 to 10, which
-is the smallest range that reaches the market attendance the model was built around, and
-leave wandering out of the market.
+**Decision.** `SpotMapper.AT_A_PLACE` raised from 3 to 10, the smallest range that reaches
+the market attendance the model was built around. Wandering stays out of the market. This
+changes nothing headless, where movement was never mapped from positions; it changes every
+in-game session.
 
 A bug worth recording, because it nearly cost the session. The survey was written with
 `String.format` and no locale, and the server's JVM writes decimals with a comma, so every

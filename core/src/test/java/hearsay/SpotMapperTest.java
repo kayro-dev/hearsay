@@ -75,9 +75,25 @@ class SpotMapperTest {
 
     @Test
     void rangeIsMeasuredInThreeDimensions() {
-        // Directly above their bed by more than the range: upstairs, not in it.
+        // Directly above their bed, far enough up to be out of range: upstairs, not in it.
+        // Expressed against the range itself, so widening the range does not turn this
+        // into a test that a villager two floors up is tucked in bed.
+        double wellAbove = SpotMapper.AT_A_PLACE * 2;
+
         assertEquals(SpotMapper.ANYWHERE_ELSE, SpotMapper.spotFor(
-                new SpotMapper.Place(0, 70, 0), Optional.of(new SpotMapper.Place(0, 64, 0)),
-                NO_JOB, Spot.MARKET));
+                new SpotMapper.Place(0, 64 + wellAbove, 0),
+                Optional.of(new SpotMapper.Place(0, 64, 0)), NO_JOB, Spot.MARKET));
+        assertEquals(Spot.HOME, SpotMapper.spotFor(
+                new SpotMapper.Place(0, 64 + SpotMapper.AT_A_PLACE / 2, 0),
+                Optional.of(new SpotMapper.Place(0, 64, 0)), NO_JOB, Spot.MARKET),
+                "and near enough above it still counts");
+    }
+
+    @Test
+    void theRangeIsTheOneSweptAgainstARecordedVillage() {
+        // E13: at three blocks villagers were in the market 5% of the time and it barely
+        // opened; at ten, 44%, which is close to what the headless model assumes.
+        assertEquals(10.0, SpotMapper.AT_A_PLACE,
+                "changing this changes every in-game session; sweep it, do not nudge it");
     }
 }

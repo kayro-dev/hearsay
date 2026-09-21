@@ -37,8 +37,8 @@ Run through it after any change to the `paper` module, and before recording anyt
 | 10 | Watch the villagers mill about | Grey text appears above others as they stand near each other |
 | 11 | Watch a telling happen | A trade sound, a thread of particles between the pair lasting about a second, and an action-bar line `X whispers to Y` within 48 blocks. The server console logs every telling, so check there if you miss one |
 | 12 | Watch a grey villager's number climb past 50% | Their text turns from grey to gold |
-| 12b | `/hearsay debug` | Every villager gets an aqua label with their spot. Walk round and check it: one at a workstation reads MARKET, a farmer at a composter reads FIELDS, one asleep reads HOME, one wandering reads WELL |
-| 12c | Watch a villager walk from bed to work | The label changes HOME → WELL → MARKET as they go |
+| 12b | `/hearsay debug` | Every villager gets an aqua label with their spot. Walk round and check it: one within about ten blocks of their workstation reads MARKET, a farmer near a composter reads FIELDS, one in or near bed reads HOME, one further from both reads WELL |
+| 12c | Watch a villager walk from bed to work | The label changes HOME → WELL → MARKET as they go. Ten blocks is a generous radius, so in a tight village the WELL stretch may be short or absent |
 | 12d | `/hearsay debug` again | Labels go back to beliefs only |
 | 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
 | 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |

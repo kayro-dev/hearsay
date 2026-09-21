@@ -15,8 +15,19 @@ import java.util.Optional;
  */
 public final class SpotMapper {
 
-    /** How near a villager must be to their bed or workstation to count as being there. */
-    public static final double AT_A_PLACE = 3.0;
+    /**
+     * How near a villager must be to their bed or workstation to count as being there.
+     *
+     * <p>Ten blocks, swept against a recorded village rather than chosen: see E13. At three
+     * blocks, which is where this started, villagers were in the market 5% of the time and
+     * the market almost never opened. At ten they are in it 44% of the time, which is close
+     * to the share the headless model puts in its market by construction, and the share of
+     * ticks with a price doubles.
+     *
+     * <p>Villagers wander constantly, so this is the radius of a place rather than the
+     * width of a block. A villager pacing around their stall is at it.
+     */
+    public static final double AT_A_PLACE = 10.0;
 
     /**
      * Where a villager ends up when nothing else fits: jobless, bedless, or simply standing
