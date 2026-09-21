@@ -5,6 +5,17 @@ What only a person standing in a village can check. Everything else is covered b
 
 Run through it after any change to the `paper` module, and before recording anything.
 
+## Before recording anything
+
+**`/difficulty peaceful`.** A session sprinted over fifty days lost fifteen villagers of
+twenty to zombies and read as a village that simply would not gossip. Hostile mobs will
+empty a village faster than a rumor can cross it, and the plugin cannot tell the difference
+between a villager who is quiet and one who is dead — it now warns when one goes missing,
+but peaceful avoids the question.
+
+Check `/hearsay status` partway through: if the bound count and the count still present
+disagree, the village is dying.
+
 ## Setup
 
 1. Copy `local.properties.example` to `local.properties` and point `server.plugins.dir` at

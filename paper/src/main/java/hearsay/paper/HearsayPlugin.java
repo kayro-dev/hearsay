@@ -66,6 +66,9 @@ public final class HearsayPlugin extends JavaPlugin {
     private World world;
     private boolean showingSpots;
 
+    /** How many bound villagers were still alive last tick, to notice when one is not. */
+    private int lastSeenAlive;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -165,6 +168,7 @@ public final class HearsayPlugin extends JavaPlugin {
                     NamedTextColor.YELLOW));
         }
 
+        lastSeenAlive = session.boundCount();
         long period = SECONDS_PER_TICK * GAME_TICKS_PER_SECOND;
         ticking = getServer().getScheduler().runTaskTimer(this, this::tick, period, period);
     }
@@ -175,6 +179,7 @@ public final class HearsayPlugin extends JavaPlugin {
             return;
         }
         Map<Integer, Villager> bodies = whoIsAround();
+        noticeTheMissing(bodies);
         Map<Integer, Location> positions = new LinkedHashMap<>();
         Map<Integer, Spot> spots = new LinkedHashMap<>();
         bodies.forEach((id, body) -> {
@@ -230,6 +235,32 @@ public final class HearsayPlugin extends JavaPlugin {
                 }
             }
         }.runTaskTimer(this, 0L, WHISPER_FRAME_GAP);
+    }
+
+    /**
+     * Says so when a bound villager stops being there.
+     *
+     * <p>A villager that has died or wandered out of a loaded chunk is simply skipped, and
+     * silently: one session lost fifteen villagers of twenty to zombies over fifty
+     * sprinted nights and read as a village that would not gossip. A village emptying out
+     * should be the most obvious thing on the screen, not something found afterwards in a
+     * survey.
+     */
+    private void noticeTheMissing(Map<Integer, Villager> bodies) {
+        int alive = bodies.size();
+        if (alive < lastSeenAlive) {
+            String lost = lastSeenAlive - alive == 1 ? "A villager is" : (lastSeenAlive - alive)
+                    + " villagers are";
+            getLogger().warning(lost + " gone: " + alive + " of " + session.boundCount()
+                    + " left. Zombies, most likely.");
+            Player player = watcher == null ? null : getServer().getPlayer(watcher);
+            if (player != null) {
+                player.sendMessage(Component.text(lost + " gone. " + alive + " of "
+                        + session.boundCount() + " left — try /difficulty peaceful.",
+                        NamedTextColor.RED));
+            }
+        }
+        lastSeenAlive = alive;
     }
 
     /** The bound villagers that are still around, by simulation id. */
@@ -300,6 +331,12 @@ public final class HearsayPlugin extends JavaPlugin {
         Map<Integer, Double> confidences = session.confidences();
         long believers = confidences.values().stream().filter(c -> c >= 0.5).count();
 
+        int alive = whoIsAround().size();
+        if (alive < session.boundCount()) {
+            player.sendMessage(Component.text("Only " + alive + " of " + session.boundCount()
+                    + " bound villagers are still here. The rest are dead or unloaded, and "
+                    + "the simulation still counts them.", NamedTextColor.RED));
+        }
         player.sendMessage(Component.text("Tick " + session.tick()
                 + " | price " + session.price().orElse(Params.defaults().basePrice())
                 + " | heard " + confidences.size() + "/" + session.boundCount()

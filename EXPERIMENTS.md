@@ -1113,3 +1113,41 @@ its villagers, not another sweep. E10 already showed what a dense village does t
 gossip side: 0.655 meetings per villager per tick, better than the model. Put that village
 together with the ten-block range and the market that now opens on a third of ticks, and
 the loop has everything it needs for the first time.
+
+---
+
+## E15 — The village died
+
+A dense village with beds and workstations in every house, 20 villagers, 573 ticks, two
+rumors. It read as another flat session: 5 tellings, 2 believers, prices on 26% of ticks
+ranging 92 to 105, no observations, no bubble.
+
+The survey says what actually happened.
+
+```
+villagers visible per tick, of 20:
+  tick   1: 20      tick 201: 9
+  tick 101: 12      tick 451: 5
+```
+
+Fifteen of the twenty stopped being there, one after another, and none came back. Five
+villagers were present for all 573 ticks; the rest were visible for between 59 and 427 of
+them. Fifty days were sprinted, which is fifty nights of hostile mobs, and a village without
+the lighting and walls to survive them loses villagers steadily.
+
+So the meeting rate of 0.178 per villager per tick, the lowest yet recorded, was measured
+against a village that was mostly no longer there. Infrastructure was not the problem this
+time: 15 of 20 villagers had both a bed and a workstation, against 9 of 18 with neither in
+E14.
+
+**The plugin was silent about it.** A bound villager who has died is skipped, along with one
+standing in an unloaded chunk, and the simulation goes on counting twenty minds for five
+bodies. That is the same phantom-villager error E7 fixed at binding time, arriving by a
+different route: not a village smaller than the model thought, but a village shrinking while
+the model was not looking.
+
+**Decision.** No model change. The plugin now warns, in the log and on screen, whenever the
+number of bound villagers still present falls, and `/hearsay status` says so plainly when
+some are missing. MANUAL_TESTS.md gained an instruction to set the difficulty to peaceful
+before recording: hostile mobs empty a village faster than a rumor can cross it, and no
+amount of tuning distinguishes a villager who is quiet from one who is dead.
