@@ -2013,3 +2013,61 @@ first to someone else.
 
 **Decision.** Nothing changed; no parameter is implicated. What it changes is how the plugin
 should be used, and `/hearsay who` exists precisely to make this choice rather than guess it.
+
+---
+
+## E28 — A boom, a bust, and the market doing the talking
+
+24 villagers, 349 ticks, two lies: tick 4 into a villager with gossip 0.83, tick 213 into
+the most talkative in the village at 0.96. Better aimed than E27, and the result is stranger.
+
+| | with the two lies | with no lie at all |
+| --- | --- | --- |
+| peak price | 125 (tick 253) | 105 |
+| **lowest price** | **73** (tick 151) | 94 |
+| holders | 19 of 24 | 0 |
+| tellings | 15 | 0 |
+| price observations | 94 | 0 |
+
+**The village went round the whole cycle:**
+
+| tick | price | believe scarce | believe abundant |
+| --- | --- | --- | --- |
+| 50 | 113 | 17 | 0 |
+| 100 | 110 | 2 | 0 |
+| **150** | **80** | 1 | **17** |
+| 200 | 90 | 6 | 17 |
+| 250 | 117 | 9 | 1 |
+| 300 | 115 | 19 | 2 |
+
+A scarcity panic, then a *glut* panic, then a second scarcity wave. Of the 94 observations,
+**46 concluded the diamonds were abundant** — nobody lied about that. The falling price was
+read as evidence of plenty, which lowered asks, which lowered the price further. **The
+feedback loop runs in both directions**, and a deflating bubble does not merely deflate: it
+overshoots into a bust at 73, well under the base of 100.
+
+The counterfactual is flat. With no lie the price never leaves 94-105 and not one villager
+believes anything. **Both the boom and the bust are caused by the single lie**, the bust by
+way of the boom it had to come down from, which is as clean a demonstration of the
+counterfactual as the project has produced.
+
+**But the market did the talking, not the villagers.** Fifteen tellings against ninety-four
+observations, and ten of the fifteen came from one villager. Against the session in E26, 111
+tellings against 109 observations, the balance has gone right over. Belief here spread
+mostly by watching the price, not by anyone repeating a rumor.
+
+That is worth being uncomfortable about. The project is about rumors spreading, and at
+`observationWeight` 0.28 in a village of this size the market is carrying the story while
+gossip barely moves. It is not wrong — the loop is supposed to close — but a village where
+belief arrives almost entirely through the price is a different claim from the one on the
+tin. Nothing in E26's sweep would have caught it, because that measured peaks and bursts and
+never the ratio of telling to observing.
+
+**Why the peak stops short of 130.** The abundance beliefs fight the scarce ones directly
+through `contradictionFactor`, and the bust at tick 150 wipes out the first wave. The second
+lie has to start from a village that has just convinced itself of the opposite.
+
+**Decision.** Nothing changed. Two things for the list: `MarketStats` counts bubbles and has
+no notion of a bust, though this run had a larger one than its bubble; and the ratio of
+tellings to observations wants watching as a measure in its own right, since no sweep so far
+has looked at it.
