@@ -1285,3 +1285,68 @@ ten seconds after binding. Villagers are created by the first tick, like every o
 and the first tick was scheduled ten seconds out, so for those ten seconds there were bodies
 with nobody in them. The first tick now runs immediately, and every command that names a
 villager says the village is still waking up rather than throwing.
+
+---
+
+## E18 — The threshold sweep, and what it ruled out
+
+`observationThreshold` was the last market parameter never swept. Swept against two played
+sessions and the headless model together, with the spontaneous side reported beside the
+bubble side.
+
+Played sessions, replayed with only the threshold changed:
+
+| threshold | session A peak$ / observations | session B peak$ / observations |
+| --- | --- | --- |
+| 0.15 | 107 / 0 | 108 / 0 |
+| 0.10 (today) | 107 / 0 | 108 / 0 |
+| 0.07 | 107 / 0 | 113 / 14 |
+| 0.05 | 130 / 326 | 134 / 371 |
+| 0.03 | 132 / 645 | 119 / 616 |
+
+And what that costs, on the hundred calibration seeds:
+
+| threshold | half-believing | quiet villages bursting | quiet villages forming any belief |
+| --- | --- | --- | --- |
+| 0.10 | 63% | 0% | **5%** |
+| 0.07 | 68% | 0% | 78% |
+| 0.05 | 63% | 2% | 100% |
+| 0.03 | 68% | 0% | 100% |
+
+**Lowering it works by making noise meaningful, which is the opposite of the point.**
+Holding the threshold at 0.05 and quietening the market instead kills it again: at a noise
+of 0.020 the same played session drops back to 105 and no observations at all. The threshold
+only helps because the wobble is then large enough to cross it, and a village that reads
+meaning into its own wobble reads it with or without a lie — the quiet column says exactly
+that, going from 5% to 100%.
+
+**Raising `priceSensitivity` instead does almost nothing in-game and wrecks the model.**
+From 0.75 to 1.50 the played sessions move 107 to 109, while headless half-believing goes
+65% to 100%. It raises what holders ask and does not change the median, because the median
+seller is not a holder.
+
+**Counting the village at large as the market is now refused with evidence rather than
+taste.** Rebuilding one session both ways:
+
+| market is | with the five lies | with no lie at all |
+| --- | --- | --- |
+| workstations only | peak 137, 115 observations, 1 bubble | peak 109, 0 observations, 0 bubbles |
+| the whole village | peak 135, 250 observations, 1 bubble | **peak 135, 259 observations, 1 bubble** |
+
+A village-wide market produces the same bubble whether or not anybody lied. That is the
+claim of the whole project, gone.
+
+**An unexplained discrepancy, recorded rather than smoothed over.** The rebuild of session A
+under its own rule reaches 137 with a bubble, where the session as recorded reached 107 with
+nothing. The pairing is not the cause: rebuilt meetings match the recorded ones exactly,
+3840 of 3840, which also confirms the rotation from E16 was live. The rebuild produces
+slightly more meetings than were recorded, and at this operating point that is apparently
+enough to flip the outcome. Something between 107 and 137 turns on a difference of a few
+dozen meetings in four thousand.
+
+**Decision.** Nothing changed. The threshold stays at 0.10, the market stays at
+workstations, sensitivity stays at 0.75. What this sweep establishes is that the in-game
+model sits on a knife edge where the loop either just fails to start or just does, and that
+the two obvious ways to push it over both work by letting noise do what the lie is supposed
+to do. The next thing to understand is the discrepancy above, because a model this sensitive
+to a handful of meetings is not one to tune further until it is understood.

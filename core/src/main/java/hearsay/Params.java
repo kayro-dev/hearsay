@@ -172,6 +172,13 @@ public record Params(
                 marketQuorumFraction, marketWindowTicks, meetingSource, villagers);
     }
 
+    public Params withObservationThreshold(double value) {
+        return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
+                forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,
+                observationWeight, value, fullMoveSize, marketNoise, noiseDecay,
+                marketQuorumFraction, marketWindowTicks, meetingSource, villagers);
+    }
+
     public Params withFullMoveSize(double value) {
         return new Params(tellThreshold, repeatWeight, contradictionFactor, dailyDecay,
                 forgetThreshold, mutationChance, plantedConfidence, basePrice, priceSensitivity,

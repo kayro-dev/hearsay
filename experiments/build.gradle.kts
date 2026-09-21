@@ -81,3 +81,11 @@ tasks.register<JavaExec>("mapping") {
     mainClass = "hearsay.experiments.MappingSweep"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** How far the price must move to mean anything: ./gradlew :experiments:threshold */
+tasks.register<JavaExec>("threshold") {
+    group = "application"
+    description = "Sweeps observationThreshold against played sessions and the model."
+    mainClass = "hearsay.experiments.ObservationThreshold"
+    classpath = sourceSets["main"].runtimeClasspath
+}
