@@ -85,7 +85,7 @@ workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ## Stage 2 — more than one thing to be wrong about — **NEXT, plan for review**
 
-Gold, iron and bread join diamond. **Plan only; no code until it is reviewed.**
+Gold, iron, wheat and bread join diamond. **Plan reviewed; step 0 (pinning) is done.**
 
 Two decisions shape everything below, and both were made before the plan was written:
 
@@ -179,7 +179,19 @@ Checked against the wiki rather than assumed (2026-09-22), and the answer moves 
 | diamond | Toolsmith, Expert, buys 1 for 1 emerald | the three smiths, Novice *(built, stage 3)* | villager **buys** |
 | gold ingot | **Cleric**, Apprentice, buys 3 for 1 emerald | Cleric, Novice | villager **buys** |
 | iron ingot | **Armorer**, Apprentice, buys 4 for 1 emerald | Armorer, Novice | villager **buys** |
+| **wheat** | **Farmer**, Novice, buys 20 for 1 emerald | Farmer, Novice | villager **buys** |
 | bread | **nobody buys it**; Farmer sells 6 for 1 emerald | Farmer, Novice | villager **sells** |
+
+**Wheat is the famine rumour's diamond.** A rumour that the harvest has failed needs the same
+loop a diamond panic has: the village bids up the scarce thing, the player sells into the
+panic, and the neighbours who watch the sale see that there was wheat after all. Wheat trades
+carry witness evidence exactly as diamond trades do. **Bread stays the one sell-side case**,
+and the only managed good with no witness evidence at all.
+
+Under independent markets a rumour about wheat moves the price of wheat and nothing else:
+bread stays at normal through a famine, because nothing yet connects the two. That is the
+honest consequence of choosing no spillover, and it is what budget spillover — unscheduled,
+below — would change.
 
 **Bread breaks the "villagers only buy" rule, and should.** Stage 3 kept villagers from
 selling diamonds because diamonds are not renewable and selling them would quietly rewrite
@@ -194,34 +206,48 @@ under the redesigned reality rule — reality refutes, never asserts — it may 
 strengthen a belief. **Bread trades carry no evidence at all** in stage 2, which is worth
 stating because it is the first managed good for which that is true.
 
-### Price resolution: one rule for every good
+### Price resolution: fixed bundles at vanilla value
 
-The earlier sketch moved expensive goods by emerald count and cheap goods by items per
-emerald. That rule works for bread and fails for the middle of the table: gold at 2 emeralds
-and iron at 1 have no room on either side — a 20% rise is 0.4 of an emerald, or 0.8 of an
-ingot.
+**Every managed trade is a fixed bundle of goods for a moving number of emeralds.** One rule
+for every good, and a player learns one thing: the number of emeralds is the price.
 
-**Proposed instead: every managed trade is a fixed bundle of goods for a moving number of
-emeralds, normally eight.**
+**The bundles are sized to vanilla's value per item, not to a round unit price.** The first
+draft priced gold at 2 emeralds and iron at 1 — about six and four times what vanilla pays.
+Gold and iron are farmable, and an iron farm feeding a village that pays four times vanilla
+is not a rumour mechanic, it is an emerald printer. At vanilla value a farm earns exactly
+what it earns without Hearsay, until a rumour moves the price.
 
-| good | bundle | normal price | unit price | a 25% panic reads |
-| --- | --- | --- | --- | --- |
-| diamond | 1 | 8 emeralds | 8 | 10 emeralds |
-| gold ingot | 4 | 8 emeralds | 2 | 10 emeralds |
-| iron ingot | 8 | 8 emeralds | 1 | 10 emeralds |
-| bread | 48 | 8 emeralds | ⅙ | 10 emeralds |
+| good | bundle | normal price | per item | vanilla per item | steps of |
+| --- | --- | --- | --- | --- | --- |
+| diamond | 1 | 8 emeralds | 8 | 1 | ⅛ |
+| gold ingot | 24 | 8 emeralds | ⅓ | ⅓ | ⅛ |
+| iron ingot | 32 | 8 emeralds | ¼ | ¼ | ⅛ |
+| **wheat** | **120** | **6 emeralds** | 1⁄20 | 1⁄20 | **⅙** |
+| bread | 48 | 8 emeralds | ⅙ | ⅙ | ⅛ |
 
-The unit prices are exactly the table agreed earlier — bread is six to the emerald — but
-every good now moves in steps of one-eighth, and a player learns one thing: **the number of
-emeralds is the price.** It keeps the property the bread rule was after without its
-coarseness at the cheap end, and the index behind it stays continuous; only the trade menu
-is rounded. *This one wants your call in review, because it replaces a mechanism you
-specified.*
+**Diamond alone is repriced,** as stage 3 already did: vanilla's one emerald leaves a 30% panic
+unrepresentable. It is safe to reprice because diamonds are not renewable — there is no
+diamond farm to turn it into a printer.
 
-The sight of goods saturates by **value rather than count** once there is more than one good.
-Sixteen diamonds is a glut; sixteen loaves is breakfast. Saturation at 128 emeralds' worth of
-goods, whatever they are, keeps "a stack is a glut" true across goods that differ in price by
-a factor of forty-eight. It only ever runs when a player trades, so it touches no calibration.
+**Wheat does not fit the rule, and the table says so rather than hiding it.** Vanilla value is
+20 wheat to the emerald, so a bundle worth eight emeralds is 160 wheat. A villager offer takes
+at most two ingredient stacks of 64 — 128 wheat — so 160 cannot be offered. The largest bundle
+that fits and keeps vanilla value is **120 wheat for 6 emeralds**, in two stacks of 60. That
+moves in sixths rather than eighths: a 17% step where every other good has 12½%. The
+alternatives were worse — breaking vanilla value to reach eight emeralds reopens the farm
+problem, and a single stack of 60 for 3 emeralds moves in thirds. *The two-stacks-of-64 limit
+is to be confirmed against Paper's `MerchantRecipe` when this is built; if more fits, wheat
+moves to 160 for 8 and the exception disappears.*
+
+**What a panic can pay.** The index is capped at 175, so the most any managed trade can pay is
+1.75 times its normal price, and only while the village goes on believing. A farm selling into
+a panic earns up to 75% over vanilla for as long as the rumour holds. That is the game — selling
+into the panic you started — and it is bounded by construction rather than by hope.
+
+**The sight of goods saturates by value**, at 128 emeralds' worth at normal price. Sixteen
+diamonds is a glut; so is 384 gold, 512 iron or 2,560 wheat, because that is what a village
+would have to watch change hands before it stopped believing in a shortage. It only ever runs
+when a player trades, so it touches no calibration.
 
 ### The screen
 
@@ -233,12 +259,17 @@ them bury the one that matters. A village with nothing going on shows nothing.
 
 | step | done when |
 | --- | --- |
-| **0. pin** | five seeds' diamond logs checksummed on today's model |
+| **0. pin** | ✓ **done.** Five diamond logs checksummed in `PinnedLogsTest`, covering tellings, mutations, price readings, witnessed sales and reality checks. Checked to fail when one default moves by a thousandth, or the rumour-id counter by one |
 | **1. goods as data** | the `Good` enum, per-good streams, id spaces, per-good market state — **diamond only**. All five checksums reproduce bit for bit; `CalibrationTest` untouched |
-| **2. + gold** | bit-identical diamond with and without gold; gold meets its targets with shared parameters; Cleric trade; reported as an E-number |
-| **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade |
-| **4. + bread** | the same for bread; Farmer trade, selling; no witness evidence |
-| **5. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots" and "bread" |
+| **2. + gold** | bit-identical diamond with and without gold; gold meets its targets with shared parameters; Cleric trade, 24 for 8; reported as an E-number |
+| **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade, 32 for 8 |
+| **4. + wheat** | the same for wheat; Farmer buys, 120 for 6; witness evidence on, so a famine rumour can be sold into and punctured |
+| **5. + bread** | the same for bread; Farmer sells, 48 for 8; no witness evidence |
+| **6. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots", "wheat" and "bread" |
+
+**Wheat before bread** because wheat is a buy-side good and follows the path diamond has
+already proved. Bread brings the one genuinely new thing — a villager selling — and goes last,
+so if it breaks something the cause is obvious.
 
 **Experiments re-run: none of E1–E38.** Step 1's checksums are what earns that. New ones:
 one E-number per good for its targets, and a trade-weight sweep for the goods players will
