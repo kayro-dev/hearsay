@@ -122,7 +122,27 @@ public final class Simulation {
         }
         for (Input input : this.inputs) {
             rejectMismatchedMeeting(input);
+            rejectForeignGood(input);
             scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
+        }
+    }
+
+    /**
+     * A lie, a sale or a look at a good this village does not trade in. Refused rather than
+     * ignored: a recipe that planted a rumour about gold in a village with no gold market
+     * would replay to a village where that rumour went nowhere, and nothing would say why.
+     */
+    private void rejectForeignGood(Input input) {
+        String item = switch (input) {
+            case PlantRumor p -> p.claim().item();
+            case PlayerTraded t -> t.item();
+            case RealityChecked c -> c.item();
+            case ObservedMeeting m -> null;
+            case VillagerSeen v -> null;
+        };
+        if (item != null && !params.goods().contains(Good.of(item))) {
+            throw new IllegalArgumentException("This village does not trade in " + item
+                    + ". It trades in " + params.goods() + ".");
         }
     }
 
@@ -152,7 +172,7 @@ public final class Simulation {
         }
         // Price first, then the people standing there read it: within a tick, belief
         // moves the price and the price moves belief, in that order.
-        for (Good good : Good.values()) {
+        for (Good good : params.goods()) { // declared order
             advanceMarketNoise(tick, good);
             observeTheMarket(tick, good, settleMarketPrice(tick, good));
         }
@@ -347,7 +367,7 @@ public final class Simulation {
         // A turn for each good they hold a belief worth mentioning about, in the declared
         // order. One turn across all of them would let a villager sure about gold stop
         // mentioning diamonds, and one market would silence another.
-        for (Good good : Good.values()) {
+        for (Good good : params.goods()) { // declared order
             maybeTellAbout(tick, tellerId, group, good);
         }
     }
@@ -439,13 +459,17 @@ public final class Simulation {
     }
 
     /**
-     * How many of a thing have to change hands for the sight of it to be complete evidence.
+     * How much has to change hands, in emeralds' worth at normal, for the sight of it to be
+     * complete evidence. By value rather than by count, because the goods differ in price by
+     * a factor of twenty-four: sixteen diamonds is a glut, and so is 384 gold, but sixteen
+     * gold ingots is small change.
      *
-     * <p>A constant rather than a knob, so the sweep that fits the two trade weights stays
-     * two-dimensional. One diamond is a curiosity, a stack is a glut, and sixteen is where
-     * the line between them sits until an experiment says otherwise.
+     * <p>128 is sixteen diamonds, which is where the line sat when diamond was the only good
+     * and the rule counted items. For diamond the two rules give exactly the same number —
+     * sixteen items at eight emeralds each is 128 — so no diamond sale weighs any
+     * differently than it did.
      */
-    private static final int SIGHT_SATURATES = 16;
+    private static final double VALUE_SATURATES = 128.0;
 
     /**
      * A sale in public, and what everyone who saw it makes of it.
@@ -461,10 +485,11 @@ public final class Simulation {
      * else see it are different amounts of evidence.
      */
     private void watchGoodsChangeHands(long tick, PlayerTraded trade) {
-        Claim plenty = new Claim(DIAMOND, ClaimType.ABUNDANT);
-        // Saturating rather than proportional: the twentieth diamond tells nobody anything
-        // the sixteenth did not.
-        double howPlainly = Math.min(1.0, trade.count() / (double) SIGHT_SATURATES);
+        Good good = Good.of(trade.item());
+        Claim plenty = new Claim(good.id(), ClaimType.ABUNDANT);
+        // Saturating rather than proportional: past a glut, more of it tells nobody
+        // anything they had not already concluded.
+        double howPlainly = Math.min(1.0, trade.count() * good.emeraldsEach() / VALUE_SATURATES);
 
         for (int witnessId : trade.witnesses()) { // id order
             Villager saw = state.villager(witnessId);
@@ -761,6 +786,7 @@ public final class Simulation {
                     + "change the past.");
         }
         rejectMismatchedMeeting(input);
+        rejectForeignGood(input);
         inputs.add(input);
         scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
     }

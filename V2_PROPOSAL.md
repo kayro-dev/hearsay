@@ -158,7 +158,7 @@ seeds. Each new good is tested by planting the lie about *that* good instead:
 | bubble within 30 days of the lie, calibration seeds, 50 days | **43%** | inside `CalibrationTest`'s band (25–60%), and within diamond's 95% interval |
 | quiet villages, bursts per 100 village-days | **0.19** [0.10–0.29] | inside that interval |
 | swing decay after the largest swing, 175 days | **0.91** | below 1 |
-| settled within 10% of normal, 175 days | **80%** | at least 70% |
+| settled within 10% of normal, 175 days | **72.5%** over 200 seeds | within the sampling error of diamond's own figure on the same 200 seeds — *not* a fixed line. E39 found diamond itself ranges 62–82% between blocks of fifty, and a "≥70%" line fails it |
 | mean price over the last quarter, 175 days | **100.8** | within 5% of normal |
 | paired worlds, bubbles only with the lie | separation holds | separation holds, with **0** only without |
 
@@ -261,7 +261,7 @@ them bury the one that matters. A village with nothing going on shows nothing.
 | --- | --- |
 | **0. pin** | ✓ **done.** Five diamond logs checksummed in `PinnedLogsTest`, covering tellings, mutations, price readings, witnessed sales and reality checks. Checked to fail when one default moves by a thousandth, or the rumour-id counter by one |
 | **1. goods as data** | ✓ **done.** `Good` enum; per-good gossip, mutation and market streams; per-good rumour-id ranges; per-good price, noise and price anchors; one telling turn per good. Diamond only. All five logs reproduce exactly — every event, number and ordering — with the market events printed in their pinned form, and no market event naming any other good. Checked to fail if diamond's streams are branched or its ids start anywhere but 0 |
-| **2. + gold** | bit-identical diamond with and without gold; gold meets its targets with shared parameters; Cleric trade, 24 for 8; reported as an E-number |
+| **2. + gold** | ✓ **done (E39).** Diamond and gold bit-identical with and without each other on fixed, fully-switched-on and fuzzed settings; all five couplings reintroduced and caught. Gold met every target untuned, once the settling target was compared with diamond's own sampling spread rather than a fixed line. `Params.goods` records what a village trades; pins untouched. Cleric trade, 24 for 8 |
 | **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade, 32 for 8 |
 | **4. + wheat** | the same for wheat; Farmer buys, 120 for 6; witness evidence on, so a famine rumour can be sold into and punctured |
 | **5. + bread** | the same for bread; Farmer sells, 48 for 8; no witness evidence |

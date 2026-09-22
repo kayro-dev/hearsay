@@ -70,8 +70,11 @@ logged so any crash can be replayed and compared against a counterfactual.
      minimum.
   3. **stage 2, more goods — in progress, plan in V2_PROPOSAL.md.** Goods are independent
      markets (no spillover), added one at a time behind gates: diamond, then gold, iron,
-     wheat and bread. PinnedLogsTest holds five diamond logs bit for bit and must never be
-     updated to match a change — if it fails, stage 2 has changed diamond. Each new good
+     wheat and bread; diamond and gold are done (E39). PinnedLogsTest holds five diamond
+     logs bit for bit, through a frozen printer, and must never be updated to match a
+     change — if it fails, stage 2 has changed diamond. IndependenceTest demands each
+     good's events be equal with and without the others. Params.goods records which
+     goods a village trades; diamond alone by default. Each new good
      joins only when every earlier good's events are bit-identical with and without it and
      it meets diamond's thirty-day targets with shared parameters; one that misses has found
      an independence bug, not a reason to tune. Managed trades are fixed bundles at vanilla

@@ -3,6 +3,7 @@ package hearsay.paper;
 import hearsay.Bearing;
 import hearsay.Bubble;
 import hearsay.ClaimType;
+import hearsay.Good;
 import hearsay.MarketRegion;
 import hearsay.Params;
 import hearsay.RecipeFile;
@@ -262,7 +263,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         });
         Map<Integer, String> labels = session.labels();
         displays.showBeliefs(world, bodies, names, labels, gossip, session.confidences(),
-                session.asks(), Params.defaults().basePrice(),
+                session.asks(Good.DIAMOND), Params.defaults().basePrice(),
                 showingSpots ? spots : Map.of());
         displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
                 bodies, session.confidences(), lit);
@@ -280,7 +281,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                         .ifPresent(session::reportStock);
             }
         }
-        session.price().ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
+        session.price(Good.DIAMOND).ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
 
         for (Telling telling : tellings) {
             Villager teller = bodies.get(telling.tellerId());
@@ -347,12 +348,15 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
      * under their hands mid-trade.
      */
     private void priceTheCounters(Map<Integer, Villager> bodies) {
-        Map<Integer, Integer> asks = session.asks();
-        bodies.forEach((id, body) -> {
-            if (Counter.canTrade(body) && asks.containsKey(id)) {
-                Counter.setPrice(body, Counter.emeraldsFor(asks.get(id), Params.defaults()));
-            }
-        });
+        for (Good good : Good.values()) {
+            Map<Integer, Integer> asks = session.asks(good);
+            bodies.forEach((id, body) -> {
+                if (Counter.goodsFor(body).contains(good) && asks.containsKey(id)) {
+                    Counter.setPrice(body, good,
+                            Counter.emeraldsFor(good, asks.get(id), Params.defaults()));
+                }
+            });
+        }
     }
 
     /** Puts every bound villager back to normal, so stopping leaves no outlines behind. */
@@ -411,6 +415,10 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         }
         ClaimType type = args.length > 2 && args[2].equalsIgnoreCase("abundant")
                 ? ClaimType.ABUNDANT : ClaimType.SCARCE;
+        // "/hearsay rumor gold scarce"; anything else, including the old "diamonds", means
+        // diamonds, so the command everyone already types still does what it did.
+        Good good = args.length > 1 && args[1].toLowerCase().startsWith("gold")
+                ? Good.GOLD : Good.DIAMOND;
 
         Integer nearest = nearestBoundVillager(player);
         if (nearest == null) {
@@ -418,10 +426,11 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                     + (int) WHISPERING_RANGE + " blocks.", NamedTextColor.RED));
             return;
         }
-        session.plantRumorIn(nearest, type);
+        session.plantRumorIn(nearest, good, type);
         double gossip = session.gossipOf(nearest);
         player.sendMessage(Component.text("You tell " + session.nameOf(nearest)
-                + " that diamonds are " + type.name().toLowerCase() + ".", NamedTextColor.GOLD));
+                + " that " + good.plural() + " are " + type.name().toLowerCase() + ".",
+                NamedTextColor.GOLD));
 
         // Who you tell is worth about a third of whether a rumor takes hold, and gossip
         // predicts it: see E8. Telling a quiet villager is a wasted session, and there is
@@ -475,8 +484,12 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTrade(PlayerTradeEvent event) {
-        if (session == null || world == null || !Counter.isManaged(event.getTrade())) {
+        if (session == null || world == null) {
             return;
+        }
+        Good good = Counter.goodOf(event.getTrade()).orElse(null);
+        if (good == null) {
+            return; // not a trade Hearsay manages
         }
         if (!(event.getVillager() instanceof Villager body)) {
             return; // a wandering trader has no mind here
@@ -499,18 +512,17 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        int diamonds = event.getTrade().getIngredients().get(0).getAmount();
+        int sold = event.getTrade().getIngredients().get(0).getAmount();
         int emeralds = event.getTrade().getResult().getAmount();
-        session.recordTrade(trader, diamonds, emeralds, watching);
+        session.recordTrade(trader, good, sold, emeralds, watching);
 
         // The running total at this counter, not this one click: shift-clicking fires the
         // event once per item, and telling the player "1 diamond" a dozen times over would
         // describe the transaction they are actually making rather poorly.
-        int soFar = session.soldSoFar(trader);
+        int soFar = session.soldSoFar(trader, good);
         event.getPlayer().sendActionBar(Component.text(
-                session.nameOf(trader) + " takes " + soFar + " diamond"
-                        + (soFar == 1 ? "" : "s") + ". " + watching.size() + " watching.",
-                NamedTextColor.AQUA));
+                session.nameOf(trader) + " takes " + soFar + " " + good.plural() + ". "
+                        + watching.size() + " watching.", NamedTextColor.AQUA));
     }
 
     /**
@@ -700,7 +712,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                     + "the simulation still counts them.", NamedTextColor.RED));
         }
         player.sendMessage(Component.text("Tick " + session.tick()
-                + " | price " + session.price().orElse(Params.defaults().basePrice())
+                + " | price " + session.price(Good.DIAMOND).orElse(Params.defaults().basePrice())
                 + " | heard " + confidences.size() + "/" + session.boundCount()
                 + " | believe " + believers + "/" + session.boundCount()
                 + " | a bubble is above " + Bubble.PEAK_ABOVE + " and back under "

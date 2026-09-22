@@ -63,6 +63,16 @@ class PinnedLogsTest {
      * An event as it printed when these logs were pinned. Only the two market events have
      * changed shape since, and only by gaining the good they are about; everything else is
      * printed exactly as it is.
+     *
+     * <p><strong>This printer is part of the guarantee, frozen as the checksums are.</strong>
+     * The checksums only mean anything because this prints what was printed on 2026-09-22.
+     * Never change it to make a test pass: a printer that drifts can make a changed log
+     * hash to the old value, and then the pins prove nothing while looking as though they
+     * prove everything. {@link #thePinnedPrinterStillPrintsWhatItPrinted} fails if its
+     * output for a known event moves by a character.
+     *
+     * <p>Private to this class on purpose. Nothing else may print events this way, so
+     * nothing else can come to depend on it and argue for changing it.
      */
     private static String frozen(Event event) {
         return switch (event) {
@@ -96,6 +106,20 @@ class PinnedLogsTest {
             set.add(id);
         }
         return set;
+    }
+
+    @Test
+    void thePinnedPrinterStillPrintsWhatItPrinted() {
+        // The literal text, not a recomputation of it: this is what the two market events
+        // looked like when the five logs were pinned, down to the spacing.
+        assertEquals("MarketPriceSet[tick=5, price=101, askingVillagers=11]",
+                frozen(new MarketPriceSet(5, 101, 11, Simulation.DIAMOND)));
+        assertEquals("MarketNoiseSet[tick=5, level=0.015]",
+                frozen(new MarketNoiseSet(5, 0.015, Simulation.DIAMOND)));
+        // And everything else falls through to the event's own printing, untouched. If a
+        // record's printing ever changes, the checksums are what catch it — not this.
+        DayEnded night = new DayEnded(4, 0.92, 0.05);
+        assertEquals(night.toString(), frozen(night));
     }
 
     @Test
@@ -134,7 +158,7 @@ class PinnedLogsTest {
         List<Input> inputs = new ArrayList<>(
                 List.of(new PlantRumor(1, SCARCE, 1, planter(2160, params))));
         for (long tick = 60; tick < 140; tick += 8) {
-            inputs.add(new PlayerTraded(tick, 0, 16, 128, near(0, 1, 2)));
+            inputs.add(new PlayerTraded(tick, 0, Simulation.DIAMOND, 16, 128, near(0, 1, 2)));
         }
         Run run = Run.execute(2160, params, inputs, 200);
 
@@ -150,7 +174,7 @@ class PinnedLogsTest {
         List<Input> inputs = new ArrayList<>(
                 List.of(new PlantRumor(1, SCARCE, 2, planter(7, params))));
         for (long tick = 40; tick < 120; tick += 10) {
-            inputs.add(new PlayerTraded(tick, 3, 12, 96, near(3, 4)));
+            inputs.add(new PlayerTraded(tick, 3, Simulation.DIAMOND, 12, 96, near(3, 4)));
         }
         for (long tick = 4; tick <= 200; tick += 4) {
             for (int villager = 0; villager < 5; villager++) {

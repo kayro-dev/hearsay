@@ -24,7 +24,7 @@ class FootprintTest {
         }
         if (trades) {
             for (long tick = 60; tick < 120; tick += 8) {
-                inputs.add(new PlayerTraded(tick, 0, 16, 128, new TreeSet<>(List.of(0, 1, 2))));
+                inputs.add(new PlayerTraded(tick, 0, Simulation.DIAMOND, 16, 128, new TreeSet<>(List.of(0, 1, 2))));
             }
         }
         return Run.execute(42, params, inputs, TICKS);

@@ -1,5 +1,6 @@
 package hearsay.paper;
 
+import hearsay.Good;
 import hearsay.Params;
 
 import org.bukkit.Material;
@@ -8,114 +9,122 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantRecipe;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * The diamond trade Hearsay puts on a villager's counter, and keeps priced.
+ * The trades Hearsay puts on a villager's counter, one per good, and keeps priced.
  *
- * <p><strong>The villager buys, and never sells.</strong> Vanilla has villagers sell
- * enchanted diamond gear and exactly one trade anywhere buys raw diamonds — the Toolsmith
- * at Expert, one for one emerald, on about a twentieth of them. Having villagers sell
- * diamonds would make diamonds renewable and quietly rewrite the game's economy, which is
- * far too large a side effect for a rumour simulator. Buying changes nothing about what
- * exists in the world, only what somebody will pay for it.
+ * <p><strong>Every managed trade is a fixed bundle for a moving number of emeralds.</strong>
+ * The bundle is sized so its normal price is vanilla's value — three gold to the emerald,
+ * so twenty-four for eight — because gold is farmable and pricing it above vanilla would
+ * turn a gold farm into an emerald printer. Diamond alone is repriced, because at vanilla's
+ * one emerald a 30% panic cannot be shown and diamonds cannot be farmed. The number of
+ * emeralds is the price, and that is the one thing a player has to learn.
  *
- * <p>It also gives the player the right verb. A scarcity panic means the village will pay
- * more for diamonds, so a player sells into the panic they started.
+ * <p>The villager <strong>buys</strong> both of today's goods. Villagers only ever buy a
+ * non-renewable good, so that no trade here creates one from nothing.
  */
 final class Counter {
 
-    /**
-     * The professions that plausibly want diamonds, and the three vanilla already links to
-     * them. A librarian buying diamonds would need explaining; a weaponsmith doing it needs
-     * none.
-     *
-     * <p>A plain set rather than an EnumSet: professions stopped being an enum and became a
-     * registry, so these are objects to be compared rather than constants to be switched on.
-     */
-    private static final Set<Villager.Profession> SMITHS = Set.of(
-            Villager.Profession.ARMORER,
-            Villager.Profession.TOOLSMITH,
-            Villager.Profession.WEAPONSMITH);
+    /** What each good is called in the game, which only the plugin needs to know. */
+    private static final Map<Good, Material> ITEM = new EnumMap<>(Map.of(
+            Good.DIAMOND, Material.DIAMOND,
+            Good.GOLD, Material.GOLD_INGOT));
 
     /**
-     * How many diamonds a villager will buy before they need to restock. Vanilla's own
-     * limit, left alone: a panicking village pays its inflated price a fixed number of
-     * times and then stops until it works at its station again, which players already
-     * understand and which stops a stack being sold into a single panic.
+     * Who keeps a counter for each good. Checked against the wiki rather than guessed: the
+     * three smiths are the professions vanilla links to diamonds, and the Cleric is the one
+     * vanilla has buying gold. A plain set rather than an EnumSet, since professions became
+     * a registry rather than an enum.
+     */
+    private static final Map<Good, Set<Villager.Profession>> WHO = new EnumMap<>(Map.of(
+            Good.DIAMOND, Set.of(Villager.Profession.ARMORER, Villager.Profession.TOOLSMITH,
+                    Villager.Profession.WEAPONSMITH),
+            Good.GOLD, Set.of(Villager.Profession.CLERIC)));
+
+    /**
+     * How many bundles a villager takes before they need to restock. Vanilla's own limit,
+     * left alone: it stops a stack being sold into a single panic.
      */
     private static final int USES_BEFORE_RESTOCK = 12;
 
-    /** Emeralds are capped at a stack; a village cannot pay what it cannot hold. */
+    /** A villager cannot pay what they cannot hold. */
     private static final int MOST_EMERALDS = 64;
 
     private Counter() {
     }
 
+    /** The goods this villager keeps a counter for, in declared order. */
+    static List<Good> goodsFor(Villager villager) {
+        List<Good> goods = new ArrayList<>();
+        for (Good good : Good.values()) {
+            if (WHO.getOrDefault(good, Set.of()).contains(villager.getProfession())) {
+                goods.add(good);
+            }
+        }
+        return goods;
+    }
+
     static boolean canTrade(Villager villager) {
-        return SMITHS.contains(villager.getProfession());
+        return !goodsFor(villager).isEmpty();
     }
 
     /**
-     * Rebuilds this villager's diamond trade at what they personally would pay.
+     * Rebuilds this villager's trade for one good at what they personally would pay.
      *
      * <p>Their own asking price, not the market's: a villager who believes the lie pays
-     * more than one who does not, which is visible, explicable, and gives the player a
-     * reason to shop around.
-     *
-     * <p>Replaces vanilla's Expert diamond purchase where it exists rather than sitting
-     * beside it. Two trades buying the same diamond at different prices would let the
-     * player take whichever is better, and that is a measurement problem before it is a
-     * balance one: the receipts would mix a Hearsay price with a fixed vanilla one, so
-     * "what did the lie earn me" could no longer be attributed.
+     * more than one who does not, which is visible and gives the player a reason to shop
+     * around. Replaces vanilla's own trade for the same good rather than sitting beside it,
+     * because two prices for one good would make "what did the lie earn me" unattributable.
      */
-    static void setPrice(Villager villager, int emeralds) {
+    static void setPrice(Villager villager, Good good, int emeralds) {
         List<MerchantRecipe> kept = new ArrayList<>();
         for (MerchantRecipe existing : villager.getRecipes()) {
-            if (!buysDiamonds(existing)) {
+            if (goodOf(existing).orElse(null) != good) {
                 kept.add(existing);
             }
         }
-        kept.add(diamondPurchase(emeralds));
+        kept.add(purchaseOf(good, emeralds));
         villager.setRecipes(kept);
     }
 
-    /** True if this is a trade Hearsay is managing, so a player using it is news. */
-    static boolean isManaged(MerchantRecipe recipe) {
-        return buysDiamonds(recipe);
+    /**
+     * The good a trade buys for emeralds, if it is one Hearsay manages or would replace.
+     * A player using one of these is news the village hears about.
+     */
+    static Optional<Good> goodOf(MerchantRecipe recipe) {
+        if (recipe.getIngredients().isEmpty() || recipe.getResult().getType() != Material.EMERALD) {
+            return Optional.empty();
+        }
+        Material given = recipe.getIngredients().get(0).getType();
+        for (Map.Entry<Good, Material> entry : ITEM.entrySet()) {
+            if (entry.getValue() == given) {
+                return Optional.of(entry.getKey());
+            }
+        }
+        return Optional.empty();
     }
 
-    private static boolean buysDiamonds(MerchantRecipe recipe) {
-        return !recipe.getIngredients().isEmpty()
-                && recipe.getIngredients().get(0).getType() == Material.DIAMOND
-                && recipe.getResult().getType() == Material.EMERALD;
-    }
-
-    private static MerchantRecipe diamondPurchase(int emeralds) {
-        int paid = Math.clamp(emeralds, 1, MOST_EMERALDS);
+    private static MerchantRecipe purchaseOf(Good good, int emeralds) {
         MerchantRecipe recipe = new MerchantRecipe(
-                new ItemStack(Material.EMERALD, paid), 0, USES_BEFORE_RESTOCK, true);
-        recipe.addIngredient(new ItemStack(Material.DIAMOND, 1));
-        // Vanilla's demand and reputation adjustments off, on this trade only. They are
-        // state held on the villager entity rather than in the recipe, so a session with
-        // them running could not be replayed, and replay is what this project is built on.
+                new ItemStack(Material.EMERALD, Math.clamp(emeralds, 1, MOST_EMERALDS)),
+                0, USES_BEFORE_RESTOCK, true);
+        recipe.addIngredient(new ItemStack(ITEM.get(good), good.bundle()));
+        // Vanilla's demand and reputation adjustments off, on managed trades only. They are
+        // state held on the villager rather than in the saved session, so a session with
+        // them running could not be replayed.
         recipe.setPriceMultiplier(0f);
         recipe.setDemand(0);
         recipe.setSpecialPrice(0);
         return recipe;
     }
 
-    /**
-     * What one diamond is worth in emeralds, from the 100-is-normal index.
-     *
-     * <p>A diamond is worth {@code DIAMOND_IN_EMERALDS} when nobody believes anything,
-     * which is not vanilla's one emerald. At one emerald a 30% panic is unrepresentable,
-     * and this figure is what every experiment from E1 was calibrated against.
-     */
-    static int emeraldsFor(int index, Params params) {
-        return Math.max(1, Math.round(DIAMOND_IN_EMERALDS * index / (float) params.basePrice()));
+    /** What a bundle of this good costs at this price index, in whole emeralds. */
+    static int emeraldsFor(Good good, int index, Params params) {
+        return Math.max(1, Math.round(good.normalEmeralds() * index / (float) params.basePrice()));
     }
-
-    static final int DIAMOND_IN_EMERALDS = 8;
 }

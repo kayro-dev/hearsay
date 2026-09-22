@@ -45,12 +45,12 @@ public final class BeliefReport {
     /**
      * What they actually think, at the severity they heard it.
      *
-     * <p>Items are stored singular — the claim is about "diamond" — and pluralised here,
-     * the same way {@link Narrator} does it. A villager does not say "diamond are running
-     * short".
+     * <p>Items are stored singular — the claim is about "diamond" — and named here as the
+     * good calls several of them. Appending an "s" gave "diamonds" by luck and would have
+     * given "golds" by the same rule.
      */
     private static String describe(Rumor version) {
-        String item = version.claim().item() + "s";
+        String item = Good.of(version.claim()).plural();
         return switch (version.claim().type()) {
             case SCARCE -> switch (version.severity()) {
                 case 1 -> item + " are getting scarce";

@@ -90,7 +90,8 @@ final class VillageSession {
         // read low, with half the village unreachable.
         Params params = Params.defaults()
                 .withMeetingSource(MeetingSource.EXTERNAL)
-                .withVillagers(bodies.size());
+                .withVillagers(bodies.size())
+                .withGoods(Good.DIAMOND, Good.GOLD);
         return new VillageSession(seed, new Simulation(seed, params, List.of()), bodies);
     }
 
@@ -123,8 +124,8 @@ final class VillageSession {
         return simulation.state().tick();
     }
 
-    OptionalInt price() {
-        return simulation.state().marketPrice(Good.DIAMOND);
+    OptionalInt price(Good good) {
+        return simulation.state().marketPrice(good);
     }
 
     /**
@@ -137,9 +138,11 @@ final class VillageSession {
         long nextTick = simulation.state().tick() + 1;
 
         // Everything sold at each counter since the last tick, as one sale apiece.
-        pendingSales.forEach((villagerId, running) -> simulation.schedule(new PlayerTraded(
-                nextTick, villagerId, running[0], running[1],
-                pendingWatchers.getOrDefault(villagerId, new java.util.TreeSet<>()))));
+        pendingSales.forEach((good, byCounter) -> byCounter.forEach((villagerId, running) ->
+                simulation.schedule(new PlayerTraded(nextTick, villagerId, good.id(),
+                        running[0], running[1],
+                        pendingWatchers.get(good).getOrDefault(villagerId,
+                                new java.util.TreeSet<>())))));
         pendingSales.clear();
         pendingWatchers.clear();
 
@@ -195,9 +198,9 @@ final class VillageSession {
      * that crossed that counter before the tick came round, seen by everyone who saw any
      * part of it.
      */
-    private final Map<Integer, int[]> pendingSales = new LinkedHashMap<>();
-    private final Map<Integer, java.util.NavigableSet<Integer>> pendingWatchers =
-            new LinkedHashMap<>();
+    private final Map<Good, Map<Integer, int[]>> pendingSales = new java.util.EnumMap<>(Good.class);
+    private final Map<Good, Map<Integer, java.util.NavigableSet<Integer>>> pendingWatchers =
+            new java.util.EnumMap<>(Good.class);
 
     /**
      * Records that somebody sold a villager diamonds, in front of whoever was near enough.
@@ -208,18 +211,22 @@ final class VillageSession {
      *
      * @param witnesses simulation ids of everyone who saw it, the trader included
      */
-    void recordTrade(int villagerId, int count, int emeralds,
+    void recordTrade(int villagerId, Good good, int count, int emeralds,
                      java.util.NavigableSet<Integer> witnesses) {
-        int[] running = pendingSales.computeIfAbsent(villagerId, id -> new int[2]);
+        // Per good as well as per counter: a villager who buys both gold and diamonds has
+        // been sold two things, and they are evidence about two markets.
+        int[] running = pendingSales.computeIfAbsent(good, g -> new LinkedHashMap<>())
+                .computeIfAbsent(villagerId, id -> new int[2]);
         running[0] += count;
         running[1] += emeralds;
-        pendingWatchers.computeIfAbsent(villagerId, id -> new java.util.TreeSet<>())
+        pendingWatchers.computeIfAbsent(good, g -> new LinkedHashMap<>())
+                .computeIfAbsent(villagerId, id -> new java.util.TreeSet<>())
                 .addAll(witnesses);
     }
 
-    /** How much has been sold at this counter since the last tick, for telling the player. */
-    int soldSoFar(int villagerId) {
-        int[] running = pendingSales.get(villagerId);
+    /** How much of a good has been sold at this counter since the last tick. */
+    int soldSoFar(int villagerId, Good good) {
+        int[] running = pendingSales.getOrDefault(good, Map.of()).get(villagerId);
         return running == null ? 0 : running[0];
     }
 
@@ -260,16 +267,16 @@ final class VillageSession {
     }
 
     /** Plants a rumor in one villager, on the tick that has not happened yet. */
-    void plantRumorIn(int villagerId, ClaimType type) {
+    void plantRumorIn(int villagerId, Good good, ClaimType type) {
         simulation.schedule(new PlantRumor(simulation.state().tick() + 1,
-                new Claim(Simulation.DIAMOND, type), 1, villagerId));
+                new Claim(good.id(), type), 1, villagerId));
     }
 
-    /** What each bound villager would charge, as a price index, for the text above them. */
-    Map<Integer, Integer> asks() {
+    /** What each bound villager would charge for a good, as a price index. */
+    Map<Integer, Integer> asks(Good good) {
         Map<Integer, Integer> asks = new LinkedHashMap<>();
         simulation.state().villagers().forEach((id, villager) ->
-                asks.put(id, (int) Math.round(simulation.askingPrice(villager, Good.DIAMOND))));
+                asks.put(id, (int) Math.round(simulation.askingPrice(villager, good))));
         return asks;
     }
 

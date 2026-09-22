@@ -29,7 +29,7 @@ class TradeTest {
      */
     private static Run sellInto(Params params, int count, int... witnesses) {
         return Run.execute(42, params,
-                List.of(new PlayerTraded(2, witnesses[0], count, count * 8, watching(witnesses))),
+                List.of(new PlayerTraded(2, witnesses[0], Simulation.DIAMOND, count, count * 8, watching(witnesses))),
                 3);
     }
 
@@ -53,7 +53,7 @@ class TradeTest {
         double asTrader = sellInto(params, 16, 1).finalState()
                 .villager(1).belief(ABUNDANT).confidence();
         double asOnlooker = Run.execute(42, params,
-                List.of(new PlayerTraded(2, 0, 16, 128, watching(0, 1))), 3)
+                List.of(new PlayerTraded(2, 0, Simulation.DIAMOND, 16, 128, watching(0, 1))), 3)
                 .finalState().villager(1).belief(ABUNDANT).confidence();
 
         assertTrue(asTrader > asOnlooker,
@@ -98,7 +98,7 @@ class TradeTest {
         int trader = 0;
         Run convinced = Run.execute(42, params, List.of(
                 new PlantRumor(1, SCARCE, 3, trader),
-                new PlayerTraded(2, trader, 16, 128, watching(trader))), 3);
+                new PlayerTraded(2, trader, Simulation.DIAMOND, 16, 128, watching(trader))), 3);
         Run openMinded = sellInto(params, 16, trader);
 
         double stubborn = convinced.finalState().villager(trader).belief(ABUNDANT).confidence();

@@ -17,7 +17,17 @@ package hearsay;
  */
 public enum Good {
 
-    DIAMOND("diamond", "diamonds");
+    /**
+     * Repriced from vanilla's one emerald, because at one emerald a 30% panic cannot be
+     * shown at all, and diamonds are not renewable so a higher price cannot be farmed.
+     */
+    DIAMOND("diamond", "diamonds", 1, 8, true),
+
+    /**
+     * At vanilla's value, three to the emerald, bought by a cleric. Gold is farmable, and
+     * pricing it above vanilla would turn a gold farm into an emerald printer.
+     */
+    GOLD("gold", "gold ingots", 24, 8, true);
 
     /**
      * How many rumour ids each good may use before it would run into the next good's range.
@@ -28,10 +38,46 @@ public enum Good {
 
     private final String id;
     private final String plural;
+    private final int bundle;
+    private final int normalEmeralds;
+    private final boolean villagerBuys;
 
-    Good(String id, String plural) {
+    /**
+     * @param bundle         how many change hands in one trade
+     * @param normalEmeralds what that bundle is worth when nobody believes anything
+     * @param villagerBuys   whether villagers buy it from the player, as every
+     *                       non-renewable good must be, or sell it, as vanilla already does
+     *                       with some renewable ones
+     */
+    Good(String id, String plural, int bundle, int normalEmeralds, boolean villagerBuys) {
         this.id = id;
         this.plural = plural;
+        this.bundle = bundle;
+        this.normalEmeralds = normalEmeralds;
+        this.villagerBuys = villagerBuys;
+    }
+
+    /** How many change hands in one trade: a fixed bundle, so the emerald count is the price. */
+    public int bundle() {
+        return bundle;
+    }
+
+    /** What one bundle is worth when nobody believes anything. */
+    public int normalEmeralds() {
+        return normalEmeralds;
+    }
+
+    public boolean villagerBuys() {
+        return villagerBuys;
+    }
+
+    /**
+     * What one of these is worth at normal, in emeralds. This is what lets a sale be
+     * weighed by value rather than by count: sixteen diamonds is a glut and sixteen loaves
+     * is breakfast.
+     */
+    public double emeraldsEach() {
+        return normalEmeralds / (double) bundle;
     }
 
     /** The name claims and recipes use, which is the name every saved session already has. */
@@ -53,6 +99,11 @@ public enum Good {
      */
     public int firstRumorId() {
         return ordinal() * RUMOR_IDS_PER_GOOD;
+    }
+
+    /** The good a rumour is about, read from the range its id falls in. */
+    public static Good ofRumor(int rumorId) {
+        return values()[rumorId / RUMOR_IDS_PER_GOOD];
     }
 
     /** The good a claim is about. */

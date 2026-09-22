@@ -154,12 +154,12 @@ public final class Narrator {
 
     /** e.g. "diamonds are very scarce" */
     private static String phrase(Rumor rumor) {
-        return rumor.claim().item() + "s are " + strength(rumor);
+        return Good.of(rumor.claim()).plural() + " are " + strength(rumor);
     }
 
     /** e.g. "diamonds are now very scarce" */
     private static String phraseNow(Rumor rumor) {
-        return rumor.claim().item() + "s are now " + strength(rumor);
+        return Good.of(rumor.claim()).plural() + " are now " + strength(rumor);
     }
 
     private static String strength(Rumor rumor) {

@@ -26,11 +26,11 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 6";
+    private static final String HEADER = "hearsay-recipe 7";
 
     private static final java.util.Set<String> READABLE_HEADERS =
             java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3",
-                    "hearsay-recipe 4", "hearsay-recipe 5", HEADER);
+                    "hearsay-recipe 4", "hearsay-recipe 5", "hearsay-recipe 6", HEADER);
 
     private RecipeFile() {
     }
@@ -112,7 +112,8 @@ public final class RecipeFile {
                 + " tradeWeight=" + p.tradeWeight()
                 + " witnessWeight=" + p.witnessWeight()
                 + " checkWeight=" + p.checkWeight()
-                + " emptyEvidence=" + p.emptyEvidence();
+                + " emptyEvidence=" + p.emptyEvidence()
+                + " goods=" + String.join(",", p.goods().stream().map(Good::id).toList());
     }
 
     private static Params readParams(String text) {
@@ -157,7 +158,10 @@ public final class RecipeFile {
                 values.containsKey("checkWeight")
                         ? number(values, "checkWeight") : Params.CHECK_WEIGHT,
                 values.containsKey("emptyEvidence")
-                        ? number(values, "emptyEvidence") : Params.EMPTY_EVIDENCE);
+                        ? number(values, "emptyEvidence") : Params.EMPTY_EVIDENCE,
+                // Written before a village could trade in anything but diamonds, so that is
+                // what those villages traded in.
+                goodsIn(values));
     }
 
     /**
@@ -196,10 +200,22 @@ public final class RecipeFile {
             // who saw a sale decides who learned anything from it, so a recipe without them
             // would replay to a different village.
             case PlayerTraded t -> "trade " + t.tick() + " " + t.villagerId() + " "
-                    + t.count() + " " + t.emeralds() + " " + join(t.witnesses());
+                    + t.count() + " " + t.emeralds() + " " + join(t.witnesses())
+                    + " " + t.item();
             case RealityChecked c -> "saw " + c.tick() + " " + c.villagerId() + " "
                     + c.item() + " " + c.sawHowMany();
         };
+    }
+
+    private static java.util.Set<Good> goodsIn(Map<String, String> values) {
+        if (!values.containsKey("goods")) {
+            return java.util.EnumSet.of(Good.DIAMOND);
+        }
+        java.util.Set<Good> goods = java.util.EnumSet.noneOf(Good.class);
+        for (String id : values.get("goods").split(",")) {
+            goods.add(Good.of(id));
+        }
+        return goods;
     }
 
     /** Witness ids as one field, so a trade stays one whitespace-separated line. */
@@ -232,9 +248,13 @@ public final class RecipeFile {
                     Integer.parseInt(parts[2]), Spot.valueOf(parts[3]));
             case "saw" -> new RealityChecked(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), parts[3], Integer.parseInt(parts[4]));
+            // The item comes last, so a line written before there was more than one good
+            // still reads: a sale then could only have been of diamonds.
             case "trade" -> new PlayerTraded(Long.parseLong(parts[1]),
-                    Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
-                    Integer.parseInt(parts[4]), split(parts.length > 5 ? parts[5] : ""));
+                    Integer.parseInt(parts[2]),
+                    parts.length > 6 ? parts[6] : Simulation.DIAMOND,
+                    Integer.parseInt(parts[3]), Integer.parseInt(parts[4]),
+                    split(parts.length > 5 ? parts[5] : ""));
             case "meet" -> new ObservedMeeting(Long.parseLong(parts[1]),
                     Integer.parseInt(parts[2]), Integer.parseInt(parts[3]),
                     Spot.valueOf(parts[4]));

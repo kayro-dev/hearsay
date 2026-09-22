@@ -48,7 +48,28 @@ class ParameterFuzzTest {
                 fraction(),                     // tradeWeight
                 fraction(),                     // witnessWeight
                 fraction(),                     // checkWeight
-                fraction());                    // emptyEvidence
+                fraction(),                     // emptyEvidence
+                someGoods());
+    }
+
+    /** Any non-empty set of goods, so independence is exercised on villages nobody chose. */
+    private java.util.Set<Good> someGoods() {
+        java.util.Set<Good> goods = java.util.EnumSet.noneOf(Good.class);
+        for (Good good : Good.values()) {
+            if (fuzz.nextBoolean()) {
+                goods.add(good);
+            }
+        }
+        if (goods.isEmpty()) {
+            goods.add(Good.values()[fuzz.nextInt(Good.values().length)]);
+        }
+        return goods;
+    }
+
+    /** One of the goods this village trades in, chosen at random. */
+    private Good anyOf(java.util.Set<Good> goods) {
+        List<Good> inOrder = new ArrayList<>(goods);
+        return inOrder.get(fuzz.nextInt(inOrder.size()));
     }
 
     private double fraction() {
@@ -62,7 +83,7 @@ class ParameterFuzzTest {
             long seed = fuzz.nextLong();
             String where = "seed " + seed + " with " + params;
 
-            Claim claim = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
+            Claim claim = new Claim(anyOf(params.goods()).id(), ClaimType.SCARCE);
             List<Input> inputs = new ArrayList<>();
             inputs.add(new PlantRumor(1, claim, 1 + fuzz.nextInt(3),
                     fuzz.nextInt(params.villagers())));
@@ -76,13 +97,14 @@ class ParameterFuzzTest {
                     watching.add(fuzz.nextInt(params.villagers()));
                 }
                 inputs.add(new PlayerTraded(2 + fuzz.nextInt(TICKS - 2), trader,
-                        1 + fuzz.nextInt(64), 1 + fuzz.nextInt(64), watching));
+                        anyOf(params.goods()).id(), 1 + fuzz.nextInt(64), 1 + fuzz.nextInt(64), watching));
             }
             // Villagers looking at what the village has, which reaches the only rule in
             // the model that can lower a confidence rather than raise it.
             for (int look = 0; look < fuzz.nextInt(6); look++) {
                 inputs.add(new RealityChecked(2 + fuzz.nextInt(TICKS - 2),
-                        fuzz.nextInt(params.villagers()), Simulation.DIAMOND, fuzz.nextInt(80)));
+                        fuzz.nextInt(params.villagers()), anyOf(params.goods()).id(),
+                        fuzz.nextInt(80)));
             }
             inputs.sort(java.util.Comparator.comparingLong(Input::tick));
 
@@ -123,8 +145,11 @@ class ParameterFuzzTest {
 
         for (int run = 0; run < RUNS && !sawObservationToldOn; run++) {
             Params params = randomParams();
+            // About a good this village trades in: one it does not is now refused, which
+            // is the rule working, not the fuzz failing.
+            Claim aboutSomethingHere = new Claim(anyOf(params.goods()).id(), ClaimType.SCARCE);
             Run executed = Run.execute(fuzz.nextLong(), params,
-                    List.of(new PlantRumor(1, claim, 1, 0)), TICKS);
+                    List.of(new PlantRumor(1, aboutSomethingHere, 1, 0)), TICKS);
 
             List<Integer> observed = new ArrayList<>();
             for (Event event : executed.log()) {

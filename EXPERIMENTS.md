@@ -2711,3 +2711,85 @@ shown it is wrong; it cannot be talked out of plenty by a cupboard nobody stocke
 That also removes the need for `emptyEvidence` — nothing is weighed against nothing —
 leaving one parameter to sweep instead of two. It wants justifying as a way of making a lie
 refutable, on its own terms, rather than as a fix for an oscillation that was not happening.
+
+---
+
+## E39 — Gold, untuned, is diamond's market with different dice
+
+Stage 2 step 2. Gold joins as an independent market: its own gossip, mutation and market
+streams, its own rumour ids from 1,000,000, its own price, noise and price anchors, and its
+own telling turn. Bought by the Cleric, 24 for 8 emeralds, at vanilla's value per ingot.
+
+### Independence first, and it is exact
+
+`IndependenceTest` runs each village three ways — diamond alone, gold alone, both — with a
+lie, a player selling into it, and villagers looking, and demands that each good's events be
+**equal** with and without the other, alongside every event that belongs to nobody (the
+clock, births, walking, meeting, the day ending). On five fixed seeds, with every switch on,
+and on twenty-five fuzzed settings down to a village of two.
+
+Checked by reintroducing each of the five couplings the plan found in the code, one at a
+time. **Every one fails all three tests:** one gossip stream shared between goods, one
+telling turn across every good's beliefs, one price anchor per villager, one market noise
+level, one rumour-id counter.
+
+One thing it found on the way was not a leak but my fixture: fuzzed villages go down to two
+villagers and the fixture named witnesses 0 to 2 and reality checks for 0 to 4. The error
+was "no villager with id 4", not a difference in any log.
+
+**The pinned diamond logs are untouched.** Adding gold to the enum first made all five fail,
+because every village had silently acquired a gold market: 200 gold noise events and 93 gold
+prices in a run where nobody said a word about gold. Filtering those out before hashing
+would have been changing the test to make it pass. The fault was that *which goods a village
+trades* was recorded nowhere, so it now is: `Params.goods`, diamond alone by default because
+every experiment, test and saved session describes that village, written into recipes and
+defaulting to diamond for old ones. Lies, sales and looks about a good the village does not
+trade in are refused rather than silently ignored. With that, the pins pass unchanged, and
+"with and without gold" is a setting rather than a reconstruction.
+
+### The targets, with no tuning
+
+Diamond and gold measured side by side in a village trading both, on identical seeds:
+
+| target | diamond | gold | |
+| --- | --- | --- | --- |
+| bubble within 30 days of the lie | 43% [33–53] | **40%** [31–49] | inside the band and diamond's interval |
+| quiet bursts per 100 village-days | 0.19 [0.10–0.29] | **0.11** [0.05–0.19] | inside diamond's interval |
+| decay after the largest swing | 0.93 | **0.93** | below 1 |
+| last-quarter price | 100.5 | **100.5** | within 5% of normal |
+| paired worlds, within 30 days | 63 only with / 0 only without | **75 / 0** | separation holds |
+| settled within 10% | 78% | **66%** | *missed the ≥70% line* |
+
+Diamond's figures in a two-good village reproduce E38 to the digit, which is independence
+confirmed a second way.
+
+### The miss, investigated before anything was touched
+
+Gold missed one target, and a second number looked worse than noise: only 16 gold runs had
+enough swings after the peak to measure decay, against 32 for diamond — about three standard
+errors on sixty seeds. The independence tests rule out anything leaking between the goods,
+so the question was whether gold is different *on its own*. Each good alone in its own
+village, two hundred seeds, in blocks of fifty:
+
+| seeds | diamond settled | diamond long runs | gold settled | gold long runs |
+| --- | --- | --- | --- | --- |
+| 1001–1050 | 76% | 23 | 70% | 13 |
+| 1051–1100 | 82% | 31 | 66% | 21 |
+| 1101–1150 | 70% | 19 | **74%** | **23** |
+| 1151–1200 | **62%** | 22 | 68% | **24** |
+| **all 200** | **72.5%** | **95** | **69.5%** | **81** |
+
+**It was noise, and the target was badly built.** Diamond on its own ranges from 62% to 82%
+settled between blocks of fifty, and on seeds 1151–1200 it fails the ≥70% line itself. Gold
+falls inside diamond's own spread in every block and beats it in two. Pooled, the gap is
+three points on settling (about one standard error) and fourteen runs on long runs (about
+one and a half); neither is a difference.
+
+The first comparison happened to land on the two blocks where diamond ran high and gold low.
+And "at least 70%" was a line drawn under a point estimate from sixty seeds, with no
+allowance for the fact that diamond's own figure moves by twenty points between samples.
+**It is the same mistake as E30's absolute quiet-village claim**, made again in a new place.
+
+**Decision.** Gold is adopted untuned, as the plan predicted. The settling target is
+restated for every later good: compared with diamond on the same two hundred seeds, within
+the sampling error of both — not against a fixed line under a sixty-seed estimate.

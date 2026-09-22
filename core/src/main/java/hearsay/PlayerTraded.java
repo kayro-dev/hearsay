@@ -17,14 +17,16 @@ import java.util.TreeSet;
  * village that may have been told there are none. That is evidence of plenty, and it is the
  * one piece of truth a player can produce on demand.
  *
- * @param count     how many diamonds changed hands, which is the whole of the evidence: one
- *                  is a curiosity and a stack is a glut
+ * @param item      what was sold. Each good is its own market, and selling gold is evidence
+ *                  about gold and nothing else
+ * @param count     how many changed hands, which with the good's value is the whole of the
+ *                  evidence: sixteen diamonds is a glut and sixteen loaves is breakfast
  * @param emeralds  what was paid for them, kept for the ledger rather than for belief
  * @param witnesses everyone standing near enough to see it, the trader included. The same
  *                  shape as a telling's witnesses in {@link RumorTold}, and for the same
  *                  reason: two villagers who watched one sale are not two sources
  */
-public record PlayerTraded(long tick, int villagerId, int count, int emeralds,
+public record PlayerTraded(long tick, int villagerId, String item, int count, int emeralds,
                            NavigableSet<Integer> witnesses) implements Input {
 
     public PlayerTraded {
