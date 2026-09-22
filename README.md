@@ -10,6 +10,14 @@ A belief-driven village economy with deterministic simulation and counterfactual
 
 Both figures are quoted with the window they were measured in, because they move without one: a share of runs that bubbled depends on how long you watched, and crediting a lie with a bubble five months later credits it with the village's own wandering. Whether a particular lie caused a particular bubble is a question the counterfactual answers — the same village, same seed, same everything, with the lie removed — rather than a claim the model makes.
 
+### Which goods a village trades
+
+**A village run headless trades diamonds alone. A village in the game trades every good there is** — diamonds, gold ingots and iron ingots so far. The difference is deliberate, and it does not undermine the figures above.
+
+Headless defaults to diamond because every experiment, every test and every session saved before there were other goods describes that village, and a village with a gold market is a different village rather than the same one with a new detail. The goods a village trades are part of its saved recipe, so a session replays as the village it was.
+
+The calibration still describes the game because **each good behaves identically whether it is traded alone or alongside the others**. That is tested, not assumed: every good is run alone and then in every combination with the rest, and its own events — every conversation, every price, every number, in order — must be exactly equal each time. A lie about gold cannot move the price of diamonds by so much as one rumour's numbering. And each good after diamond is held to diamond's own figures on the same seeds, within their sampling error, before it is added; gold and iron both met them with no tuning at all.
+
 ### Where Hearsay's prices differ from vanilla
 
 Villagers who trade in a village Hearsay is running still keep all their ordinary trades. Hearsay takes over one offer per good and moves its price with what that villager believes. Every managed offer is a fixed bundle for a moving number of emeralds — the number of emeralds is the price.

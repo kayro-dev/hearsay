@@ -2875,3 +2875,49 @@ lockstep given the same inputs: one market wearing two names. `IndependenceTest`
 first property and `GoodTest` the second, and neither can stand in for the other.
 
 **Decision.** Iron adopted untuned. Targets are `Target`s from here on.
+
+---
+
+## E41 — The quiet guard, restored over a village's whole life
+
+E40 found that the quiet-village check had been weakened by its own window: limited to thirty
+days, a village nobody lied to almost never bursts even when the loop is running away, so at
+`observationWeight` 0.45 that check no longer failed. Only the burst check caught it.
+
+**A second quiet check, over five hundred days.** Sixty villages nobody lied to, 2,000 ticks
+each, bursts per 100 village-days as an `Estimate` from per-run counts:
+
+| observationWeight | 250 days | 500 days |
+| --- | --- | --- |
+| 0.28 (default) | 0.067 [0.007, 0.126] | **0.100 [0.025, 0.175]** |
+| 0.35 | 0.527 [0.278, 0.776] | **1.057 [0.720, 1.393]** |
+| 0.45 | 0.713 [0.410, 1.016] | **1.337 [0.949, 1.724]** |
+
+The target is **demonstrated under 0.5 per 100 village-days over 500 days**, with room on
+both sides: the default's interval tops out at 0.175 and 0.35's bottoms out at 0.72. It costs
+about a second.
+
+**Which checks each runaway fails:**
+
+| observationWeight | lie's burst rate | quiet, within 30 days | quiet, over 500 days |
+| --- | --- | --- | --- |
+| 0.28 (default) | pass | pass | pass |
+| 0.35 | **pass** | pass | **FAIL** |
+| 0.45 | FAIL | pass | FAIL |
+
+At 0.45 the new check and the burst check both fail. At 0.35 — a quieter runaway — **only the
+new check fails**, so before this entry a weight that doubles the rate at which villages talk
+themselves into bubbles would have passed calibration unnoticed. The thirty-day check fails at
+neither; it is kept, because a month is the window the README's claim is stated over, but it
+is not a guard against a runaway on its own and was never going to be.
+
+### A correction to E38
+
+E38 said a rate per hundred village-days "is the same number whether measured over fifty days
+or a hundred and seventy-five". Not quite. Villages need a while to warm up before they can
+burst unaided, so a longer run contains proportionally more of the days on which they can:
+at 0.35 the rate over 250 days is half the rate over 500. At the defaults the two lengths are
+inside each other's intervals, which is why E38 did not see it, but the rate is not
+length-free and is quoted with its length from here on.
+
+**Decision.** The long-run check joins `CalibrationTest`. No parameter changed.

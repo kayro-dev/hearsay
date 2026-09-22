@@ -82,6 +82,29 @@ class CalibrationTest {
     private static final Target.Band QUIET_VILLAGES = Target.demonstrates(
             "villages nobody lied to bursting within 30 days", 0.0, 0.03, QUIET_SEEDS);
 
+    /**
+     * The same guarantee over a village's whole life, so the windowed check above is not
+     * left guarding alone. Windowed to a month, a village nobody lied to almost never
+     * bursts even when the loop is running away — E40 found that at observationWeight 0.45
+     * the thirty-day check no longer fails at all — because a runaway loop still needs time
+     * to talk itself into something. Over five hundred days it has that time.
+     *
+     * <p>Sixty villages of five hundred days each. At the defaults these give 0.100 [0.025,
+     * 0.175] bursts per 100 village-days; at 0.35 they give 1.06 [0.72, 1.39], and at 0.45,
+     * 1.34 [0.95, 1.72]. The ceiling sits between them, with room on both sides.
+     *
+     * <p>The length is fixed, and has to be. A rate per village-day is still not quite
+     * independent of how long anyone watched: villages need a while to warm up before they
+     * can burst unaided, so at 0.35 the rate over 250 days is half the rate over 500. At
+     * the defaults the difference is inside the noise, but the figure is only ever quoted
+     * with its length.
+     */
+    private static final int LONG_RUNS = 60;
+    private static final int LONG_TICKS = 2000; // five hundred days
+    private static final Target.Band BACKGROUND_RATE = Target.demonstrates(
+            "villages nobody lied to bursting, per 100 village-days over 500 days",
+            0.0, 0.5, LONG_RUNS);
+
     private static MarketStats runVillage(long seed, List<Input> inputs) {
         return MarketStats.of(
                 Run.execute(seed, Params.defaults(), inputs, TICKS).log(), DIAMONDS_SCARCE);
@@ -124,5 +147,20 @@ class CalibrationTest {
         assertTrue(verdict.passed(), "villages nobody lied to are bursting, at seeds "
                 + panicked + ": " + verdict + ". E38 measured 0.19 per 100 village-days, "
                 + "so this is the loop starting itself.");
+    }
+
+    @Test
+    void villagesNobodyLiedToStayRareOverAWholeLifetime() {
+        int[] bursts = new int[LONG_RUNS];
+        for (int i = 0; i < LONG_RUNS; i++) {
+            bursts[i] = MarketStats.of(
+                    Run.execute(FIRST_SEED + i, Params.defaults(), List.of(), LONG_TICKS).log(),
+                    DIAMONDS_SCARCE).bubbles().size();
+        }
+        Estimate rate = Estimate.ratePer(bursts, LONG_TICKS / 4.0, 100);
+
+        Target.Verdict verdict = BACKGROUND_RATE.judge(rate);
+        assertTrue(verdict.passed(), "villages nobody lied to are talking themselves into "
+                + "bubbles over the long run: " + verdict);
     }
 }
