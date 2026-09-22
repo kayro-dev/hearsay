@@ -83,85 +83,166 @@ workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ---
 
-## Stage 2 — more than one thing to be wrong about — **NEXT**
+## Stage 2 — more than one thing to be wrong about — **NEXT, plan for review**
 
-A price index per item, each with a normal price in emeralds:
+Gold, iron and bread join diamond. **Plan only; no code until it is reviewed.**
 
-| Item | Normal price |
-| --- | --- |
-| Diamond | 8 |
-| Gold ingot | 2 |
-| Iron ingot | 1 |
-| Bread | 1 |
+Two decisions shape everything below, and both were made before the plan was written:
 
-**Emeralds are the currency and never a good.** There is no rumour about emeralds and no
-index for them; a village cannot panic about the thing it prices everything else in.
-
-**What changes in core.** The larger of the two stages.
-
-- `Claim` already carries an item, so beliefs are per-item today. What is single is the
-  *market*: `marketPrice`, `marketNoiseLevel` and `lastObservedPrice` are one value each.
-  All three become per-item, keyed by the item, in `WorldState` and on `Villager`.
-- `MarketPriceSet`, `MarketNoiseSet` and `PriceObserved` gain an item. They already carry
-  their own numbers, so this is one more field of the same kind.
-- `Params.basePrice` becomes a lookup: a normal price per item, with the table above as the
-  default. `priceSensitivity` stays one number — how far belief moves a price is a fact
-  about villagers, not about diamonds.
-- Each item gets **its own noise stream**, derived like the others in `RandomStream`. One
-  shared wobble would make every price move together, and a village would look like it had
-  an opinion when it only had weather.
-
-**Determinism and replay.** Preserved, with one condition: iteration over items must be by
-a fixed order, not a hash. Every map in `WorldState` is already sorted for exactly this
-reason and the item maps must follow. `RandomStream` gains entries and they must be
-**appended**, as `NEIGHBOURHOOD` was in E23, or every existing seed produces a different
-village.
-
-**Old recipes.** Keep loading. `RecipeFile` already defaults fields absent from older
-versions — the `mixing` and `villagers` fields do this today. An old recipe names no item,
-and the reader supplies diamond, which is what those sessions were about. The format
-version goes to 5.
-
-**Experiments to re-run.** This is the expensive stage.
-- `CalibrationTest` measures one item's bubbles. It keeps working on diamonds and should
-  gain nothing until the multi-item behaviour is understood.
-- **E5, E18, E24, E25, E29 need re-running per item**, because the market parameters were
-  fitted to a base price of 100 and a bread priced at 1 has no room to move — a price that
-  can only be 1 or 2 is a different instrument. `PriceMood` already scales its bands by base
-  price, which is the same problem solved once; `Bubble` does not, and would need to.
-- A new question no experiment covers: **does belief about one item leak into another?**
-  It should not, and a sweep should confirm it does not before any of this is trusted.
-
-### Price resolution, solved the way vanilla already solves it
-
-The problem: four items at 8, 2, 1 and 1 emeralds means three of them have almost no room to
-move. A 30% rise on bread is a third of an emerald, and Minecraft trades whole items.
-
-Vanilla has the answer already, and it is worth copying rather than inventing around.
-**A trade has two sides, and which side carries the price depends on which is worth more.**
-
-| Kind | Trade reads | A rise shows as |
+| | decided | why |
 | --- | --- | --- |
-| **Expensive goods** (diamond, gold) | *n emeralds → 1 item* | the emerald count going up: 8 → 11 |
-| **Cheap goods** (bread, iron) | *1 emerald → n items* | the item count coming **down**: 6 bread → 4 bread |
+| **Spillover** | **none** — every good is an independent market | "a lie about diamonds moved the price of bread" becomes a bug that can be tested for, rather than a feature that must be tuned |
+| **Calibration** | **one good at a time, gated** — diamond keeps its numbers, then gold, then iron, then bread | a regression is attributable to the good that caused it, and E1–E38 stand without re-running |
 
-So bread at **6 per emerald** is normal, and **4 per emerald is +50%**, which is a visible,
-whole-number change that needs no fractional emerald. The index stays continuous internally
-and is rounded only at the point of display, so the simulation keeps its resolution and the
-trade menu is always a whole number of things.
+### Independence is guaranteed, not measured
 
-This also fixes something the current model papers over. Rounding a continuous index to a
-whole number of items is **lossy in a way that matters at the cheap end**: between 6 and 5
-bread per emerald there is a 20% step, so small price moves on cheap goods are invisible
-until they are large enough to cross one. That is not a flaw to be engineered away — it is
-what a real market with coarse denominations does — but it means **cheap goods will bubble
-less readily than dear ones**, and a sweep must measure that rather than assume the four
-items behave alike.
+A sweep that finds "no leakage" has only failed to find it. The stronger claim is that
+leakage is impossible, and that needs two things: nothing shared between goods that a good
+can disturb, and a test that would fail the instant anything is.
 
-**What this adds to stage 2's work.** `Params` gains, per item, a normal price *and* which
-way round the trade goes. The display rule — emeralds up, or items down — belongs beside
-`PriceMood` in core, since the dashboard and the trade menu must agree about what "+50%"
-means for bread.
+**What is shared today, and would couple the goods.** Five places, found by reading the code
+rather than by waiting for a sweep to notice:
+
+| where | what it is | why a gold lie would disturb diamond |
+| --- | --- | --- |
+| `Simulation.gossip`, `.mutation`, `.market` | one `Random` each | a gold telling draws from the gossip stream, so every diamond draw after it shifts |
+| `WorldState.nextRumorId` | one counter for every rumour | a gold rumour takes id 3, and diamond's next rumour becomes 4 instead of 3 |
+| `Villager.strongestBeliefWorthTelling` | one telling per turn, across every claim | a villager sure of gold stops mentioning diamonds at all |
+| `WorldState.marketPrice`, `marketNoiseLevel` | one market | there is only one price to hold |
+| `Villager.lastObservedPrice` | one anchor per villager | reading the gold price moves the diamond anchor |
+
+**What changes.**
+
+- **Every good gets its own gossip, mutation and market streams.** Diamond keeps the three
+  it has now, unbranched, so every existing seed produces the village it always did. Each
+  other good branches from those: `Seeds.branch(streamSeed, goodIndex)`. Movement and
+  neighbourhoods stay shared — they decide who stands where, and no good touches them.
+- **Every good gets its own rumour-id space.** Diamond keeps 0, 1, 2… exactly as now; gold
+  numbers from 1,000,000, iron from 2,000,000, bread from 3,000,000. Encoding the good into
+  every id (`counter × 4 + good`) would have been neater and would have renumbered every
+  diamond rumour ever recorded.
+- **One turn per good, not one turn per meeting.** A villager who meets somebody gets a
+  chance to mention each good they hold a belief worth telling about, goods in a fixed
+  order, each roll from that good's own stream. Within a good, the stronger of "scarce" and
+  "plentiful" is told, exactly as today.
+- **Every market value becomes per good**: price, noise level, whether a price is known,
+  and each villager's anchor. `MarketNoiseSet` and `MarketPriceSet` gain an item field;
+  `PriceObserved` already carries one in its claim.
+- **`DIAMOND` stops being hardcoded** in `askingPrice`, `observeTheMarket` and the trade
+  rule. A `Good` enum carries the id, the order, the display name — "gold ingots", not
+  "golds"; "bread", not "breads", which is what `BeliefReport` and the narrator would
+  currently print — and the trade settings below.
+
+**The tests that make it a guarantee.**
+
+1. **Before the first line of stage 2 code:** record the full event log of five seeds on
+   today's model and pin a checksum of each. The stage-2 model, given only diamond inputs,
+   must reproduce all five **bit for bit**. That is what "diamond keeps its numbers" means
+   in practice, and it makes E1–E38 stand by construction rather than by assertion.
+2. **Bit-identical diamond, with and without gold.** Run a village with a diamond lie; run
+   it again with a diamond lie *and* a gold lie. Filter both logs to the events that belong
+   to diamond or to nobody — moves, meetings, day ends, and anything whose claim or item is
+   diamond — and assert the two lists are **equal**, not merely similar.
+3. **Then with iron added, then bread**, cumulatively: diamond identical with and without
+   the other three, gold identical with and without iron and bread, and so on down.
+4. `ParameterFuzzTest` gains random lies about random goods, so the independence tests are
+   exercised on settings nobody chose.
+
+### What each new good is fitted to
+
+The targets are diamond's, measured on today's model with the thirty-day window, on the same
+seeds. Each new good is tested by planting the lie about *that* good instead:
+
+| metric | diamond, today | a new good must reach |
+| --- | --- | --- |
+| bubble within 30 days of the lie, calibration seeds, 50 days | **43%** | inside `CalibrationTest`'s band (25–60%), and within diamond's 95% interval |
+| quiet villages, bursts per 100 village-days | **0.19** [0.10–0.29] | inside that interval |
+| swing decay after the largest swing, 175 days | **0.91** | below 1 |
+| settled within 10% of normal, 175 days | **80%** | at least 70% |
+| mean price over the last quarter, 175 days | **100.8** | within 5% of normal |
+| paired worlds, bubbles only with the lie | separation holds | separation holds, with **0** only without |
+
+**A prediction worth writing down before measuring.** With independent streams and shared
+parameters, a new good *is* diamond's market with different dice. It should meet every row
+above without any tuning at all. So the gate is a check, not a fit — **and a good that misses
+its targets with shared parameters has found a bug in the independence, not a reason to
+tune.** The only parameters that genuinely differ between goods are the trade settings
+below, and those never run in a headless calibration because a headless village has no
+player in it.
+
+### How each good trades
+
+Checked against the wiki rather than assumed (2026-09-22), and the answer moves two goods:
+
+| good | vanilla | who manages it in Hearsay | direction |
+| --- | --- | --- | --- |
+| diamond | Toolsmith, Expert, buys 1 for 1 emerald | the three smiths, Novice *(built, stage 3)* | villager **buys** |
+| gold ingot | **Cleric**, Apprentice, buys 3 for 1 emerald | Cleric, Novice | villager **buys** |
+| iron ingot | **Armorer**, Apprentice, buys 4 for 1 emerald | Armorer, Novice | villager **buys** |
+| bread | **nobody buys it**; Farmer sells 6 for 1 emerald | Farmer, Novice | villager **sells** |
+
+**Bread breaks the "villagers only buy" rule, and should.** Stage 3 kept villagers from
+selling diamonds because diamonds are not renewable and selling them would quietly rewrite
+the game's economy. Bread is renewable, a farmer selling it is what vanilla already does, and
+a bread panic reads naturally as the price of a loaf going up. **The rule was about
+non-renewable goods all along**, and it is restated that way: non-renewable goods are only
+ever bought by villagers; renewable goods follow the direction vanilla already trades them.
+
+The witness rule does not carry over to bread. A player *selling* diamonds is evidence of
+plenty; a player *buying* bread is not evidence of anything the village should believe, and
+under the redesigned reality rule — reality refutes, never asserts — it may not create or
+strengthen a belief. **Bread trades carry no evidence at all** in stage 2, which is worth
+stating because it is the first managed good for which that is true.
+
+### Price resolution: one rule for every good
+
+The earlier sketch moved expensive goods by emerald count and cheap goods by items per
+emerald. That rule works for bread and fails for the middle of the table: gold at 2 emeralds
+and iron at 1 have no room on either side — a 20% rise is 0.4 of an emerald, or 0.8 of an
+ingot.
+
+**Proposed instead: every managed trade is a fixed bundle of goods for a moving number of
+emeralds, normally eight.**
+
+| good | bundle | normal price | unit price | a 25% panic reads |
+| --- | --- | --- | --- | --- |
+| diamond | 1 | 8 emeralds | 8 | 10 emeralds |
+| gold ingot | 4 | 8 emeralds | 2 | 10 emeralds |
+| iron ingot | 8 | 8 emeralds | 1 | 10 emeralds |
+| bread | 48 | 8 emeralds | ⅙ | 10 emeralds |
+
+The unit prices are exactly the table agreed earlier — bread is six to the emerald — but
+every good now moves in steps of one-eighth, and a player learns one thing: **the number of
+emeralds is the price.** It keeps the property the bread rule was after without its
+coarseness at the cheap end, and the index behind it stays continuous; only the trade menu
+is rounded. *This one wants your call in review, because it replaces a mechanism you
+specified.*
+
+The sight of goods saturates by **value rather than count** once there is more than one good.
+Sixteen diamonds is a glut; sixteen loaves is breakfast. Saturation at 128 emeralds' worth of
+goods, whatever they are, keeps "a stack is a glut" true across goods that differ in price by
+a factor of forty-eight. It only ever runs when a player trades, so it touches no calibration.
+
+### The screen
+
+One boss bar per good **that is not normal**, rather than four bars at all times. The same
+principle that thinned the name plates: a bar that says "· 0%" is saying nothing, and four of
+them bury the one that matters. A village with nothing going on shows nothing.
+
+### The gates, in order
+
+| step | done when |
+| --- | --- |
+| **0. pin** | five seeds' diamond logs checksummed on today's model |
+| **1. goods as data** | the `Good` enum, per-good streams, id spaces, per-good market state — **diamond only**. All five checksums reproduce bit for bit; `CalibrationTest` untouched |
+| **2. + gold** | bit-identical diamond with and without gold; gold meets its targets with shared parameters; Cleric trade; reported as an E-number |
+| **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade |
+| **4. + bread** | the same for bread; Farmer trade, selling; no witness evidence |
+| **5. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots" and "bread" |
+
+**Experiments re-run: none of E1–E38.** Step 1's checksums are what earns that. New ones:
+one E-number per good for its targets, and a trade-weight sweep for the goods players will
+sell in bulk, since value-based saturation is new.
 
 ### Vanilla's own price adjustments, on trades Hearsay manages
 
@@ -621,6 +702,8 @@ settle is not one to build more onto.
 | **Households** | families who share a home share what they hear, ahead of the village | overlaps the neighbourhoods from E23 and may replace them |
 | **Claims about people** | rumours about villagers rather than goods: who is a thief, who is generous | the belief machinery carries it already; what it lacks is anything for such a claim to *do* |
 | **Corrections** | a villager who learns they were wrong tells the people they told | the natural partner to reality checks, and worth nothing before them |
+| **Spillover through budgets** | once the village purse exists, a village that overspends on one good has less for the others, so a diamond panic can leave bread dear without any rule saying the two are related | comes from a real constraint rather than a substitution matrix, which is why it is preferred over one. **It deliberately breaks stage 2's bit-identical tests**, which will have to become "identical while the purse is not binding" — a decision to be made on purpose, not discovered |
+| **Shared mood** | a village in a panic about anything is slightly readier to believe a scarcity rumour about everything | one parameter rather than a matrix, and prices stay independent. Kept as the lighter alternative to budgets |
 | **Notice board** | a place the player can post a claim to the whole village at once | trivial to build and easy to abuse; it wants credibility first, or it is a panic button |
 
 ## Order of work

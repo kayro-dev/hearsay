@@ -68,14 +68,19 @@ logged so any crash can be replayed and compared against a counterfactual.
      Swing decay and the quiet-village rate are both length-dependent and must only be
      compared between runs of the same length; MarketStats.ENOUGH_SWINGS enforces the
      minimum.
-  3. **stage 2, more goods — next.** No longer waiting on stage 4: E37 measured the
-     baseline already meeting the gate stage 4 was to have achieved.
+  3. **stage 2, more goods — next, planned in V2_PROPOSAL.md and awaiting review before
+     any code.** Goods are independent markets (no spillover) and are added one at a time
+     behind gates: diamond first reproduces five pinned log checksums bit for bit, then
+     gold, iron and bread each join only when diamond's events are bit-identical with and
+     without them and the new good meets diamond's thirty-day targets with shared
+     parameters. A good that misses its targets has found an independence bug, not a
+     reason to tune.
 - Figures that are shares of runs move with run length and must not be compared across
   lengths. The quiet-village rate is 0.19 bursts per 100 village-days [0.10-0.29] (E38),
   and a bubble is only laid at a lie's door within thirty days of it.
 - Player-facing features built between stages must not touch the simulation's decisions or
   the calibration, and each needs a test proving it read-only, so no experiment re-runs.
-- Stage 4 is not done when it is built but when it works: swing decay below 1 and the lie
-  still causing its bubbles, against E32's baseline of 1.05, never settling, 5 bubbles to 0.
-  Damping the swings must never become muting the village, and only running the oscillation
-  measures beside the paired-worlds separation can tell those apart.
+- E32's "never settles" is withdrawn (E37): measured from the largest swing, the village
+  settles on its own. Measure oscillation after the peak, and never let a damper mute the
+  village — only the oscillation measures beside the paired-worlds separation can tell
+  damping from muting.
