@@ -34,7 +34,8 @@ final class Counter {
     private static final Map<Good, Material> ITEM = new EnumMap<>(Map.of(
             Good.DIAMOND, Material.DIAMOND,
             Good.GOLD, Material.GOLD_INGOT,
-            Good.IRON, Material.IRON_INGOT));
+            Good.IRON, Material.IRON_INGOT,
+            Good.WHEAT, Material.WHEAT));
 
     /**
      * Who keeps a counter for each good. Checked against the wiki rather than guessed: the
@@ -49,7 +50,8 @@ final class Counter {
             // The Armorer is also a smith, so keeps two counters: diamonds and iron. The
             // first villager to, and the reason every sale is grouped by good as well as
             // by counter.
-            Good.IRON, Set.of(Villager.Profession.ARMORER)));
+            Good.IRON, Set.of(Villager.Profession.ARMORER),
+            Good.WHEAT, Set.of(Villager.Profession.FARMER)));
 
     /**
      * How many bundles a villager takes before they need to restock. Vanilla's own limit,
@@ -118,7 +120,9 @@ final class Counter {
         MerchantRecipe recipe = new MerchantRecipe(
                 new ItemStack(Material.EMERALD, Math.clamp(emeralds, 1, MOST_EMERALDS)),
                 0, USES_BEFORE_RESTOCK, true);
-        recipe.addIngredient(new ItemStack(ITEM.get(good), good.bundle()));
+        for (int stack : good.stacks(ITEM.get(good).getMaxStackSize())) {
+            recipe.addIngredient(new ItemStack(ITEM.get(good), stack));
+        }
         // Vanilla's demand and reputation adjustments off, on managed trades only. They are
         // state held on the villager rather than in the saved session, so a session with
         // them running could not be replayed.
@@ -126,6 +130,21 @@ final class Counter {
         recipe.setDemand(0);
         recipe.setSpecialPrice(0);
         return recipe;
+    }
+
+    /**
+     * Everything a trade took, across both ingredient slots. A sale of wheat fills two, and
+     * reading only the first would record 60 where 120 changed hands — evidence about the
+     * harvest at half its weight.
+     */
+    static int amountTaken(MerchantRecipe recipe, Good good) {
+        int taken = 0;
+        for (ItemStack ingredient : recipe.getIngredients()) {
+            if (ingredient.getType() == ITEM.get(good)) {
+                taken += ingredient.getAmount();
+            }
+        }
+        return taken;
     }
 
     /** What a bundle of this good costs at this price index, in whole emeralds. */

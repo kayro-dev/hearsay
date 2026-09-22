@@ -80,11 +80,24 @@ public sealed interface Target permits Target.Band, Target.SameAs {
         }
 
         public Verdict judge(Estimate measured, Estimate reference) {
+            return judge(measured, reference, 1);
+        }
+
+        /**
+         * Judged as one of several comparisons made together, sharing a 5% chance of a
+         * false alarm between them. Five comparisons each judged at 95% will fail a good that
+         * is identical by construction nearly a quarter of the time; five judged at 99% will
+         * fail it about one time in twenty, which is what "95%" was supposed to mean for the
+         * gate as a whole.
+         *
+         * @param comparisons how many comparisons the gate makes in all, this one included
+         */
+        public Verdict judge(Estimate measured, Estimate reference, int comparisons) {
             int fewer = Math.min(measured.n(), reference.n());
             if (fewer < atLeast) {
                 return tooFew(what, fewer, atLeast);
             }
-            Estimate difference = measured.minus(reference);
+            Estimate difference = measured.minus(reference, Estimate.zFor(0.05 / comparisons));
             boolean passed = difference.low() <= 0 && 0 <= difference.high();
             return new Verdict(what, passed, "difference " + difference
                     + (passed ? " contains 0" : " excludes 0") + "; reference " + reference);

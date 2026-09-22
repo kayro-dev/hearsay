@@ -79,6 +79,10 @@ disagree, the village is dying.
 | 11a | Find an Armorer and open their trades | **Two** managed trades: 1 diamond for 8 emeralds and 32 iron ingots for 8 emeralds. The first villager with two counters |
 | 11b | `/hearsay rumor iron scarce` next to a villager, let it spread | The Armorer's iron trade pays more; their diamond trade stays at 8, because nobody said anything about diamonds |
 | 11c | Sell iron to the Armorer, then diamonds | Two separate lines on the action bar, "takes 32 iron ingots" and "takes 1 diamond" — each sale is evidence about its own good only |
+| 12a | **Find a Farmer and open their trades — the decisive wheat test** | A trade taking **60 wheat in each of two slots** for 6 emeralds. Click it with 120+ wheat in your inventory: both slots should fill with 60, and the trade should complete. **If it does not fill both, or will not complete, stop and report it** — the fallback is 18 hay bales for 8 emeralds (E42) |
+| 12b | Sell wheat to the Farmer with villagers watching | "Farmer takes 120 wheat. N watching." — **120**, not 60: both slots are counted |
+| 12c | `/hearsay rumor wheat scarce` next to a villager, let it spread | The Farmer's wheat trade pays more than 6. No other good's trade moves |
+| 12d | Sell into the famine | Watchers grow less sure the harvest failed. A famine rumour can be punctured the way a diamond panic can |
 | 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |
 | 9b | Plant a rumour and wait several days | It should struggle. A village that can see a stack of diamonds is hard to convince they are gone |
 | 9c | Crouch-right-click a villager who did believe it | Their confidence falls day by day while the chest is there |

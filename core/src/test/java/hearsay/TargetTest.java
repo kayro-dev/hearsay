@@ -105,4 +105,63 @@ class TargetTest {
         assertTrue(rate.low() >= 0, "a rate cannot be negative");
         assertEquals(60, rate.n());
     }
+
+    @Test
+    void theQuantileIsTheOneEveryoneKnows() {
+        assertEquals(1.960, Estimate.zFor(0.05), 0.001);
+        assertEquals(2.576, Estimate.zFor(0.01), 0.001);
+        assertEquals(Estimate.zFor(0.01), Estimate.zFor(0.05 / 5), 1e-12,
+                "five comparisons sharing 5% is each at 1%");
+    }
+
+    /** How often a gate of five comparisons fails a good identical to its reference. */
+    private static double falseFailureRate(int judgedAsOneOf) {
+        java.util.Random draws = new java.util.Random(20260922);
+        int gates = 2000;
+        int failed = 0;
+        for (int gate = 0; gate < gates; gate++) {
+            boolean anyFailed = false;
+            for (int comparison = 0; comparison < 5; comparison++) {
+                // Both drawn from exactly the same truth: 50%, two hundred trials each.
+                int a = 0;
+                int b = 0;
+                for (int trial = 0; trial < 200; trial++) {
+                    a += draws.nextBoolean() ? 1 : 0;
+                    b += draws.nextBoolean() ? 1 : 0;
+                }
+                Target.Verdict verdict = Target.sameAs("identical", 200).judge(
+                        Estimate.proportion(a, 200), Estimate.proportion(b, 200), judgedAsOneOf);
+                anyFailed |= !verdict.passed();
+            }
+            failed += anyFailed ? 1 : 0;
+        }
+        return failed / (double) gates;
+    }
+
+    @Test
+    void fiveComparisonsAt95EachFailAnIdenticalGoodAboutAQuarterOfTheTime() {
+        // The defect E42 found in the gate built for E40: a good that is diamond's market with
+        // different dice, compared on five measures at 95% each, fails one of them by chance
+        // far more often than one time in twenty.
+        double uncorrected = falseFailureRate(1);
+        assertTrue(uncorrected > 0.15 && uncorrected < 0.30,
+                "five uncorrected comparisons should fail an identical good about 23% of the "
+                        + "time, was " + uncorrected);
+    }
+
+    @Test
+    void sharingTheConfidenceBringsThatBackToOneInTwenty() {
+        double corrected = falseFailureRate(5);
+        assertTrue(corrected < 0.08,
+                "judged as one of five, an identical good should fail about 5% of the time, was "
+                        + corrected);
+    }
+
+    @Test
+    void sharingTheConfidenceStillCatchesARealDifference() {
+        // The correction must not buy fewer false alarms by going blind.
+        Estimate broken = Estimate.proportion(60, 200);
+        Estimate diamond = Estimate.proportion(145, 200);
+        assertFalse(Target.sameAs("settled", 200).judge(broken, diamond, 5).passed());
+    }
 }

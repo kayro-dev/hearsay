@@ -2921,3 +2921,92 @@ inside each other's intervals, which is why E38 did not see it, but the rate is 
 length-free and is quoted with its length from here on.
 
 **Decision.** The long-run check joins `CalibrationTest`. No parameter changed.
+
+---
+
+## E42 — Wheat, and a defect in the gate itself
+
+```
+./gradlew :experiments:goods --args="--good wheat"
+```
+
+### The stack limit, checked before building
+
+Paper's `MerchantRecipe` javadoc: *"Trades can take one or two ingredients"*, and the first
+ingredient's amount is constrained *"between 1 and the item stack's maximum stack size"*. So a
+trade holds at most two stacks of 64 — 128 wheat. Eight emeralds' worth at vanilla's value is
+160, which cannot be offered; **120 in two stacks of 60, for six emeralds**, can. It moves in
+sixths where every other good moves in eighths.
+
+What the javadoc does not settle is whether a trade with **the same item in both slots** fills
+and completes normally in the game. That is the first manual test for wheat. If it does not,
+the fallback is eighteen hay bales for eight emeralds: 162 wheat's worth, 1% under vanilla's
+value, in one slot, moving in eighths like everything else.
+
+The split lives in core as `Good.stacks`, with a test that **every good's bundle fits one
+trade** — checked by setting wheat to 160 for 8, which fails it. And the sale handler now sums
+both ingredient slots: reading only the first, as it did, would have recorded 60 wheat where
+120 changed hands, and weighed every wheat sale at half its evidence.
+
+### Wheat failed one target, and the investigation found the gate was wrong
+
+Wheat passed seven of eight and failed the quiet rate against diamond: 0.067 [0.018, 0.116]
+against 0.187 [0.088, 0.285], a difference whose interval excluded zero.
+
+**All three new goods had come in under diamond on that measure** — gold 0.107, iron 0.113 —
+and E41 had measured diamond at 0.100 on another block. So every good alone, on four blocks of
+sixty:
+
+| seeds | diamond | gold | iron | wheat |
+| --- | --- | --- | --- | --- |
+| 3001–3060 | **0.187** | 0.107 | 0.113 | **0.067** |
+| 4001–4060 | 0.123 | 0.103 | 0.110 | **0.167** |
+| 5001–5060 | 0.150 | 0.147 | 0.080 | 0.100 |
+| 6001–6060 | **0.063** | 0.043 | 0.097 | 0.050 |
+| **all 240** | 0.131 [0.084, 0.177] | 0.100 [0.060, 0.140] | 0.100 [0.062, 0.138] | 0.096 [0.057, 0.135] |
+
+Diamond alone ranges from 0.063 to 0.187, and the gate's block was its highest; on the next
+block wheat is above it. **Nothing about wheat, independence or any parameter** — the same
+unlucky pairing E39 met.
+
+**But the gate built in E40 had a real defect.** It makes five comparisons with diamond per
+good, each at 95%, and a good identical to diamond by construction fails at least one of five
+by chance about a quarter of the time. Simulated — two thousand gates comparing a good against
+an exact copy of itself:
+
+| | an identical good fails the gate |
+| --- | --- |
+| five comparisons at 95% each | **23.0%** |
+| five sharing 5% between them (99% each) | **4.4%** |
+
+Across gold, iron and wheat that was fifteen comparisons, and one false failure is exactly
+what chance predicts. The gate was set up to reject roughly one good in four that deserved to
+pass.
+
+**Two changes, each justified without reference to wheat, applied to every good:**
+
+- **The five comparisons share the 5%** (Bonferroni, 0.05/5), through
+  `Target.SameAs.judge(measured, reference, comparisons)`. Tested by the simulation above, and
+  by checking a genuine difference — 60 of 200 against 145 of 200 — still fails.
+- **The quiet rate gets 240 runs, not 60.** A burst is the rarest thing the gate counts, about
+  six in sixty villages, and its block-to-block spread was the whole of this failure.
+
+This is a change to a gate made right after a good failed it, which is exactly when such a
+change deserves suspicion. What makes it not loosening-to-pass: the defect exists independently
+of wheat and is demonstrated by simulation; the fix is applied to every good and re-run on all
+three; it still catches a real difference; and **wheat passes under either change alone** —
+on 240 quiet runs at plain 95% the difference is about [−0.099, 0.027], and on the original
+sixty with the correction it contains zero too.
+
+### All three, re-judged
+
+| | gold | iron | wheat |
+| --- | --- | --- | --- |
+| every target, corrected gate | **PASS** | **PASS** | **PASS** |
+| quiet rate against diamond, 240 runs | −0.043 [−0.123, 0.037] | −0.033 [−0.118, 0.051] | −0.036 [−0.118, 0.047] |
+
+Diamond's quiet rate over those 240 runs is 0.140 [0.092, 0.188].
+
+**Decision.** Wheat adopted untuned: the Farmer buys it, 120 for 6, with witness evidence, so a
+famine rumour can be sold into and punctured. The gate shares its confidence across its
+comparisons from here on.

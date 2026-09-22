@@ -90,9 +90,54 @@ public final class Estimate {
      * from its own streams.
      */
     public Estimate minus(Estimate other) {
+        return minus(other, Z);
+    }
+
+    /**
+     * The difference with an interval at a stated width, for when one comparison is one of
+     * several and the confidence has to be shared between them. See {@link #zFor}.
+     */
+    public Estimate minus(Estimate other, double z) {
         double se = Math.hypot(halfWidth() / Z, other.halfWidth() / Z);
         double diff = value - other.value;
-        return new Estimate(diff, diff - Z * se, diff + Z * se, Math.min(n, other.n));
+        return new Estimate(diff, diff - z * se, diff + z * se, Math.min(n, other.n));
+    }
+
+    /**
+     * How many standard errors wide an interval must be so that it misses the truth with
+     * the given chance, split evenly between the two tails.
+     *
+     * <p>{@code zFor(0.05)} is 1.96, the usual 95%. {@code zFor(0.05 / 5)} is 2.58, which is
+     * what five comparisons have to use between them if together they are to be wrong only
+     * one time in twenty. Judge five things at 95% each and something passes that should
+     * not, or fails that should not, nearly a quarter of the time.
+     *
+     * <p>Acklam's rational approximation to the normal quantile, accurate far beyond what
+     * any interval here needs, and deterministic.
+     */
+    public static double zFor(double twoSidedChance) {
+        if (!(twoSidedChance > 0 && twoSidedChance < 1)) {
+            throw new IllegalArgumentException("a chance between 0 and 1, was " + twoSidedChance);
+        }
+        double p = 1 - twoSidedChance / 2;
+        double[] a = {-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+                1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00};
+        double[] b = {-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+                6.680131188771972e+01, -1.328068155288572e+01};
+        double[] c = {-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+                -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00};
+        double[] d = {7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+                3.754408661907416e+00};
+        double high = 1 - 0.02425;
+        if (p > high) {
+            double q = Math.sqrt(-2 * Math.log(1 - p));
+            return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
+                    / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+        }
+        double q = p - 0.5;
+        double r = q * q;
+        return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q
+                / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
     }
 
     public double value() { return value; }

@@ -28,12 +28,26 @@ import java.util.List;
  */
 public final class GoodTargets {
 
+    /**
+     * Quiet villages to run for the background rate. Two hundred and forty, not sixty: a
+     * burst is the rarest thing this gate counts — about six in sixty villages — and E42
+     * found sixty runs let one unlucky block fail wheat. Over four blocks of sixty, diamond
+     * alone ranged from 0.063 to 0.187.
+     */
+    private static final int QUIET_RUNS = 240;
+
+    /**
+     * The comparisons with diamond, judged together. Five at 95% each would fail a good
+     * identical to diamond nearly a quarter of the time (E42), so they share the 5%.
+     */
+    private static final int COMPARISONS = 5;
+
     private static final Target.Band BURSTS = Target.demonstrates(
             "a lie bursts the price within 30 days", 0.25, 0.60, 100);
     private static final Target.SameAs BURSTS_LIKE_DIAMOND = Target.sameAs(
             "bursts within 30 days, as diamond does", 100);
     private static final Target.SameAs QUIET_LIKE_DIAMOND = Target.sameAs(
-            "quiet bursts per 100 village-days, as diamond", 60);
+            "quiet bursts per 100 village-days, as diamond", QUIET_RUNS);
     private static final Target.SameAs DECAY_LIKE_DIAMOND = Target.sameAs(
             "swing decay after the largest swing, as diamond", 30);
     private static final Target.SameAs SETTLES_LIKE_DIAMOND = Target.sameAs(
@@ -44,6 +58,7 @@ public final class GoodTargets {
             "paired worlds bubbling only with the lie, as diamond", 200);
     private static final Target.Band NEVER_WITHOUT = Target.demonstrates(
             "paired worlds bubbling only without the lie", 0.0, 0.03, 200);
+
 
     private GoodTargets() {
     }
@@ -65,12 +80,12 @@ public final class GoodTargets {
 
         List<Target.Verdict> verdicts = List.of(
                 BURSTS.judge(other.bursts()),
-                BURSTS_LIKE_DIAMOND.judge(other.bursts(), diamond.bursts()),
-                QUIET_LIKE_DIAMOND.judge(other.quiet(), diamond.quiet()),
-                DECAY_LIKE_DIAMOND.judge(other.decay(), diamond.decay()),
-                SETTLES_LIKE_DIAMOND.judge(other.settled(), diamond.settled()),
+                BURSTS_LIKE_DIAMOND.judge(other.bursts(), diamond.bursts(), COMPARISONS),
+                QUIET_LIKE_DIAMOND.judge(other.quiet(), diamond.quiet(), COMPARISONS),
+                DECAY_LIKE_DIAMOND.judge(other.decay(), diamond.decay(), COMPARISONS),
+                SETTLES_LIKE_DIAMOND.judge(other.settled(), diamond.settled(), COMPARISONS),
                 COMES_HOME.judge(other.endPrice()),
-                SEPARATES_LIKE_DIAMOND.judge(other.onlyWith(), diamond.onlyWith()),
+                SEPARATES_LIKE_DIAMOND.judge(other.onlyWith(), diamond.onlyWith(), COMPARISONS),
                 NEVER_WITHOUT.judge(other.onlyWithout()));
 
         System.out.println();
@@ -104,8 +119,8 @@ public final class GoodTargets {
             }
         }
 
-        int[] quietCounts = new int[60];
-        for (int i = 0; i < 60; i++) {
+        int[] quietCounts = new int[QUIET_RUNS];
+        for (int i = 0; i < QUIET_RUNS; i++) {
             quietCounts[i] = MarketStats.of(
                     Run.execute(3001 + i, village, List.of(), 2000).log(), claim).bubbles().size();
         }

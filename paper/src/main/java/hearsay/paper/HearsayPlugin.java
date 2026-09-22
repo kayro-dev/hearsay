@@ -74,7 +74,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
     private static final java.util.Map<Good, String> WHO_TO_ASK = java.util.Map.of(
             Good.DIAMOND, "A blast furnace, smithing table or grindstone makes a smith.",
             Good.GOLD, "A brewing stand makes a cleric.",
-            Good.IRON, "A blast furnace makes an armorer.");
+            Good.IRON, "A blast furnace makes an armorer.",
+            Good.WHEAT, "A composter makes a farmer.");
 
     /** A market a player would pace out without thinking about it. */
     private static final double DEFAULT_MARKET_RADIUS = 8.0;
@@ -427,6 +428,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         String named = args.length > 1 ? args[1].toLowerCase() : "";
         Good good = named.startsWith("gold") ? Good.GOLD
                 : named.startsWith("iron") ? Good.IRON
+                : named.startsWith("wheat") ? Good.WHEAT
                 : Good.DIAMOND;
 
         Integer nearest = nearestBoundVillager(player);
@@ -521,7 +523,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        int sold = event.getTrade().getIngredients().get(0).getAmount();
+        int sold = Counter.amountTaken(event.getTrade(), good);
         int emeralds = event.getTrade().getResult().getAmount();
         session.recordTrade(trader, good, sold, emeralds, watching);
 

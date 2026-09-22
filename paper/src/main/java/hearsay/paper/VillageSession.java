@@ -91,7 +91,7 @@ final class VillageSession {
         Params params = Params.defaults()
                 .withMeetingSource(MeetingSource.EXTERNAL)
                 .withVillagers(bodies.size())
-                .withGoods(Good.DIAMOND, Good.GOLD, Good.IRON);
+                .withGoods(Good.DIAMOND, Good.GOLD, Good.IRON, Good.WHEAT);
         return new VillageSession(seed, new Simulation(seed, params, List.of()), bodies);
     }
 

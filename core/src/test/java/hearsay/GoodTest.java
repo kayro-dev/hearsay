@@ -42,6 +42,31 @@ class GoodTest {
         assertEquals("diamonds", Good.DIAMOND.plural());
         assertEquals("gold ingots", Good.GOLD.plural());
         assertEquals("iron ingots", Good.IRON.plural());
+        assertEquals("wheat", Good.WHEAT.plural(), "wheat is a mass noun, not 'wheats'");
+        assertEquals("120 wheat", Good.WHEAT.amount(120));
+    }
+
+    @Test
+    void everyGoodsBundleFitsInOneTrade() {
+        // A trade holds at most two stacks of 64. A good whose bundle could not be offered
+        // should fail here, not in front of a player at a counter that will not fill.
+        for (Good good : Good.values()) {
+            int[] stacks = good.stacks(64);
+            assertTrue(stacks.length <= 2, good + " needs " + stacks.length + " slots");
+            int total = 0;
+            for (int stack : stacks) {
+                assertTrue(stack >= 1 && stack <= 64, good + " has a stack of " + stack);
+                total += stack;
+            }
+            assertEquals(good.bundle(), total, good + " lost part of its bundle in the split");
+        }
+    }
+
+    @Test
+    void wheatSplitsIntoTwoEqualStacks() {
+        assertArrayEquals(new int[] {60, 60}, Good.WHEAT.stacks(64));
+        assertArrayEquals(new int[] {1}, Good.DIAMOND.stacks(64));
+        assertArrayEquals(new int[] {32}, Good.IRON.stacks(64));
     }
 
     @Test
@@ -72,6 +97,8 @@ class GoodTest {
         assertEquals(8.0, Good.DIAMOND.emeraldsEach(), 1e-12, "diamond is repriced on purpose");
         assertEquals(1.0 / 3, Good.GOLD.emeraldsEach(), 1e-12);
         assertEquals(1.0 / 4, Good.IRON.emeraldsEach(), 1e-12);
+        assertEquals(1.0 / 20, Good.WHEAT.emeraldsEach(), 1e-12,
+                "wheat at six for 120 is exactly vanilla's twenty to the emerald");
     }
 
     @Test

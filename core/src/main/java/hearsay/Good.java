@@ -33,7 +33,19 @@ public enum Good {
      * At vanilla's value, four to the emerald, bought by an armorer. Iron farms are the
      * most common farm there is, which is exactly why this must not pay more than vanilla.
      */
-    IRON("iron", "iron ingot", "iron ingots", 32, 8, true);
+    IRON("iron", "iron ingot", "iron ingots", 32, 8, true),
+
+    /**
+     * The famine rumour's diamond: bought by a farmer, so a player can sell into a panic
+     * about the harvest and the neighbours who watch see there was wheat after all. At
+     * vanilla's value, twenty to the emerald.
+     *
+     * <p>The one good that does not fit the eight-emerald bundle. Eight emeralds' worth is
+     * 160 wheat, and a trade takes at most two ingredients of at most a stack each — 128 —
+     * so the bundle is 120 in two stacks of 60, for six emeralds. It moves in sixths where
+     * every other good moves in eighths, which is the cost of keeping vanilla's value.
+     */
+    WHEAT("wheat", "wheat", "wheat", 120, 6, true);
 
     /**
      * How many rumour ids each good may use before it would run into the next good's range.
@@ -72,6 +84,29 @@ public enum Good {
      */
     public String amount(int count) {
         return count + " " + (count == 1 ? singular : plural);
+    }
+
+    /**
+     * This good's bundle split into the stacks one trade can hold.
+     *
+     * <p>Paper's MerchantRecipe takes one or two ingredients and keeps each within the item's
+     * stack size (checked against its javadoc, not assumed). So a bundle over a stack goes
+     * into two halves — 120 wheat as two sixties — and a bundle over two stacks cannot be
+     * offered at all. Here rather than in the plugin because it is arithmetic with a rule in
+     * it, and a good whose bundle could not be traded should fail a test, not a player.
+     *
+     * @param mostInAStack the item's stack size, 64 for everything so far
+     */
+    public int[] stacks(int mostInAStack) {
+        if (bundle <= mostInAStack) {
+            return new int[] {bundle};
+        }
+        if (bundle > 2 * mostInAStack) {
+            throw new IllegalStateException(plural + " come in bundles of " + bundle
+                    + ", and a trade holds at most two stacks of " + mostInAStack);
+        }
+        int first = (bundle + 1) / 2;
+        return new int[] {first, bundle - first};
     }
 
     /** How many change hands in one trade: a fixed bundle, so the emerald count is the price. */
