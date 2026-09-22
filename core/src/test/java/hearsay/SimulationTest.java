@@ -90,6 +90,6 @@ class SimulationTest {
         WorldState replayed = Simulation.replay(sim.log());
 
         assertEquals(sim.state().rumors(), replayed.rumors());
-        assertEquals(sim.state().nextRumorId(), replayed.nextRumorId());
+        assertEquals(sim.state().nextRumorId(Good.DIAMOND), replayed.nextRumorId(Good.DIAMOND));
     }
 }

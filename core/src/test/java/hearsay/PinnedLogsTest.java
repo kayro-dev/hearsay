@@ -29,17 +29,61 @@ import org.junit.jupiter.api.Test;
  *
  * <p><strong>If this fails, stage 2 has changed diamond.</strong> Do not update the
  * checksums to match. Find what diamond is now reading that it did not read before.
+ *
+ * <p><strong>One deliberate exception, and why it is not an update.</strong> Stage 2 gave
+ * {@link MarketPriceSet} and {@link MarketNoiseSet} an {@code item}, because once there are
+ * several markets an event has to say which one it settled. That changes how those two
+ * events print, and so would change any checksum of their text — without changing a single
+ * decision. So the checksum is taken over each event in the form it had when these were
+ * pinned: {@link #frozen(Event)} prints those two without the new field and every other
+ * event exactly as it prints. The checksums themselves are the ones recorded on 2026-09-22
+ * and have not been touched.
+ *
+ * <p>Stripping a field would hide it, so the field is checked rather than trusted:
+ * {@link #onlyDiamondWasPriced} asserts that every market event in these runs names
+ * diamond. Together the two say the whole of it — every event, every number and every
+ * order is what it was, and the one addition carries no information in a diamond-only
+ * village. Stage 2 step 1 was checked this way before the renderer was written into the
+ * test: all five logs matched and no market event named another good.
  */
 class PinnedLogsTest {
 
     private static final Claim SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
     private static String checksum(List<Event> log) throws Exception {
+        onlyDiamondWasPriced(log);
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         for (Event event : log) {
-            digest.update((event + "\n").getBytes(StandardCharsets.UTF_8));
+            digest.update((frozen(event) + "\n").getBytes(StandardCharsets.UTF_8));
         }
         return HexFormat.of().formatHex(digest.digest()).substring(0, 16);
+    }
+
+    /**
+     * An event as it printed when these logs were pinned. Only the two market events have
+     * changed shape since, and only by gaining the good they are about; everything else is
+     * printed exactly as it is.
+     */
+    private static String frozen(Event event) {
+        return switch (event) {
+            case MarketPriceSet m -> "MarketPriceSet[tick=" + m.tick() + ", price=" + m.price()
+                    + ", askingVillagers=" + m.askingVillagers() + "]";
+            case MarketNoiseSet n -> "MarketNoiseSet[tick=" + n.tick() + ", level=" + n.level() + "]";
+            default -> event.toString();
+        };
+    }
+
+    /** The field {@link #frozen} leaves out has to carry nothing, or leaving it out hides it. */
+    private static void onlyDiamondWasPriced(List<Event> log) {
+        for (Event event : log) {
+            String item = switch (event) {
+                case MarketPriceSet m -> m.item();
+                case MarketNoiseSet n -> n.item();
+                default -> Simulation.DIAMOND;
+            };
+            assertEquals(Simulation.DIAMOND, item,
+                    "a diamond-only village priced something else: " + event);
+        }
     }
 
     private static int planter(long seed, Params params) {

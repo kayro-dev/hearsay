@@ -41,4 +41,18 @@ public enum RandomStream {
     public Random from(long seed) {
         return new Random(Seeds.branch(seed, ordinal()));
     }
+
+    /**
+     * This stream for one good, so that goods never draw from each other's dice.
+     *
+     * <p>Diamond, first among the goods, gets exactly the stream {@link #from(long)} gives,
+     * branched no further: a diamond-only village draws the same numbers it drew before any
+     * other good existed. Every other good branches once more by its position, so a gold
+     * telling can never shift a diamond draw — which it would, the moment they shared a
+     * generator, and a counterfactual would then differ for reasons nothing to do with gold.
+     */
+    public Random from(long seed, Good good) {
+        long mine = Seeds.branch(seed, ordinal());
+        return new Random(good.ordinal() == 0 ? mine : Seeds.branch(mine, good.ordinal()));
+    }
 }

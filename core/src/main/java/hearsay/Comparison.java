@@ -74,7 +74,7 @@ public final class Comparison {
 
         for (Event event : log) {
             mirror.apply(event);
-            if (event instanceof MarketPriceSet priced) {
+            if (event instanceof MarketPriceSet priced && priced.item().equals(claim.item())) {
                 lastPrice = priced.price();
                 peak = Math.max(peak, priced.price());
             }

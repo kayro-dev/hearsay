@@ -71,7 +71,10 @@ public final class MarketStats {
             if (event instanceof PriceObserved read && read.claim().equals(claim)) {
                 priceReadings++;
             }
-            if (event instanceof MarketPriceSet priced) {
+            // Only this claim's own market. Once there is more than one good, every
+            // other good's prices are in the same log, and reading them would make
+            // diamond's statistics partly about gold.
+            if (event instanceof MarketPriceSet priced && priced.item().equals(claim.item())) {
                 priceSeries.add(new int[] {(int) priced.tick(), priced.price()});
                 peakPrice = Math.max(peakPrice, priced.price());
                 dayHigh = Math.max(dayHigh, priced.price());

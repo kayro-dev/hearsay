@@ -260,7 +260,7 @@ them bury the one that matters. A village with nothing going on shows nothing.
 | step | done when |
 | --- | --- |
 | **0. pin** | ✓ **done.** Five diamond logs checksummed in `PinnedLogsTest`, covering tellings, mutations, price readings, witnessed sales and reality checks. Checked to fail when one default moves by a thousandth, or the rumour-id counter by one |
-| **1. goods as data** | the `Good` enum, per-good streams, id spaces, per-good market state — **diamond only**. All five checksums reproduce bit for bit; `CalibrationTest` untouched |
+| **1. goods as data** | ✓ **done.** `Good` enum; per-good gossip, mutation and market streams; per-good rumour-id ranges; per-good price, noise and price anchors; one telling turn per good. Diamond only. All five logs reproduce exactly — every event, number and ordering — with the market events printed in their pinned form, and no market event naming any other good. Checked to fail if diamond's streams are branched or its ids start anywhere but 0 |
 | **2. + gold** | bit-identical diamond with and without gold; gold meets its targets with shared parameters; Cleric trade, 24 for 8; reported as an E-number |
 | **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade, 32 for 8 |
 | **4. + wheat** | the same for wheat; Farmer buys, 120 for 6; witness evidence on, so a famine rumour can be sold into and punctured |

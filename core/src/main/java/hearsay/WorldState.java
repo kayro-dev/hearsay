@@ -1,6 +1,8 @@
 package hearsay;
 
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -19,19 +21,25 @@ public final class WorldState {
 
     private long tick = 0;
 
-    /** Unset until the market first settles on a price. */
-    private int marketPrice = 0;
-    private boolean priceKnown = false;
+    /**
+     * The last price each good's market settled on. A good is absent until its market has
+     * first settled, which is how "no price yet" is told from a price.
+     */
+    private final Map<Good, Integer> marketPrice = new EnumMap<>(Good.class);
 
-    /** How far the market's wobble currently stands from nothing. */
-    private double marketNoiseLevel = 0;
+    /** How far each good's wobble currently stands from nothing. */
+    private final Map<Good, Double> marketNoiseLevel = new EnumMap<>(Good.class);
 
     /** Keyed by id, so iteration order is id order rather than hash order. */
     private final NavigableMap<Integer, Villager> villagers = new TreeMap<>();
     private final NavigableMap<Integer, Rumor> rumors = new TreeMap<>();
 
-    /** Rumor ids come from here, never from randomness. */
-    private int nextRumorId = 0;
+    /**
+     * Rumour ids come from here, never from randomness, and each good counts in its own
+     * range. A single counter would let a gold rumour take id 3 and push diamond's next one
+     * to 4, renumbering a diamond log that had nothing to do with gold.
+     */
+    private final Map<Good, Integer> nextRumorId = new EnumMap<>(Good.class);
 
     public void apply(Event event) {
         switch (event) {
@@ -100,12 +108,11 @@ public final class WorldState {
             }
             case MarketNoiseSet e -> {
                 tick = e.tick();
-                marketNoiseLevel = e.level();
+                marketNoiseLevel.put(Good.of(e.item()), e.level());
             }
             case MarketPriceSet e -> {
                 tick = e.tick();
-                marketPrice = e.price();
-                priceKnown = true;
+                marketPrice.put(Good.of(e.item()), e.price());
             }
             case PriceObserved e -> {
                 tick = e.tick();
@@ -125,7 +132,7 @@ public final class WorldState {
                 villager(e.villagerId()).believe(new Belief(seen.claim(), e.newConfidence(),
                         Belief.MARKET, e.tick(), e.rumorId(), chain));
                 // From here on, this villager measures the price against this one.
-                villager(e.villagerId()).sawPrice(e.price());
+                villager(e.villagerId()).sawPrice(Good.of(e.claim()), e.price());
             }
             case DayEnded e -> {
                 tick = e.tick();
@@ -158,19 +165,23 @@ public final class WorldState {
 
     private void addRumor(Rumor rumor) {
         rumors.put(rumor.id(), rumor);
-        nextRumorId = Math.max(nextRumorId, rumor.id() + 1);
+        Good good = Good.of(rumor.claim());
+        nextRumorId.put(good, Math.max(nextRumorId(good), rumor.id() + 1));
     }
 
     public long tick() { return tick; }
 
-    /** Where the market's wobble stands, which a forked world has to carry with it. */
-    public double marketNoiseLevel() { return marketNoiseLevel; }
+    /** Where a good's wobble stands, which a forked world has to carry with it. */
+    public double marketNoiseLevel(Good good) { return marketNoiseLevel.getOrDefault(good, 0.0); }
 
-    /** The last price the market settled on, empty until it first does. */
-    public OptionalInt marketPrice() {
-        return priceKnown ? OptionalInt.of(marketPrice) : OptionalInt.empty();
+    /** The last price a good's market settled on, empty until it first does. */
+    public OptionalInt marketPrice(Good good) {
+        Integer price = marketPrice.get(good);
+        return price == null ? OptionalInt.empty() : OptionalInt.of(price);
     }
-    public int nextRumorId() { return nextRumorId; }
+
+    /** The id the next rumour about this good will take. */
+    public int nextRumorId(Good good) { return nextRumorId.getOrDefault(good, good.firstRumorId()); }
 
     public NavigableMap<Integer, Villager> villagers() {
         return Collections.unmodifiableNavigableMap(villagers);
@@ -230,23 +241,21 @@ public final class WorldState {
     public boolean equals(Object o) {
         return o instanceof WorldState w
             && tick == w.tick
-            && marketPrice == w.marketPrice
-            && priceKnown == w.priceKnown
-            && Double.compare(marketNoiseLevel, w.marketNoiseLevel) == 0
-            && nextRumorId == w.nextRumorId
+            && marketPrice.equals(w.marketPrice)
+            && marketNoiseLevel.equals(w.marketNoiseLevel)
+            && nextRumorId.equals(w.nextRumorId)
             && villagers.equals(w.villagers)
             && rumors.equals(w.rumors);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(tick, marketPrice, priceKnown, marketNoiseLevel,
-                nextRumorId, villagers, rumors);
+        return Objects.hash(tick, marketPrice, marketNoiseLevel, nextRumorId, villagers, rumors);
     }
 
     @Override
     public String toString() {
-        return "tick=" + tick + ", price=" + (priceKnown ? marketPrice : "unset")
+        return "tick=" + tick + ", prices=" + (marketPrice.isEmpty() ? "unset" : marketPrice)
                 + ", villagers=" + villagers.size() + ", rumors=" + rumors.size();
     }
 }

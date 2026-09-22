@@ -73,6 +73,6 @@ class ResumeTest {
 
         assertEquals(live.state().villagers(), carried.state().villagers());
         assertEquals(live.state().rumors(), carried.state().rumors());
-        assertEquals(live.state().marketPrice(), carried.state().marketPrice());
+        assertEquals(live.state().marketPrice(Good.DIAMOND), carried.state().marketPrice(Good.DIAMOND));
     }
 }

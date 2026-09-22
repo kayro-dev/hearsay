@@ -17,7 +17,7 @@ class SwingTest {
     private static MarketStats pricesOf(int... prices) {
         List<Event> log = new ArrayList<>();
         for (int i = 0; i < prices.length; i++) {
-            log.add(new MarketPriceSet(i + 1, prices[i], 10));
+            log.add(new MarketPriceSet(i + 1, prices[i], 10, Simulation.DIAMOND));
         }
         return MarketStats.of(log, DIAMONDS_SCARCE);
     }

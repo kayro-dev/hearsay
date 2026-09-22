@@ -2,6 +2,7 @@ package hearsay;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -47,10 +48,15 @@ public final class Simulation {
 
     // One generator per subsystem. See RandomStream for why they must not be shared.
     private final Random movement;
-    private final Random gossip;
-    private final Random mutation;
-    private final Random market;
     private final Random neighbourhood;
+
+    // And one per good, for everything a good decides for itself: whether it is mentioned,
+    // whether it grows in the telling, and how its market wobbles. Movement and
+    // neighbourhoods stay shared, because they decide who stands where and no good touches
+    // them. Keyed by an EnumMap, so iteration follows the declared order of the goods.
+    private final Map<Good, Random> gossip = new EnumMap<>(Good.class);
+    private final Map<Good, Random> mutation = new EnumMap<>(Good.class);
+    private final Map<Good, Random> market = new EnumMap<>(Good.class);
 
     /**
      * The inputs, kept so this run can describe itself. Grows during live play, where the
@@ -108,10 +114,12 @@ public final class Simulation {
         this.inputs.addAll(inputs);
         this.state = state;
         this.movement = RandomStream.MOVEMENT.from(seed);
-        this.gossip = RandomStream.GOSSIP.from(seed);
-        this.mutation = RandomStream.MUTATION.from(seed);
-        this.market = RandomStream.MARKET.from(seed);
         this.neighbourhood = RandomStream.NEIGHBOURHOOD.from(seed);
+        for (Good good : Good.values()) {
+            gossip.put(good, RandomStream.GOSSIP.from(seed, good));
+            mutation.put(good, RandomStream.MUTATION.from(seed, good));
+            market.put(good, RandomStream.MARKET.from(seed, good));
+        }
         for (Input input : this.inputs) {
             rejectMismatchedMeeting(input);
             scheduled.computeIfAbsent(input.tick(), t -> new ArrayList<>()).add(input);
@@ -144,8 +152,10 @@ public final class Simulation {
         }
         // Price first, then the people standing there read it: within a tick, belief
         // moves the price and the price moves belief, in that order.
-        advanceMarketNoise(tick);
-        observeTheMarket(tick, settleMarketPrice(tick));
+        for (Good good : Good.values()) {
+            advanceMarketNoise(tick, good);
+            observeTheMarket(tick, good, settleMarketPrice(tick, good));
+        }
         if (DayPart.of(tick) == DayPart.NIGHT) {
             record(new DayEnded(tick, params.dailyDecay(), params.forgetThreshold()));
         }
@@ -190,7 +200,7 @@ public final class Simulation {
     private void applyInputs(long tick) {
         for (Input input : scheduled.getOrDefault(tick, List.of())) {
             switch (input) {
-                case PlantRumor p -> record(new RumorPlanted(tick, state.nextRumorId(),
+                case PlantRumor p -> record(new RumorPlanted(tick, state.nextRumorId(Good.of(p.claim())),
                         p.claim(), p.severity(), p.villagerId(), params.plantedConfidence()));
                 // Somebody outside saw these two together. Where they are is as much news
                 // as who they are with, since the market is made of whoever stands in it.
@@ -334,13 +344,22 @@ public final class Simulation {
      * hand each of them three independent-looking sources for what was actually said once.
      */
     private void maybeTell(long tick, int tellerId, List<Integer> group) {
+        // A turn for each good they hold a belief worth mentioning about, in the declared
+        // order. One turn across all of them would let a villager sure about gold stop
+        // mentioning diamonds, and one market would silence another.
+        for (Good good : Good.values()) {
+            maybeTellAbout(tick, tellerId, group, good);
+        }
+    }
+
+    private void maybeTellAbout(long tick, int tellerId, List<Integer> group, Good good) {
         Villager teller = state.villager(tellerId);
-        Belief toTell = teller.strongestBeliefWorthTelling(params.tellThreshold());
+        Belief toTell = teller.strongestBeliefWorthTelling(params.tellThreshold(), good);
         if (toTell == null) {
             return;
         }
         // Eager gossips with strong beliefs talk most.
-        if (gossip.nextDouble() >= teller.traits().gossip() * toTell.confidence()) {
+        if (gossip.get(good).nextDouble() >= teller.traits().gossip() * toTell.confidence()) {
             return;
         }
 
@@ -388,11 +407,12 @@ public final class Simulation {
         if (told.severity() >= Rumor.MAX_SEVERITY) {
             return rumorId;
         }
-        if (mutation.nextDouble() >= params.mutationChance()) {
+        Good good = Good.of(told.claim());
+        if (mutation.get(good).nextDouble() >= params.mutationChance()) {
             return rumorId;
         }
         int grown = told.severity() + 1;
-        int childId = state.nextRumorId();
+        int childId = state.nextRumorId(good);
         record(new RumorMutated(tick, childId, rumorId, grown));
         return childId;
     }
@@ -462,7 +482,7 @@ public final class Simulation {
             if (after <= before) {
                 continue; // nothing was learned, so nothing is written down
             }
-            int rumorId = had == null ? state.nextRumorId() : had.rumorId();
+            int rumorId = had == null ? state.nextRumorId(Good.of(plenty)) : had.rumorId();
             record(new TradeSeen(tick, witnessId, plenty, rumorId, after, traded));
         }
     }
@@ -560,16 +580,16 @@ public final class Simulation {
      * float it above their head: a villager's own asking price is the most honest thing to
      * show about them, and it is the number their belief actually feeds into.
      */
-    public double askingPrice(Villager villager) {
-        double scarcityBelief = strengthOf(villager, ClaimType.SCARCE)
-                - strengthOf(villager, ClaimType.ABUNDANT);
+    public double askingPrice(Villager villager, Good good) {
+        double scarcityBelief = strengthOf(villager, ClaimType.SCARCE, good)
+                - strengthOf(villager, ClaimType.ABUNDANT, good);
         double clamped = Math.max(-1, Math.min(1, scarcityBelief));
         return params.basePrice() * (1 + params.priceSensitivity() * clamped);
     }
 
     /** Confidence in one side of the claim, weighted by how bad the version they hold is. */
-    private double strengthOf(Villager villager, ClaimType type) {
-        Belief held = villager.belief(new Claim(DIAMOND, type));
+    private double strengthOf(Villager villager, ClaimType type, Good good) {
+        Belief held = villager.belief(new Claim(good.id(), type));
         if (held == null) {
             return 0;
         }
@@ -587,9 +607,10 @@ public final class Simulation {
      * every tick whether or not the market opens, since it is a property of the day
      * rather than of who turned up.
      */
-    private void advanceMarketNoise(long tick) {
-        double step = params.marketNoise() * (market.nextDouble() * 2 - 1);
-        record(new MarketNoiseSet(tick, params.noiseDecay() * state.marketNoiseLevel() + step));
+    private void advanceMarketNoise(long tick, Good good) {
+        double step = params.marketNoise() * (market.get(good).nextDouble() * 2 - 1);
+        record(new MarketNoiseSet(tick,
+                params.noiseDecay() * state.marketNoiseLevel(good) + step, good.id()));
     }
 
     /**
@@ -609,11 +630,11 @@ public final class Simulation {
      * bounded, and one utterly convinced villager in a market of twelve moves the average
      * by a few percent. The insurance was real; the thing it insured against was not.
      */
-    private OptionalInt settleMarketPrice(long tick) {
+    private OptionalInt settleMarketPrice(long tick, Good good) {
         List<Double> asks = new ArrayList<>();
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.inTheMarket(tick, params.marketWindowTicks())) {
-                asks.add(askingPrice(villager));
+                asks.add(askingPrice(villager, good));
             }
         }
         if (asks.size() < params.marketQuorum()) {
@@ -625,8 +646,8 @@ public final class Simulation {
         }
         double average = total / asks.size();
 
-        int price = Math.max(1, (int) Math.round(average * (1 + state.marketNoiseLevel())));
-        record(new MarketPriceSet(tick, price, asks.size()));
+        int price = Math.max(1, (int) Math.round(average * (1 + state.marketNoiseLevel(good))));
+        record(new MarketPriceSet(tick, price, asks.size(), good.id()));
         return OptionalInt.of(price);
     }
 
@@ -645,7 +666,7 @@ public final class Simulation {
      * the first move still registers as a level. Measuring the first one as a change would
      * leave nobody with anything to compare against, and the loop could never start.
      */
-    private void observeTheMarket(long tick, OptionalInt settledThisTick) {
+    private void observeTheMarket(long tick, Good good, OptionalInt settledThisTick) {
         // Only a price set this very tick is there to be read. Asking the world whether its
         // clock had moved used to answer that; it cannot now that the tick moves itself.
         if (settledThisTick.isEmpty()) {
@@ -657,13 +678,13 @@ public final class Simulation {
             if (villager.spot() != Spot.MARKET) {
                 continue;
             }
-            int anchor = villager.lastObservedPrice().orElse(params.basePrice());
+            int anchor = villager.lastObservedPrice(good).orElse(params.basePrice());
             double move = (price - anchor) / (double) anchor;
             if (Math.abs(move) <= params.observationThreshold()) {
                 continue;
             }
 
-            Claim claim = new Claim(DIAMOND, move > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
+            Claim claim = new Claim(good.id(), move > 0 ? ClaimType.SCARCE : ClaimType.ABUNDANT);
             // The threshold decides whether the move is noticed; fullMoveSize decides
             // how much a noticed move is worth. Scaling by the raw move instead would
             // make every observation a fraction of a fraction.
@@ -686,7 +707,7 @@ public final class Simulation {
                 return rumor.id();
             }
         }
-        return state.nextRumorId();
+        return state.nextRumorId(Good.of(claim));
     }
 
     private void record(Event event) {

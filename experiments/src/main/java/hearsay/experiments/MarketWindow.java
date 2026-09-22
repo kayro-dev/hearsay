@@ -61,7 +61,7 @@ public final class MarketWindow {
                 Params params = played.params().withMarketWindowTicks((int) window);
                 Run again = Run.execute(played.seed(), params, played.inputs(), played.ticks());
                 MarketStats stats = MarketStats.of(again.log(), DIAMONDS_SCARCE);
-                long priced = again.log().stream().filter(e -> e instanceof MarketPriceSet).count();
+                long priced = again.log().stream().filter(e -> e instanceof MarketPriceSet m && m.item().equals(Simulation.DIAMOND)).count();
 
                 System.out.printf(Locale.ROOT, "  %6.0f %13s %7d %14d %16d %9d%n", window,
                         percent(priced / (double) played.ticks()), stats.peakPrice(),
@@ -88,7 +88,7 @@ public final class MarketWindow {
                                 .gossipiestVillager().id()));
                 Run run = Run.execute(seed, params, lie, 300);
                 MarketStats stats = MarketStats.of(run.log(), DIAMONDS_SCARCE);
-                priced += run.log().stream().filter(e -> e instanceof MarketPriceSet).count() / 300.0;
+                priced += run.log().stream().filter(e -> e instanceof MarketPriceSet m && m.item().equals(Simulation.DIAMOND)).count() / 300.0;
                 peak += stats.peakPrice();
                 believers += stats.peakBelieversFraction();
                 if (stats.bubbleWithin(41, 30).isPresent()) {

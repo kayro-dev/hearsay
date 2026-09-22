@@ -142,7 +142,7 @@ class MarketTest {
             sim.state().apply(new RumorPlanted(1, 900 + severity, DIAMONDS_SCARCE,
                     severity, 0, confidence));
         }
-        return sim.askingPrice(villager);
+        return sim.askingPrice(villager, Good.DIAMOND);
     }
 
     @Test
@@ -154,7 +154,7 @@ class MarketTest {
         sim.state().apply(new RumorPlanted(1, 900,
                 new Claim(Simulation.DIAMOND, ClaimType.ABUNDANT), 2, 0, 0.8));
 
-        assertTrue(sim.askingPrice(sim.state().villager(0)) < params.basePrice());
+        assertTrue(sim.askingPrice(sim.state().villager(0), Good.DIAMOND) < params.basePrice());
     }
 
     @Test
@@ -164,9 +164,9 @@ class MarketTest {
 
         WorldState replayed = Simulation.replay(run.log());
 
-        assertTrue(replayed.marketPrice().isPresent(), "the market should have settled");
+        assertTrue(replayed.marketPrice(Good.DIAMOND).isPresent(), "the market should have settled");
         assertEquals(run.finalState(), replayed);
-        assertEquals(run.finalState().marketPrice(), replayed.marketPrice());
+        assertEquals(run.finalState().marketPrice(Good.DIAMOND), replayed.marketPrice(Good.DIAMOND));
     }
 
     @Test
@@ -191,7 +191,7 @@ class MarketTest {
         int observations = 0;
         for (Event event : run.log()) {
             if (event instanceof PriceObserved e) {
-                int anchor = mirror.villager(e.villagerId()).lastObservedPrice()
+                int anchor = mirror.villager(e.villagerId()).lastObservedPrice(Good.DIAMOND)
                         .orElse(Params.defaults().basePrice());
                 double move = Math.abs(e.price() - anchor) / (double) anchor;
                 assertTrue(move > Params.defaults().observationThreshold(),
@@ -213,7 +213,7 @@ class MarketTest {
         int falls = 0;
         for (Event event : run.log()) {
             if (event instanceof PriceObserved e) {
-                int anchor = mirror.villager(e.villagerId()).lastObservedPrice()
+                int anchor = mirror.villager(e.villagerId()).lastObservedPrice(Good.DIAMOND)
                         .orElse(Params.defaults().basePrice());
                 if (e.price() > anchor) {
                     assertEquals(ClaimType.SCARCE, e.claim().type(), "a rise means scarcity");
@@ -240,7 +240,7 @@ class MarketTest {
             mirror.apply(event);
             if (event instanceof PriceObserved e) {
                 assertEquals(e.price(),
-                        mirror.villager(e.villagerId()).lastObservedPrice().orElseThrow());
+                        mirror.villager(e.villagerId()).lastObservedPrice(Good.DIAMOND).orElseThrow());
                 checked++;
             }
         }

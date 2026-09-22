@@ -3,6 +3,7 @@ package hearsay.paper;
 import hearsay.BeliefReport;
 import hearsay.Claim;
 import hearsay.ClaimType;
+import hearsay.Good;
 import hearsay.MeetingSource;
 import hearsay.ObservedMeeting;
 import hearsay.Params;
@@ -123,7 +124,7 @@ final class VillageSession {
     }
 
     OptionalInt price() {
-        return simulation.state().marketPrice();
+        return simulation.state().marketPrice(Good.DIAMOND);
     }
 
     /**
@@ -268,7 +269,7 @@ final class VillageSession {
     Map<Integer, Integer> asks() {
         Map<Integer, Integer> asks = new LinkedHashMap<>();
         simulation.state().villagers().forEach((id, villager) ->
-                asks.put(id, (int) Math.round(simulation.askingPrice(villager))));
+                asks.put(id, (int) Math.round(simulation.askingPrice(villager, Good.DIAMOND))));
         return asks;
     }
 

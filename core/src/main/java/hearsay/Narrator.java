@@ -83,7 +83,7 @@ public final class Narrator {
             // Moves would be twenty lines a tick, and the end of a day is bookkeeping
             // rather than news.
             case MarketPriceSet e -> {
-                int before = mirror.marketPrice().orElse(e.price());
+                int before = mirror.marketPrice(Good.of(e.item())).orElse(e.price());
                 mirror.apply(e);
                 if (e.price() != before) {
                     lines.add(prefix(e.tick()) + "the market settles at " + e.price()

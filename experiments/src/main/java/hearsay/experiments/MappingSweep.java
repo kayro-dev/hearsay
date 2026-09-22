@@ -144,7 +144,7 @@ public final class MappingSweep {
         long priced = 0;
         double sellers = 0;
         for (Event event : run.log()) {
-            if (event instanceof MarketPriceSet price) {
+            if (event instanceof MarketPriceSet price && price.item().equals(Simulation.DIAMOND)) {
                 priced++;
                 sellers += price.askingVillagers();
             }

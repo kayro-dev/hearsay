@@ -1,6 +1,7 @@
 package hearsay;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -23,8 +24,13 @@ public final class Villager {
     private final NavigableMap<Claim, Belief> beliefs = new TreeMap<>();
     private Spot spot;
 
-    /** The price this villager last read something into, or 0 if they never have. */
-    private int lastObservedPrice = 0;
+    /**
+     * The price this villager last read something into, per good. Absent until they have.
+     *
+     * <p>One anchor per good rather than one per villager: reading the price of gold must
+     * not move where they measure diamonds from, or two markets would be one market.
+     */
+    private final Map<Good, Integer> lastObservedPrice = new EnumMap<>(Good.class);
 
     /** When they were last known to be at the market, or {@link #NEVER}. */
     private long lastAtMarket = NEVER;
@@ -63,8 +69,8 @@ public final class Villager {
         return lastAtMarket != NEVER && tick - lastAtMarket <= within;
     }
 
-    void sawPrice(int price) {
-        this.lastObservedPrice = price;
+    void sawPrice(Good good, int price) {
+        lastObservedPrice.put(good, price);
     }
 
     /** Replaces whatever was held about this claim. */
@@ -99,8 +105,9 @@ public final class Villager {
      * Evidence comes from how far the price has moved since then, not from where it
      * stands, so a price that stops climbing stops being news.
      */
-    public OptionalInt lastObservedPrice() {
-        return lastObservedPrice == 0 ? OptionalInt.empty() : OptionalInt.of(lastObservedPrice);
+    public OptionalInt lastObservedPrice(Good good) {
+        Integer seen = lastObservedPrice.get(good);
+        return seen == null ? OptionalInt.empty() : OptionalInt.of(seen);
     }
 
     public NavigableMap<Claim, Belief> beliefs() {
@@ -117,9 +124,14 @@ public final class Villager {
      * Ties go to the first claim in claim order, never to whatever a hash happened to put
      * first. Returns null if nothing reaches the threshold.
      */
-    public Belief strongestBeliefWorthTelling(double threshold) {
+    public Belief strongestBeliefWorthTelling(double threshold, Good good) {
         Belief strongest = null;
         for (Belief belief : beliefs.values()) { // claim order
+            // One good at a time. A villager sure about gold would otherwise stop
+            // mentioning diamonds altogether, which is one market silencing another.
+            if (!belief.claim().item().equals(good.id())) {
+                continue;
+            }
             if (belief.confidence() >= threshold
                     && (strongest == null || belief.confidence() > strongest.confidence())) {
                 strongest = belief;
@@ -136,7 +148,7 @@ public final class Villager {
             && traits.equals(v.traits)
             && neighbourhood == v.neighbourhood
             && spot == v.spot
-            && lastObservedPrice == v.lastObservedPrice
+            && lastObservedPrice.equals(v.lastObservedPrice)
             && lastAtMarket == v.lastAtMarket
             && beliefs.equals(v.beliefs);
     }

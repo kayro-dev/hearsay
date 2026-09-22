@@ -8,4 +8,4 @@ package hearsay;
  * forked world would start from a calm market it never had. The resume test exists to
  * catch exactly that.
  */
-public record MarketNoiseSet(long tick, double level) implements Event {}
+public record MarketNoiseSet(long tick, double level, String item) implements Event {}
