@@ -70,6 +70,12 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
     /** Four simulation ticks to the day, as core counts them. */
     private static final int TICKS_PER_DAY = 4;
 
+    /** What to put down so somebody takes up the trade, said when nobody has. */
+    private static final java.util.Map<Good, String> WHO_TO_ASK = java.util.Map.of(
+            Good.DIAMOND, "A blast furnace, smithing table or grindstone makes a smith.",
+            Good.GOLD, "A brewing stand makes a cleric.",
+            Good.IRON, "A blast furnace makes an armorer.");
+
     /** A market a player would pace out without thinking about it. */
     private static final double DEFAULT_MARKET_RADIUS = 8.0;
 
@@ -207,24 +213,25 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                     NamedTextColor.YELLOW));
         }
 
-        // Said at binding rather than discovered halfway through. Only smiths buy
-        // diamonds, and a village with none is a village the player cannot sell into -
-        // worth knowing before an hour of it has been played.
-        int smiths = 0;
+        // Said at binding rather than discovered halfway through: for each good, who in
+        // this village keeps a counter for it. Every good is traded in every session, but
+        // a good nobody here buys is a good the player cannot sell into, and that is worth
+        // knowing before an hour of it has been played.
+        java.util.Map<Good, Integer> counters = new java.util.EnumMap<>(Good.class);
         for (Villager villager : world.getNearbyEntitiesByType(
                 Villager.class, player.getLocation(), BINDING_RANGE)) {
-            if (Counter.canTrade(villager)) {
-                smiths++;
+            for (Good good : Counter.goodsFor(villager)) {
+                counters.merge(good, 1, Integer::sum);
             }
         }
-        if (smiths == 0) {
-            player.sendMessage(Component.text("No armorer, toolsmith or weaponsmith here, so "
-                    + "nobody will buy diamonds. Put down a blast furnace, smithing table or "
-                    + "grindstone and let a villager take it up.", NamedTextColor.YELLOW));
-        } else {
-            player.sendMessage(Component.text(smiths + " smith" + (smiths == 1 ? "" : "s")
-                    + " will buy diamonds, at whatever they each believe they are worth.",
-                    NamedTextColor.GREEN));
+        for (Good good : Good.values()) {
+            int keepers = counters.getOrDefault(good, 0);
+            player.sendMessage(keepers == 0
+                    ? Component.text("Nobody here buys " + good.plural() + ". "
+                            + WHO_TO_ASK.getOrDefault(good, ""), NamedTextColor.YELLOW)
+                    : Component.text(keepers + " villager" + (keepers == 1 ? "" : "s")
+                            + " will buy " + good.plural() + ", at whatever they believe "
+                            + "they are worth.", NamedTextColor.GREEN));
         }
 
         lastSeenAlive = session.boundCount();
@@ -415,10 +422,12 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         }
         ClaimType type = args.length > 2 && args[2].equalsIgnoreCase("abundant")
                 ? ClaimType.ABUNDANT : ClaimType.SCARCE;
-        // "/hearsay rumor gold scarce"; anything else, including the old "diamonds", means
+        // "/hearsay rumor gold scarce" or "iron"; anything else, including "diamonds", means
         // diamonds, so the command everyone already types still does what it did.
-        Good good = args.length > 1 && args[1].toLowerCase().startsWith("gold")
-                ? Good.GOLD : Good.DIAMOND;
+        String named = args.length > 1 ? args[1].toLowerCase() : "";
+        Good good = named.startsWith("gold") ? Good.GOLD
+                : named.startsWith("iron") ? Good.IRON
+                : Good.DIAMOND;
 
         Integer nearest = nearestBoundVillager(player);
         if (nearest == null) {
@@ -521,7 +530,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         // describe the transaction they are actually making rather poorly.
         int soFar = session.soldSoFar(trader, good);
         event.getPlayer().sendActionBar(Component.text(
-                session.nameOf(trader) + " takes " + soFar + " " + good.plural() + ". "
+                session.nameOf(trader) + " takes " + good.amount(soFar) + ". "
                         + watching.size() + " watching.", NamedTextColor.AQUA));
     }
 

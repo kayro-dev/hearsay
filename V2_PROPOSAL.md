@@ -150,6 +150,12 @@ rather than by waiting for a sweep to notice:
 
 ### What each new good is fitted to
 
+> **Since E40 these are `Target`s, run by `./gradlew :experiments:goods --args="--good X"`.**
+> Every per-good target is a comparison with diamond on the same seeds, judged on the
+> interval of the difference; absolute bands remain only where the README states a figure
+> as a claim. The table below is the original statement, kept for the record — its bare
+> "at least 70%" is the line E39 found diamond itself could fail.
+
 The targets are diamond's, measured on today's model with the thirty-day window, on the same
 seeds. Each new good is tested by planting the lie about *that* good instead:
 
@@ -262,7 +268,7 @@ them bury the one that matters. A village with nothing going on shows nothing.
 | **0. pin** | ✓ **done.** Five diamond logs checksummed in `PinnedLogsTest`, covering tellings, mutations, price readings, witnessed sales and reality checks. Checked to fail when one default moves by a thousandth, or the rumour-id counter by one |
 | **1. goods as data** | ✓ **done.** `Good` enum; per-good gossip, mutation and market streams; per-good rumour-id ranges; per-good price, noise and price anchors; one telling turn per good. Diamond only. All five logs reproduce exactly — every event, number and ordering — with the market events printed in their pinned form, and no market event naming any other good. Checked to fail if diamond's streams are branched or its ids start anywhere but 0 |
 | **2. + gold** | ✓ **done (E39).** Diamond and gold bit-identical with and without each other on fixed, fully-switched-on and fuzzed settings; all five couplings reintroduced and caught. Gold met every target untuned, once the settling target was compared with diamond's own sampling spread rather than a fixed line. `Params.goods` records what a village trades; pins untouched. Cleric trade, 24 for 8 |
-| **3. + iron** | the same for iron, with diamond and gold both identical without it; Armorer trade, 32 for 8 |
+| **3. + iron** | ✓ **done (E40).** Every good identical alone and in every village trading anything else; iron passes all eight `GoodTargets` untuned. Armorer trade, 32 for 8 — the first villager with two counters |
 | **4. + wheat** | the same for wheat; Farmer buys, 120 for 6; witness evidence on, so a famine rumour can be sold into and punctured |
 | **5. + bread** | the same for bread; Farmer sells, 48 for 8; no witness evidence |
 | **6. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots", "wheat" and "bread" |

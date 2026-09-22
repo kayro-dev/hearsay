@@ -94,30 +94,61 @@ class IndependenceTest {
         return copy;
     }
 
-    private static void assertIndependent(long seed, Params base) {
+    /** Every village that trades in this good: every set of goods that includes it. */
+    private static List<java.util.Set<Good>> villagesWith(Good good) {
+        List<java.util.Set<Good>> villages = new ArrayList<>();
+        Good[] all = Good.values();
+        for (int mask = 0; mask < (1 << all.length); mask++) {
+            java.util.Set<Good> village = java.util.EnumSet.noneOf(Good.class);
+            for (int i = 0; i < all.length; i++) {
+                if ((mask & (1 << i)) != 0) {
+                    village.add(all[i]);
+                }
+            }
+            if (village.contains(good) && village.size() > 1) {
+                villages.add(village);
+            }
+        }
+        return villages;
+    }
+
+    /**
+     * Each good alone, then in every village that also trades anything else, and its own
+     * events must be equal every time. With three goods that is three villages per good;
+     * each new good doubles them, which is the point — independence has to hold against
+     * every combination, not just the one somebody thought to try.
+     */
+    private static void assertIndependent(long seed, Params base, boolean everyCombination) {
         int planter = Run.execute(seed, base.withGoods(Good.DIAMOND), List.of(), 1)
                 .finalState().gossipiestVillager().id();
-        List<Input> diamond = everythingAbout(Good.DIAMOND, planter, base.villagers());
-        List<Input> gold = everythingAbout(Good.GOLD, (planter + 1) % base.villagers(),
-                base.villagers());
-        List<Input> both = new ArrayList<>(diamond);
-        both.addAll(gold);
+        java.util.Map<Good, List<Input>> about = new java.util.EnumMap<>(Good.class);
+        for (Good good : Good.values()) {
+            about.put(good, everythingAbout(good,
+                    (planter + good.ordinal()) % base.villagers(), base.villagers()));
+        }
 
-        Run diamondAlone = Run.execute(seed, base.withGoods(Good.DIAMOND), sorted(diamond), TICKS);
-        Run goldAlone = Run.execute(seed, base.withGoods(Good.GOLD), sorted(gold), TICKS);
-        Run together = Run.execute(seed, base.withGoods(Good.DIAMOND, Good.GOLD),
-                sorted(both), TICKS);
-
-        assertEquals(seenBy(Good.DIAMOND, diamondAlone.log()), seenBy(Good.DIAMOND, together.log()),
-                "seed " + seed + ": diamond behaved differently once gold existed");
-        assertEquals(seenBy(Good.GOLD, goldAlone.log()), seenBy(Good.GOLD, together.log()),
-                "seed " + seed + ": gold behaved differently once diamond existed");
+        for (Good good : Good.values()) {
+            List<Event> alone = seenBy(good, Run.execute(seed, base.withGoods(good),
+                    sorted(about.get(good)), TICKS).log());
+            List<java.util.Set<Good>> villages = everyCombination
+                    ? villagesWith(good)
+                    : List.of(java.util.EnumSet.allOf(Good.class));
+            for (java.util.Set<Good> village : villages) {
+                List<Input> inputs = new ArrayList<>();
+                village.forEach(g -> inputs.addAll(about.get(g)));
+                Run together = Run.execute(seed,
+                        base.withGoods(village.toArray(new Good[0])), sorted(inputs), TICKS);
+                assertEquals(alone, seenBy(good, together.log()),
+                        "seed " + seed + ": " + good.plural() + " behaved differently in a "
+                                + "village also trading " + village);
+            }
+        }
     }
 
     @Test
-    void diamondIsUntouchedByGoldAndGoldByDiamond() {
+    void everyGoodIsUntouchedByEveryOther() {
         for (long seed : new long[] {42, 1001, 1165, 2160, 7}) {
-            assertIndependent(seed, Params.defaults());
+            assertIndependent(seed, Params.defaults(), true);
         }
     }
 
@@ -125,13 +156,14 @@ class IndependenceTest {
     void theyStayIndependentWithEverySwitchOn() {
         // Reality checks are off by default, which would leave their per-good path untested.
         for (long seed : new long[] {42, 1001, 7}) {
-            assertIndependent(seed, Params.defaults().withCheckWeight(0.30));
+            assertIndependent(seed, Params.defaults().withCheckWeight(0.30), true);
         }
     }
 
     @Test
     void theyStayIndependentOnSettingsNobodyChose() {
-        // A fixed fuzz, so a failure names its settings and can be reproduced.
+        // A fixed fuzz, so a failure names its settings and can be reproduced. Each good
+        // alone against every good at once, to keep twenty-five settings affordable.
         Random fuzz = new Random(20260922);
         for (int run = 0; run < 25; run++) {
             Params params = Params.defaults()
@@ -141,7 +173,7 @@ class IndependenceTest {
                     .withCheckWeight(fuzz.nextDouble())
                     .withMixing(fuzz.nextDouble())
                     .withVillagers(2 + fuzz.nextInt(Simulation.MOST_VILLAGERS - 1));
-            assertIndependent(fuzz.nextLong(), params);
+            assertIndependent(fuzz.nextLong(), params, false);
         }
     }
 

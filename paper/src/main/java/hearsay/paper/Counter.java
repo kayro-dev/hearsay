@@ -25,7 +25,7 @@ import java.util.Set;
  * one emerald a 30% panic cannot be shown and diamonds cannot be farmed. The number of
  * emeralds is the price, and that is the one thing a player has to learn.
  *
- * <p>The villager <strong>buys</strong> both of today's goods. Villagers only ever buy a
+ * <p>The villager <strong>buys</strong> every one of today's goods. Villagers only ever buy a
  * non-renewable good, so that no trade here creates one from nothing.
  */
 final class Counter {
@@ -33,7 +33,8 @@ final class Counter {
     /** What each good is called in the game, which only the plugin needs to know. */
     private static final Map<Good, Material> ITEM = new EnumMap<>(Map.of(
             Good.DIAMOND, Material.DIAMOND,
-            Good.GOLD, Material.GOLD_INGOT));
+            Good.GOLD, Material.GOLD_INGOT,
+            Good.IRON, Material.IRON_INGOT));
 
     /**
      * Who keeps a counter for each good. Checked against the wiki rather than guessed: the
@@ -44,7 +45,11 @@ final class Counter {
     private static final Map<Good, Set<Villager.Profession>> WHO = new EnumMap<>(Map.of(
             Good.DIAMOND, Set.of(Villager.Profession.ARMORER, Villager.Profession.TOOLSMITH,
                     Villager.Profession.WEAPONSMITH),
-            Good.GOLD, Set.of(Villager.Profession.CLERIC)));
+            Good.GOLD, Set.of(Villager.Profession.CLERIC),
+            // The Armorer is also a smith, so keeps two counters: diamonds and iron. The
+            // first villager to, and the reason every sale is grouped by good as well as
+            // by counter.
+            Good.IRON, Set.of(Villager.Profession.ARMORER)));
 
     /**
      * How many bundles a villager takes before they need to restock. Vanilla's own limit,

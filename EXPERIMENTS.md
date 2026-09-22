@@ -2793,3 +2793,85 @@ allowance for the fact that diamond's own figure moves by twenty points between 
 **Decision.** Gold is adopted untuned, as the plan predicted. The settling target is
 restated for every later good: compared with diamond on the same two hundred seeds, within
 the sampling error of both — not against a fixed line under a sixty-seed estimate.
+
+---
+
+## E40 — Targets that cannot be bare, and iron
+
+```
+./gradlew :experiments:goods --args="--good gold"
+./gradlew :experiments:goods --args="--good iron"
+```
+
+### A target type, so E39's mistake cannot be written again
+
+E30 stated a quiet-village figure from a hundred seeds as a law; E39 drew "at least 70%
+settled" under a sixty-seed estimate that moves by twenty points between samples. Both were
+numbers that had lost their uncertainty between measurement and claim. Twice is a pattern,
+so the fix is structural rather than a resolution to be careful:
+
+- **`Estimate`** is a measured number that cannot exist without its sample size and its
+  95% interval. It is built only from data — a proportion (Wilson interval, so none-in-300 is
+  not read as proof of none), a mean, or a rate from per-run counts — and never from a bare
+  figure. Intervals are computed, not resampled, so a test built on one never flickers.
+- **`Target`** judges only an `Estimate`, must name the smallest sample it may be judged on
+  (at least ten), and refuses rather than passes when handed less. A band target must also
+  say **which claim it makes**: `DEMONSTRATED`, the whole interval inside the band, for a
+  claim a stage has to earn; or `NOT_CONTRADICTED`, the interval merely reaching it, for a
+  guard. A comparison — gold against diamond — is judged on the interval of the difference.
+
+E39 is now a test: 66% of sixty fails "demonstrates at least 70%" and passes "does not
+contradict it", and diamond on seeds 1151–1200 fails the same line it was drawn from. The
+mutation that mattered — judging "demonstrated" on the point rather than the interval —
+**survived every test at first**, because every fixture had its point outside the band. It
+needed the one case a point comparison gets wrong: 72% of sixty, just over a 70% line, with
+an interval down to 60%. That case is now a test and the mutation fails.
+
+**`CalibrationTest` converted.** The lie's burst rate must be *demonstrated* inside 25–60%
+(43 of 100 is [34%, 53%]); quiet villages demonstrated under 3% within a month (none of 300,
+[0%, 1.3%]), which tolerates three bursts and fails at four where the bare count allowed four.
+It still fails when `observationWeight` goes to 0.45, as E30's did — **though only the burst
+check catches it now.** The quiet check has been windowed to thirty days since E38, and a
+quiet village rarely bursts within a month even at that weight, so as a guard against a
+runaway observation weight it is weaker than it was. Worth knowing; not changed here.
+
+**Every per-good target is now a comparison with diamond on the same seeds**, run by
+`GoodTargets`, because the gate's question for a new good is whether it behaves like diamond,
+not whether it re-proves diamond's own properties. Absolute bands remain only where the
+README states a figure as a claim.
+
+### Gold, re-judged by code
+
+All eight pass, reproducing E39's conclusion without anybody reading a table. And diamond's
+decay after the peak comes out at **0.928 [0.918, 0.937]** on ninety-five long runs — an
+interval entirely under 1, so the village settling after its peak is now *demonstrated*
+rather than merely not contradicted.
+
+### Iron, untuned
+
+Bought by the Armorer, 32 for 8 emeralds, at vanilla's value. The Armorer is also one of the
+diamond smiths, so it is the first villager with **two managed counters** — which is why
+sales were already grouped by good as well as by counter.
+
+| | diamond | iron | verdict |
+| --- | --- | --- | --- |
+| bursts within 30 days | 43% [34, 53] | 41% [32, 51] | PASS, both band and against diamond |
+| quiet bursts / 100 village-days | 0.19 [0.09, 0.29] | 0.11 [0.01, 0.22] | PASS |
+| decay after the largest swing | 0.928 [0.918, 0.937] | 0.924 [0.915, 0.934] | PASS |
+| settled within 10% | 72.5% [66, 78] | 67.0% [60, 73] | PASS, difference −5.5 [−14, 3] |
+| last-quarter price | 100.7 | 100.8 | PASS, inside 95–105 |
+| paired: only with the lie | 31.5% | 36.5% | PASS |
+| paired: only without | 0 of 200 | 0 of 200 | PASS, under 3% demonstrated |
+
+**Independence holds against every combination.** `IndependenceTest` now runs each good
+alone and then in every village that also trades anything else — three per good with three
+goods, doubling with each new one — and demands its events be equal every time.
+
+**Two kinds of independence, caught by two tests.** Giving iron gold's dice fails
+`GoodTest.noTwoGoodsShareDice` and *passes* `IndependenceTest`, and both are right. Two
+separate generators seeded alike share no state, so neither good's existence can change the
+other's events — causal independence holds. But they would roll the same numbers and move in
+lockstep given the same inputs: one market wearing two names. `IndependenceTest` guards the
+first property and `GoodTest` the second, and neither can stand in for the other.
+
+**Decision.** Iron adopted untuned. Targets are `Target`s from here on.

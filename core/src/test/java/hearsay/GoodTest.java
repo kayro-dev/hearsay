@@ -40,5 +40,45 @@ class GoodTest {
     @Test
     void aGoodKnowsWhatSeveralOfItAreCalled() {
         assertEquals("diamonds", Good.DIAMOND.plural());
+        assertEquals("gold ingots", Good.GOLD.plural());
+        assertEquals("iron ingots", Good.IRON.plural());
+    }
+
+    @Test
+    void oneOfSomethingIsNotSeveralOfIt() {
+        // A diamond bundle is one diamond, so every diamond sale hits this.
+        assertEquals("1 diamond", Good.DIAMOND.amount(1));
+        assertEquals("12 diamonds", Good.DIAMOND.amount(12));
+        assertEquals("1 gold ingot", Good.GOLD.amount(1));
+        assertEquals("24 gold ingots", Good.GOLD.amount(24));
+    }
+
+    @Test
+    void noTwoGoodsShareDice() {
+        // If two goods ever drew from the same stream, one would shift the other's draws.
+        for (RandomStream stream : RandomStream.values()) {
+            java.util.Set<Long> firstDraws = new java.util.HashSet<>();
+            for (Good good : Good.values()) {
+                assertTrue(firstDraws.add(stream.from(42, good).nextLong()),
+                        stream + " gives " + good + " the same dice as another good");
+            }
+        }
+    }
+
+    @Test
+    void everyGoodIsAtVanillaValueExceptDiamond() {
+        // What stops a farm becoming an emerald printer: vanilla pays a third of an emerald
+        // for gold and a quarter for iron, and so must Hearsay when nobody believes anything.
+        assertEquals(8.0, Good.DIAMOND.emeraldsEach(), 1e-12, "diamond is repriced on purpose");
+        assertEquals(1.0 / 3, Good.GOLD.emeraldsEach(), 1e-12);
+        assertEquals(1.0 / 4, Good.IRON.emeraldsEach(), 1e-12);
+    }
+
+    @Test
+    void aRumourIdSaysWhichGoodItIsAbout() {
+        for (Good good : Good.values()) {
+            assertEquals(good, Good.ofRumor(good.firstRumorId()));
+            assertEquals(good, Good.ofRumor(good.firstRumorId() + 12_345));
+        }
     }
 }

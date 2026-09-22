@@ -44,9 +44,18 @@ class CalibrationTest {
      */
     private static final int WITHIN_DAYS = 30;
 
-    // Re-derived in E38 under the window. 43% on these seeds, against 45% unwindowed.
-    private static final double AT_LEAST = 0.25;
-    private static final double AT_MOST = 0.60;
+    /**
+     * The lie's thirty-day burst rate has to be <em>demonstrated</em> inside 25-60%: its
+     * whole interval, not its point. 43 of 100 on these seeds gives [34%, 53%]. A bare
+     * "between 25 and 60" would have passed a 59% whose interval ran to 68%.
+     *
+     * <p>Demonstrated rather than merely not contradicted because this is the figure the
+     * README states, and a stated figure is a claim. The seeds are fixed and the simulation
+     * deterministic, so the test never flickers: the interval says what these hundred seeds
+     * show about the model, not how much this run might wobble.
+     */
+    private static final Target.Band A_LIE_BURSTS = Target.demonstrates(
+            "a lie bursts the price within 30 days", 0.25, 0.60, 100);
 
     /**
      * Villages nobody lied to, and how many of them may talk themselves into a bubble.
@@ -62,7 +71,16 @@ class CalibrationTest {
      * cry wolf; if the rate ever climbed to 3%, this would catch it in 98 runs out of 100.
      */
     private static final int QUIET_SEEDS = 300;
-    private static final int MOST_THAT_MAY_BURST = 4;
+
+    /**
+     * Villages nobody lied to, demonstrated under 3% within a month. None of 300 does on
+     * these seeds, and Wilson's interval on none-in-300 still runs to about 1.3%, so the
+     * claim is "rare", never "never". It tolerates three bursts in 300 and fails at four,
+     * one stricter than the bare count it replaced — which allowed four without saying
+     * what four in 300 could and could not show.
+     */
+    private static final Target.Band QUIET_VILLAGES = Target.demonstrates(
+            "villages nobody lied to bursting within 30 days", 0.0, 0.03, QUIET_SEEDS);
 
     private static MarketStats runVillage(long seed, List<Input> inputs) {
         return MarketStats.of(
@@ -88,13 +106,8 @@ class CalibrationTest {
             }
         }
 
-        double rate = burst / (double) SEEDS;
-        assertTrue(rate >= AT_LEAST,
-                "the loop has gone quiet: the lie burst the price in only "
-                        + burst + " of " + SEEDS + " seeds");
-        assertTrue(rate <= AT_MOST,
-                "the loop has run away: the lie burst the price in "
-                        + burst + " of " + SEEDS + " seeds");
+        Target.Verdict verdict = A_LIE_BURSTS.judge(Estimate.proportion(burst, SEEDS));
+        assertTrue(verdict.passed(), "the model has been retuned: " + verdict);
     }
 
     @Test
@@ -106,10 +119,10 @@ class CalibrationTest {
             }
         }
 
-        assertTrue(panicked.size() <= MOST_THAT_MAY_BURST,
-                "villages nobody lied to are bursting: " + panicked.size() + " of "
-                        + QUIET_SEEDS + ", at seeds " + panicked + ". E38 measured the rate "
-                        + "at 0.19 bursts per 100 village-days, so this is the loop "
-                        + "starting itself.");
+        Target.Verdict verdict = QUIET_VILLAGES.judge(
+                Estimate.proportion(panicked.size(), QUIET_SEEDS));
+        assertTrue(verdict.passed(), "villages nobody lied to are bursting, at seeds "
+                + panicked + ": " + verdict + ". E38 measured 0.19 per 100 village-days, "
+                + "so this is the loop starting itself.");
     }
 }

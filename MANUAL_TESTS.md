@@ -71,10 +71,14 @@ disagree, the village is dying.
 | 8f | **Sell into a panic at a busy smith.** Wait for the price to climb, then sell 16 diamonds to a smith with several villagers standing around | The action bar names the smith and says how many saw it. Watch those villagers' asking prices fall over the next few ticks |
 | 8g | **Sell into a panic at an isolated smith.** The same, to a smith standing alone | The action bar says 1 saw it. The effect should be smaller and slower, because only the trader learned anything |
 | 8h | `/hearsay stop`, then dashboard the session | "Who moved the price" splits the lie's contribution from your selling's, and says plainly that these are the same trades priced against each timeline, not what you would have made |
+| 10 | `/hearsay start` | One line per good: how many villagers here will buy diamonds, gold ingots and iron ingots, or what to put down if nobody will. **Every good is traded in every session; there is nothing to switch on.** A good nobody buys just has no counter |
 | 10a | Find a Cleric and open their trades | A trade buying 24 gold ingots for 8 emeralds before anyone believes anything |
 | 10b | `/hearsay rumor gold scarce` next to a villager | "You tell … that gold ingots are scarce." Crouch-right-click them: "gold ingots are getting scarce" |
 | 10c | Let the gold rumour spread, reopen the Cleric | The gold trade pays more. The diamond trades on the smiths have not moved at all, because nobody said anything about diamonds |
 | 10d | Sell gold to the Cleric with villagers watching | "Cleric takes 24 gold ingots. N watching." Evidence about gold only |
+| 11a | Find an Armorer and open their trades | **Two** managed trades: 1 diamond for 8 emeralds and 32 iron ingots for 8 emeralds. The first villager with two counters |
+| 11b | `/hearsay rumor iron scarce` next to a villager, let it spread | The Armorer's iron trade pays more; their diamond trade stays at 8, because nobody said anything about diamonds |
+| 11c | Sell iron to the Armorer, then diamonds | Two separate lines on the action bar, "takes 32 iron ingots" and "takes 1 diamond" — each sale is evidence about its own good only |
 | 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |
 | 9b | Plant a rumour and wait several days | It should struggle. A village that can see a stack of diamonds is hard to convince they are gone |
 | 9c | Crouch-right-click a villager who did believe it | Their confidence falls day by day while the chest is there |

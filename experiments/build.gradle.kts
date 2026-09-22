@@ -89,3 +89,11 @@ tasks.register<JavaExec>("threshold") {
     mainClass = "hearsay.experiments.ObservationThreshold"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** The stage 2 gate for a new good: ./gradlew :experiments:goods --args="--good iron" */
+tasks.register<JavaExec>("goods") {
+    group = "application"
+    description = "Judges a good against diamond on the same seeds, with Target."
+    mainClass = "hearsay.experiments.GoodTargets"
+    classpath = sourceSets["main"].runtimeClasspath
+}

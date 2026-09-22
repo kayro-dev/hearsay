@@ -21,13 +21,19 @@ public enum Good {
      * Repriced from vanilla's one emerald, because at one emerald a 30% panic cannot be
      * shown at all, and diamonds are not renewable so a higher price cannot be farmed.
      */
-    DIAMOND("diamond", "diamonds", 1, 8, true),
+    DIAMOND("diamond", "diamond", "diamonds", 1, 8, true),
 
     /**
      * At vanilla's value, three to the emerald, bought by a cleric. Gold is farmable, and
      * pricing it above vanilla would turn a gold farm into an emerald printer.
      */
-    GOLD("gold", "gold ingots", 24, 8, true);
+    GOLD("gold", "gold ingot", "gold ingots", 24, 8, true),
+
+    /**
+     * At vanilla's value, four to the emerald, bought by an armorer. Iron farms are the
+     * most common farm there is, which is exactly why this must not pay more than vanilla.
+     */
+    IRON("iron", "iron ingot", "iron ingots", 32, 8, true);
 
     /**
      * How many rumour ids each good may use before it would run into the next good's range.
@@ -37,6 +43,7 @@ public enum Good {
     static final int RUMOR_IDS_PER_GOOD = 1_000_000;
 
     private final String id;
+    private final String singular;
     private final String plural;
     private final int bundle;
     private final int normalEmeralds;
@@ -49,12 +56,22 @@ public enum Good {
      *                       non-renewable good must be, or sell it, as vanilla already does
      *                       with some renewable ones
      */
-    Good(String id, String plural, int bundle, int normalEmeralds, boolean villagerBuys) {
+    Good(String id, String singular, String plural, int bundle, int normalEmeralds,
+         boolean villagerBuys) {
         this.id = id;
+        this.singular = singular;
         this.plural = plural;
         this.bundle = bundle;
         this.normalEmeralds = normalEmeralds;
         this.villagerBuys = villagerBuys;
+    }
+
+    /**
+     * A number of them, as a person would say it: "1 diamond", "24 gold ingots". Diamond's
+     * bundle is one, so every diamond sale is exactly the case a plural-only name gets wrong.
+     */
+    public String amount(int count) {
+        return count + " " + (count == 1 ? singular : plural);
     }
 
     /** How many change hands in one trade: a fixed bundle, so the emerald count is the price. */

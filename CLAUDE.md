@@ -70,7 +70,7 @@ logged so any crash can be replayed and compared against a counterfactual.
      minimum.
   3. **stage 2, more goods — in progress, plan in V2_PROPOSAL.md.** Goods are independent
      markets (no spillover), added one at a time behind gates: diamond, then gold, iron,
-     wheat and bread; diamond and gold are done (E39). PinnedLogsTest holds five diamond
+     wheat and bread; diamond, gold (E39) and iron (E40) are done. PinnedLogsTest holds five diamond
      logs bit for bit, through a frozen printer, and must never be updated to match a
      change — if it fails, stage 2 has changed diamond. IndependenceTest demands each
      good's events be equal with and without the others. Params.goods records which
@@ -79,6 +79,11 @@ logged so any crash can be replayed and compared against a counterfactual.
      it meets diamond's thirty-day targets with shared parameters; one that misses has found
      an independence bug, not a reason to tune. Managed trades are fixed bundles at vanilla
      value per item (only diamond is repriced), so no farm becomes an emerald printer.
+- **Every target is a `Target`, never a bare threshold.** It judges only an `Estimate`,
+  which cannot exist without its sample size and 95% interval; it names the smallest sample
+  it may be judged on; and a band says whether it must be DEMONSTRATED (interval inside) or
+  merely NOT_CONTRADICTED (interval reaching). A new good is judged by
+  `./gradlew :experiments:goods --args="--good X"` against diamond on the same seeds.
 - Figures that are shares of runs move with run length and must not be compared across
   lengths. The quiet-village rate is 0.19 bursts per 100 village-days [0.10-0.29] (E38),
   and a bubble is only laid at a lie's door within thirty days of it.
