@@ -65,7 +65,8 @@ class IndependenceTest {
     }
 
     /**
-     * A lie about this good, a player selling it into the panic, and villagers looking —
+     * A lie about this good, a player selling it into the panic if villagers buy it, and
+     * villagers looking —
      * using only villagers the village actually has, since the fuzzed settings go down to
      * a village of two.
      */
@@ -76,7 +77,9 @@ class IndependenceTest {
         for (int id = 0; id < Math.min(3, villagers); id++) {
             watching.add(id);
         }
-        for (long tick = 60; tick < 140; tick += 8) {
+        // Bread is sold by villagers, and a player buying it is evidence of nothing, so
+        // there is no sale of it to make.
+        for (long tick = 60; good.villagerBuys() && tick < 140; tick += 8) {
             inputs.add(new PlayerTraded(tick, 0, good.id(), good.bundle(),
                     good.normalEmeralds(), watching));
         }

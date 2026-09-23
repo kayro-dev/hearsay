@@ -3086,3 +3086,47 @@ agreeing with the 16.8% from resampling the real model.
 The calibration seeds 1001–1200 give 34.5% [28.3, 41.3], inside the band.
 
 **Decision.** The burst check runs on 200 seeds. Nothing else changes. No parameter moved.
+
+---
+
+## E44 — Bread, the one good villagers sell
+
+```
+./gradlew :experiments:goods --args="--good bread"
+```
+
+Bread joins as stage 2 planned it: the Farmer **sells** it, forty-eight loaves for a normal
+eight emeralds (vanilla's six to the emerald), and a player buying it carries **no evidence at
+all**. Buying from a villager is not a reason for anyone to believe anything is plentiful, and
+under "reality refutes, never asserts" it may not create or strengthen a belief. So
+`PlayerTraded` refuses a good villagers sell, and the plugin drops bread purchases before
+they reach the session: no saved session can carry one.
+
+That makes bread the first good for which `Good.villagerBuys()` is false, and the first time
+anything reads it. The independence test's sale fixture skips bread for the same reason, and
+the parameter fuzz still makes every draw for a bread sale it then discards, so every other
+fuzzed case is exactly what it was.
+
+| target | diamond | bread | |
+| --- | --- | --- | --- |
+| bursts within 30 days | 0.430 [0.337, 0.528] | 0.460 [0.366, 0.557] | PASS, band and against diamond |
+| quiet bursts / 100 village-days | 0.140 [0.092, 0.188] | 0.107 [0.069, 0.144] | PASS |
+| decay after the largest swing | 0.928 [0.918, 0.937] | 0.928 [0.918, 0.938] | PASS |
+| settled within 10% | 0.725 [0.659, 0.782] | 0.640 [0.571, 0.703] | PASS |
+| last-quarter price | 100.74 [100.32, 101.15] | 100.71 [100.33, 101.09] | PASS, inside 95–105 |
+| paired: only with the lie | 0.315 [0.255, 0.382] | 0.350 [0.287, 0.418] | PASS |
+| paired: only without | 0.000 [0.000, 0.019] | 0.000 [0.000, 0.019] | PASS, under 3% |
+
+**Bread passes every target, untuned.** Nothing was expected to differ — the gate plants a lie
+and sells nothing, and bread's only difference is on the trading side — and nothing did.
+
+Independence: bread is run alone and in every village trading anything else, and every good's
+events are bit-identical with and without it. Checked to fail if bread rolls wheat's dice or
+takes its rumour ids from wheat's range. Bread's own rules are checked to fail if a bread
+purchase is accepted, if bread is marked as bought, if its price leaves vanilla's value, or
+if "bread is scarce" becomes "bread are": the rule that worked for wheat, *a good whose plural
+is its singular is a mass*, breaks for bread, whose singular is a loaf, so a mass is now a good
+named without a plural "s".
+
+**Decision.** Bread joins every village in the game. Headless stays diamond alone. With it
+stage 2's goods are all in: diamond, gold, iron, wheat and bread.

@@ -33,6 +33,14 @@ public record PlayerTraded(long tick, int villagerId, String item, int count, in
         if (count < 1) {
             throw new IllegalArgumentException("A trade moves at least one, was " + count);
         }
+        // Only goods villagers buy. A player buying from a villager - bread, today - is not
+        // evidence that anything is plentiful, and under "reality refutes, never asserts"
+        // it may not create or strengthen a belief. Refused here rather than ignored later,
+        // so no session can carry one and no replay can wonder what it meant.
+        if (!Good.of(item).villagerBuys()) {
+            throw new IllegalArgumentException("Villagers sell " + Good.of(item).plural()
+                    + " rather than buy it; buying it is evidence of nothing");
+        }
         witnesses = Collections.unmodifiableNavigableSet(new TreeSet<>(witnesses));
     }
 }

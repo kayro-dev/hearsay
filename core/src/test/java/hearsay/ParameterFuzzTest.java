@@ -96,8 +96,15 @@ class ParameterFuzzTest {
                 for (int extra = 0; extra < fuzz.nextInt(4); extra++) {
                     watching.add(fuzz.nextInt(params.villagers()));
                 }
-                inputs.add(new PlayerTraded(2 + fuzz.nextInt(TICKS - 2), trader,
-                        anyOf(params.goods()).id(), 1 + fuzz.nextInt(64), 1 + fuzz.nextInt(64), watching));
+                // Every draw made whether or not the sale is kept, so a good villagers sell
+                // (bread) leaves every other fuzzed case exactly as it was.
+                long tick = 2 + fuzz.nextInt(TICKS - 2);
+                Good sold = anyOf(params.goods());
+                int count = 1 + fuzz.nextInt(64);
+                int emeralds = 1 + fuzz.nextInt(64);
+                if (sold.villagerBuys()) {
+                    inputs.add(new PlayerTraded(tick, trader, sold.id(), count, emeralds, watching));
+                }
             }
             // Villagers looking at what the village has, which reaches the only rule in
             // the model that can lower a confidence rather than raise it.

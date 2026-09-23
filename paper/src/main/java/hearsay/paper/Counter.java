@@ -25,8 +25,11 @@ import java.util.Set;
  * one emerald a 30% panic cannot be shown and diamonds cannot be farmed. The number of
  * emeralds is the price, and that is the one thing a player has to learn.
  *
- * <p>The villager <strong>buys</strong> every one of today's goods. Villagers only ever buy a
- * non-renewable good, so that no trade here creates one from nothing.
+ * <p>The villager <strong>buys</strong> every good but one. Villagers only ever buy a
+ * non-renewable good, so that no trade here creates one from nothing; a renewable good
+ * follows the direction vanilla already trades it, and for bread that is the farmer
+ * selling. A bread counter is emeralds in, forty-eight loaves out, and the emeralds are
+ * still the price.
  */
 final class Counter {
 
@@ -35,7 +38,8 @@ final class Counter {
             Good.DIAMOND, Material.DIAMOND,
             Good.GOLD, Material.GOLD_INGOT,
             Good.IRON, Material.IRON_INGOT,
-            Good.WHEAT, Material.WHEAT));
+            Good.WHEAT, Material.WHEAT,
+            Good.BREAD, Material.BREAD));
 
     /**
      * Who keeps a counter for each good. Checked against the wiki rather than guessed: the
@@ -51,7 +55,10 @@ final class Counter {
             // first villager to, and the reason every sale is grouped by good as well as
             // by counter.
             Good.IRON, Set.of(Villager.Profession.ARMORER),
-            Good.WHEAT, Set.of(Villager.Profession.FARMER)));
+            // The Farmer buys the harvest and sells the loaves: two counters, as the
+            // Armorer has, and the only villager with one in each direction.
+            Good.WHEAT, Set.of(Villager.Profession.FARMER),
+            Good.BREAD, Set.of(Villager.Profession.FARMER)));
 
     /**
      * How many bundles a villager takes before they need to restock. Vanilla's own limit,
@@ -95,7 +102,7 @@ final class Counter {
                 kept.add(existing);
             }
         }
-        kept.add(purchaseOf(good, emeralds));
+        kept.add(good.villagerBuys() ? purchaseOf(good, emeralds) : saleOf(good, emeralds));
         villager.setRecipes(kept);
     }
 
@@ -104,16 +111,36 @@ final class Counter {
      * A player using one of these is news the village hears about.
      */
     static Optional<Good> goodOf(MerchantRecipe recipe) {
-        if (recipe.getIngredients().isEmpty() || recipe.getResult().getType() != Material.EMERALD) {
+        if (recipe.getIngredients().isEmpty()) {
             return Optional.empty();
         }
         Material given = recipe.getIngredients().get(0).getType();
+        Material got = recipe.getResult().getType();
         for (Map.Entry<Good, Material> entry : ITEM.entrySet()) {
-            if (entry.getValue() == given) {
-                return Optional.of(entry.getKey());
+            Good good = entry.getKey();
+            // Bought: the good in, emeralds out. Sold: emeralds in, the good out. Each good
+            // is matched only in its own direction, so vanilla's other farmer trades - a
+            // pie, a cookie for emeralds - are left alone.
+            boolean matches = good.villagerBuys()
+                    ? given == entry.getValue() && got == Material.EMERALD
+                    : given == Material.EMERALD && got == entry.getValue();
+            if (matches) {
+                return Optional.of(good);
             }
         }
         return Optional.empty();
+    }
+
+    /** A counter the villager sells from: emeralds in, the bundle out. */
+    private static MerchantRecipe saleOf(Good good, int emeralds) {
+        MerchantRecipe recipe = new MerchantRecipe(
+                new ItemStack(ITEM.get(good), good.bundle()), 0, USES_BEFORE_RESTOCK, true);
+        recipe.addIngredient(new ItemStack(Material.EMERALD, Math.clamp(emeralds, 1, MOST_EMERALDS)));
+        // Vanilla's demand and reputation off, as on every managed trade.
+        recipe.setPriceMultiplier(0f);
+        recipe.setDemand(0);
+        recipe.setSpecialPrice(0);
+        return recipe;
     }
 
     private static MerchantRecipe purchaseOf(Good good, int emeralds) {

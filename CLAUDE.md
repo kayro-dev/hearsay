@@ -70,7 +70,7 @@ logged so any crash can be replayed and compared against a counterfactual.
      minimum.
   3. **stage 2, more goods — in progress, plan in V2_PROPOSAL.md.** Goods are independent
      markets (no spillover), added one at a time behind gates: diamond, then gold, iron,
-     wheat and bread; diamond, gold (E39), iron (E40) and wheat (E42) are done. PinnedLogsTest holds five diamond
+     wheat and bread; diamond, gold (E39), iron (E40), wheat (E42) and bread (E44) are done. PinnedLogsTest holds five diamond
      logs bit for bit, through a frozen printer, and must never be updated to match a
      change — if it fails, stage 2 has changed diamond. IndependenceTest demands each
      good's events be equal with and without the others. Params.goods records which

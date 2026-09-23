@@ -80,7 +80,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             Good.DIAMOND, "A blast furnace, smithing table or grindstone makes a smith.",
             Good.GOLD, "A brewing stand makes a cleric.",
             Good.IRON, "A blast furnace makes an armorer.",
-            Good.WHEAT, "A composter makes a farmer.");
+            Good.WHEAT, "A composter makes a farmer.",
+            Good.BREAD, "A composter makes a farmer.");
 
     /** A market a player would pace out without thinking about it. */
     private static final double DEFAULT_MARKET_RADIUS = 8.0;
@@ -560,6 +561,11 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         Good good = Counter.goodOf(event.getTrade()).orElse(null);
         if (good == null) {
             return; // not a trade Hearsay manages
+        }
+        if (!good.villagerBuys()) {
+            // Buying bread off a farmer is evidence of nothing, and PlayerTraded refuses it:
+            // recording one would throw inside the next tick and stop the village.
+            return;
         }
         if (!(event.getVillager() instanceof Villager body)) {
             return; // a wandering trader has no mind here

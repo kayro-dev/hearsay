@@ -270,7 +270,7 @@ them bury the one that matters. A village with nothing going on shows nothing.
 | **2. + gold** | ✓ **done (E39).** Diamond and gold bit-identical with and without each other on fixed, fully-switched-on and fuzzed settings; all five couplings reintroduced and caught. Gold met every target untuned, once the settling target was compared with diamond's own sampling spread rather than a fixed line. `Params.goods` records what a village trades; pins untouched. Cleric trade, 24 for 8 |
 | **3. + iron** | ✓ **done (E40).** Every good identical alone and in every village trading anything else; iron passes all eight `GoodTargets` untuned. Armorer trade, 32 for 8 — the first villager with two counters |
 | **4. + wheat** | ✓ **done (E42).** Passes every target untuned. The stack limit is checked against Paper's javadoc (two ingredients, each within a stack), so 120 goes as two sixties. Investigating wheat's one miss found the gate itself failed an identical good 23% of the time; it now shares its 5% across its comparisons, and all three goods pass. The same-item-in-both-slots behaviour is a manual test, with hay bales as the fallback |
-| **5. + bread** | the same for bread; Farmer sells, 48 for 8; no witness evidence |
+| **5. + bread** | ✓ **done (E44).** Passes every target untuned, identical alone and alongside every other good. Farmer sells, 48 for 8 — the Farmer now keeps two counters, one each way. A bread purchase is refused as an input, so it carries no evidence by construction rather than by convention |
 | **6. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots", "wheat" and "bread" |
 
 **Wheat before bread** because wheat is a buy-side good and follows the path diamond has

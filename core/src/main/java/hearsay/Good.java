@@ -45,7 +45,20 @@ public enum Good {
      * so the bundle is 120 in two stacks of 60, for six emeralds. It moves in sixths where
      * every other good moves in eighths, which is the cost of keeping vanilla's value.
      */
-    WHEAT("wheat", "wheat", "wheat", 120, 6, true);
+    WHEAT("wheat", "wheat", "wheat", 120, 6, true),
+
+    /**
+     * The one good villagers <em>sell</em>: a farmer's loaves, at vanilla's six to the
+     * emerald, forty-eight for eight. Renewable, and vanilla already has farmers selling it,
+     * so it follows the direction vanilla trades it; only non-renewable goods are never sold
+     * by a villager.
+     *
+     * <p>A player buying bread is not evidence of anything the village should believe, so
+     * bread trades carry none: {@link PlayerTraded} refuses them. Under independent markets
+     * a famine rumour moves wheat and leaves bread at normal, because nothing yet connects
+     * the two.
+     */
+    BREAD("bread", "loaf of bread", "bread", 48, 8, false);
 
     /**
      * How many rumour ids each good may use before it would run into the next good's range.
@@ -146,11 +159,12 @@ public enum Good {
     }
 
     /**
-     * "Wheat is", "diamonds are". A good whose plural is its singular is counted as a mass,
-     * and a mass takes "is": "wheat are scarce" is nobody talking.
+     * "Wheat is", "bread is", "diamonds are". A good named without a plural "s" is a mass,
+     * and a mass takes "is": "wheat are scarce" is nobody talking. Not "plural equals
+     * singular", which bread breaks: one is a loaf, and bread is still a mass.
      */
     public String isOrAre() {
-        return plural.equals(singular) ? "is" : "are";
+        return plural.endsWith("s") ? "are" : "is";
     }
 
     /**

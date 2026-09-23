@@ -48,6 +48,11 @@ class GoodTest {
         assertEquals("are", Good.GOLD.isOrAre());
         assertEquals("are", Good.IRON.isOrAre());
         assertEquals("120 wheat", Good.WHEAT.amount(120));
+        assertEquals("bread", Good.BREAD.plural(), "not 'breads'");
+        assertEquals("is", Good.BREAD.isOrAre(),
+                "bread is scarce, although one of it is a loaf and so 'plural equals singular' fails");
+        assertEquals("48 bread", Good.BREAD.amount(48));
+        assertEquals("1 loaf of bread", Good.BREAD.amount(1));
     }
 
     @Test
@@ -103,6 +108,40 @@ class GoodTest {
         assertEquals(1.0 / 4, Good.IRON.emeraldsEach(), 1e-12);
         assertEquals(1.0 / 20, Good.WHEAT.emeraldsEach(), 1e-12,
                 "wheat at six for 120 is exactly vanilla's twenty to the emerald");
+        assertEquals(1.0 / 6, Good.BREAD.emeraldsEach(), 1e-12,
+                "bread at forty-eight for eight is vanilla's six to the emerald");
+    }
+
+    @Test
+    void breadIsTheOneGoodVillagersSell() {
+        for (Good good : Good.values()) {
+            assertEquals(good != Good.BREAD, good.villagerBuys(), good.toString());
+        }
+        assertEquals(1, Good.BREAD.stacks(64).length, "forty-eight loaves fit one slot");
+    }
+
+    @Test
+    void buyingBreadIsNotASaleTheVillageCanLearnFrom() {
+        // A player buying from a villager is evidence of nothing. Refused where the input
+        // is made, so no session can carry one.
+        java.util.NavigableSet<Integer> watching = new java.util.TreeSet<>(java.util.Set.of(0, 1));
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -> new PlayerTraded(5, 0, Good.BREAD.id(), 48, 8, watching));
+        assertTrue(refused.getMessage().contains("bread"), refused.getMessage());
+        for (Good good : Good.values()) {
+            if (good.villagerBuys()) {
+                new PlayerTraded(5, 0, good.id(), good.bundle(), good.normalEmeralds(), watching);
+            }
+        }
+    }
+
+    @Test
+    void goodsAreOnlyEverAppended() {
+        // The order is part of the seed contract: each good's streams and rumour ids branch
+        // from its position. Bread came last and must stay last of these five.
+        assertArrayEquals(new Good[] {Good.DIAMOND, Good.GOLD, Good.IRON, Good.WHEAT, Good.BREAD},
+                java.util.Arrays.copyOf(Good.values(), 5));
+        assertEquals(4_000_000, Good.BREAD.firstRumorId());
     }
 
     @Test
