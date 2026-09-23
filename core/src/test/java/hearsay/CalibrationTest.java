@@ -14,9 +14,10 @@ import org.junit.jupiter.api.Test;
  * and a village nobody lied to almost never does. A change that quietly retunes the model will pass
  * every invariant and fail here.
  *
- * <p>The seeds are 1001 to 1100, held back from every sweep in EXPERIMENTS.md, so this
+ * <p>The seeds start at 1001, held back from every sweep in EXPERIMENTS.md, so this
  * measures the settings rather than the seeds they were fitted on. E5 recorded 65%
- * half-believing and 94% bursting on exactly these seeds.
+ * half-believing and 94% bursting on 1001-1100; the lie's check has run on 1001-1200
+ * since E43.
  *
  * <p>The bounds are wide on purpose. `observationWeight` moves the rate by twenty points
  * or more for a change of 0.05, so a band tight enough to pin the current figure would
@@ -57,10 +58,10 @@ class CalibrationTest {
      * fixed and the simulation deterministic, so this never flickers between runs — but any
      * change that keeps the model's behaviour while re-rolling its dice (adding a random
      * stream did exactly that in stage 2) hands it a fresh sample. On a hundred seeds a
-     * demonstrated band this narrow failed an unchanged model <strong>16.3%</strong> of the
+     * demonstrated band this narrow failed an unchanged model <strong>16.8%</strong> of the
      * time, measured by resampling five thousand calibration runs from the real model's own
      * runs; the estimate had to land between about 34% and 50% when the true rate is 38%.
-     * On two hundred it fails 1.6%. Together the three checks still catch every retune
+     * On two hundred it fails 2.0%. Together the three checks still catch every retune
      * tried, every time, but not all by this one: this check catches loops quietened to a
      * 13% or 18% burst rate and the runaway at 63%; the runaway at 47% sits inside the band
      * and is caught by the lifetime check below instead. Sharing the
