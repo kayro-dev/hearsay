@@ -84,7 +84,7 @@ disagree, the village is dying.
 | 12a | **Find a Farmer and open their trades — the decisive wheat test** | A trade taking **60 wheat in each of two slots** for 6 emeralds. Click it with 120+ wheat in your inventory: both slots should fill with 60, and the trade should complete. **If it does not fill both, or will not complete, stop and report it** — the fallback is 18 hay bales for 8 emeralds (E42) |
 | 12b | Sell wheat to the Farmer twice with villagers watching, then close the window | In chat: "<name> took 240 wheat for 12 emeralds. N villagers saw it." — **120 a trade**, not 60: both slots are counted. The action bar says the same while trading but is hidden behind the window, so the chat line is the one to read |
 | 12c | `/hearsay rumor wheat scarce` next to a villager, let it spread | "Heads, glow and the bar now follow wheat scarce." The bar reads **Wheat**, the villager told glows gold, and heads show a wheat price change as it spreads. Whispers say "about wheat". The Farmer's wheat trade pays more than 6. No other good's trade moves |
-| 12d | Sell into the famine | Watchers grow less sure the harvest failed. A famine rumour can be punctured the way a diamond panic can |
+| 12d | Sprint with `/tick sprint 800` — **one village day**, not `1d`, which is thirty — until three or more glow gold, then sell into the famine | Watchers grow less sure the harvest failed, a little per sale: a 120-wheat bundle is 6 emeralds of evidence, and evidence saturates at 128. The counter pays what that one villager believes, so a Farmer who never heard the rumour pays 6 whatever the bar says |
 | 12e | `/hearsay watch diamonds` mid-famine | The bar reads **Diamonds**, back near no change, and the glow goes: nobody believes anything about diamonds. `/hearsay watch wheat` brings the famine back. Nothing else about the village changes |
 | 12f | `/hearsay watch` alone | Refused, "Which good?". `/hearsay status` names the claim on display |
 | 12g | Crouch-right-click a villager who heard the famine | "wheat **is** getting scarce", not "wheat are" |
@@ -133,7 +133,9 @@ These are deliberate, not bugs to report:
 - **Villagers who arrive after `/hearsay start` are ignored.** Binding a mind to a body
   halfway through would make the session unreplayable from its recipe.
 - **A tick is ten seconds of game time, not wall-clock.** `/tick sprint 20d` sprints the
-  simulation along with the world, which is a quick way to get a long session.
+  simulation along with the world, which is a quick way to get a long session. Mind the
+  scale: a village day is four ticks, forty seconds, `/tick sprint 800`. One Minecraft day,
+  `1d`, is **thirty village days** — long enough for a rumour to rise and die unseen.
 - **Every observed meeting is reported as happening at the market.** The price needs to know
   where people are, and a pair on its own does not say. Mapping real locations to spots is
   the next piece of work.
