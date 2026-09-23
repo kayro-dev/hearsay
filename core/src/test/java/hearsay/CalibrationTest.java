@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class CalibrationTest {
 
     private static final long FIRST_SEED = 1001;
-    private static final int SEEDS = 100;
+    private static final int SEEDS = 200;
     private static final int TICKS = 200; // 50 days
     private static final Claim DIAMONDS_SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
@@ -46,16 +46,29 @@ class CalibrationTest {
 
     /**
      * The lie's thirty-day burst rate has to be <em>demonstrated</em> inside 25-60%: its
-     * whole interval, not its point. 43 of 100 on these seeds gives [34%, 53%]. A bare
-     * "between 25 and 60" would have passed a 59% whose interval ran to 68%.
+     * whole interval, not its point. A bare "between 25 and 60" would have passed a 59%
+     * whose interval ran to 68%.
      *
-     * <p>Demonstrated rather than merely not contradicted because this is the figure the
-     * README states, and a stated figure is a claim. The seeds are fixed and the simulation
-     * deterministic, so the test never flickers: the interval says what these hundred seeds
-     * show about the model, not how much this run might wobble.
+     * <p>Demonstrated rather than merely not contradicted, because not contradicted cannot
+     * catch a loop that has gone quiet: E43 found it missed a retune that halved the burst
+     * rate more than half the time.
+     *
+     * <p><strong>On two hundred seeds, not a hundred, and E43 is why.</strong> The seeds are
+     * fixed and the simulation deterministic, so this never flickers between runs — but any
+     * change that keeps the model's behaviour while re-rolling its dice (adding a random
+     * stream did exactly that in stage 2) hands it a fresh sample. On a hundred seeds a
+     * demonstrated band this narrow failed an unchanged model <strong>16.3%</strong> of the
+     * time, measured by resampling five thousand calibration runs from the real model's own
+     * runs; the estimate had to land between about 34% and 50% when the true rate is 38%.
+     * On two hundred it fails 1.6%. Together the three checks still catch every retune
+     * tried, every time, but not all by this one: this check catches loops quietened to a
+     * 13% or 18% burst rate and the runaway at 63%; the runaway at 47% sits inside the band
+     * and is caught by the lifetime check below instead. Sharing the
+     * confidence across the three checks, as the goods gate does, was tried and made it
+     * worse, 33.6%: for a demonstrated band a wider interval fails more, not less.
      */
     private static final Target.Band A_LIE_BURSTS = Target.demonstrates(
-            "a lie bursts the price within 30 days", 0.25, 0.60, 100);
+            "a lie bursts the price within 30 days", 0.25, 0.60, SEEDS);
 
     /**
      * Villages nobody lied to, and how many of them may talk themselves into a bubble.
@@ -162,5 +175,42 @@ class CalibrationTest {
         Target.Verdict verdict = BACKGROUND_RATE.judge(rate);
         assertTrue(verdict.passed(), "villages nobody lied to are talking themselves into "
                 + "bubbles over the long run: " + verdict);
+    }
+
+    /**
+     * How often the burst check fails when the true thirty-day burst rate is {@code rate},
+     * over two thousand fresh samples of the size the check really uses.
+     */
+    private static double failureRateAt(double rate) {
+        java.util.Random draws = new java.util.Random(20260923);
+        int failed = 0;
+        for (int sample = 0; sample < 2000; sample++) {
+            int bursts = 0;
+            for (int seed = 0; seed < SEEDS; seed++) {
+                bursts += draws.nextDouble() < rate ? 1 : 0;
+            }
+            failed += A_LIE_BURSTS.judge(Estimate.proportion(bursts, SEEDS)).passed() ? 0 : 1;
+        }
+        return failed / 2000.0;
+    }
+
+    @Test
+    void theBurstCheckRarelyFailsAnUnchangedModelAndCatchesTheRetunesItIsFor() {
+        // The rates are the real model's, pooled over 3,000 lies on fresh seeds each (E43).
+        // Pinned to the check itself, so shrinking it back to a hundred seeds fails here:
+        // at a hundred an unchanged model fails about one time in six.
+        double unchanged = failureRateAt(0.384);
+        assertTrue(unchanged < 0.05, "the burst check fails an unchanged model "
+                + unchanged * 100 + "% of the time");
+
+        // Its job: loops that have gone quiet, and a runaway far enough to leave the band.
+        // A runaway to 47% stays inside 25-60% and is the lifetime check's to catch, which
+        // it does every time (E43); claiming it here would credit this check with another's
+        // work.
+        for (double retuned : new double[] {0.131, 0.176, 0.633}) {
+            assertTrue(failureRateAt(retuned) > 0.95, "a model retuned to a " + retuned * 100
+                    + "% burst rate should fail the check almost always, but failed only "
+                    + failureRateAt(retuned) * 100 + "% of the time");
+        }
     }
 }

@@ -85,7 +85,10 @@ logged so any crash can be replayed and compared against a counterfactual.
   merely NOT_CONTRADICTED (interval reaching). A new good is judged by
   `./gradlew :experiments:goods --args="--good X"` against diamond on the same seeds, and
   comparisons made together share their 5% (five at 95% each fail an identical good 23% of
-  the time; see E42).
+  the time; see E42). That fix is for comparisons only: for a DEMONSTRATED band a wider
+  interval fails more, not less, so a band that fails a good model too often needs more
+  data, not shared confidence (E43). `./gradlew :experiments:guard` measures
+  CalibrationTest's false-failure rate and power against the real model on fresh seeds.
 - Figures that are shares of runs move with run length and must not be compared across
   lengths. The quiet-village rate is 0.19 bursts per 100 village-days [0.10-0.29] (E38),
   and a bubble is only laid at a lie's door within thirty days of it.

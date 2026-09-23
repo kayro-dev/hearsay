@@ -3010,3 +3010,79 @@ Diamond's quiet rate over those 240 runs is 0.140 [0.092, 0.188].
 **Decision.** Wheat adopted untuned: the Farmer buys it, 120 for 6, with witness evidence, so a
 famine rumour can be sold into and punctured. The gate shares its confidence across its
 comparisons from here on.
+
+---
+
+## E43 — CalibrationTest's false alarms were one check, not three compounding
+
+```
+./gradlew :experiments:guard
+```
+
+E42 found the goods gate compounding its confidence across five comparisons. The question was
+whether `CalibrationTest`, which now passes only if all three of its checks pass — the lie's
+burst rate, quiet villages within 30 days, quiet villages over 500 days — has the same defect.
+
+**What a false failure means here.** `CalibrationTest` runs fixed seeds on a deterministic
+simulation and never flickers between runs. What it *can* do is fail when a change keeps the
+model's behaviour but re-rolls its dice, which hands every seed a fresh sample — adding a
+random stream in stage 2 did exactly that. So "known-good data" is the real, unchanged model on
+fresh seeds: thirty blocks per weight, well away from the calibration seeds, pooled; then five
+thousand calibration runs of exactly the test's sizes drawn from the pools and judged by the
+real `Target`s. Weights 0.10 and 0.15 are retunes that quieten the loop (burst rates of 13% and
+18% against the default's 38%); 0.35 and 0.45 are runaways.
+
+| design | good model | quiet 0.10 | quiet 0.15 | runaway 0.35 | runaway 0.45 |
+| --- | --- | --- | --- | --- | --- |
+| **as it was**: burst demonstrated on 100 | **16.8%** | 100% | 100% | 100% | 100% |
+| the goods gate's fix: intervals shared across three | **33.6%** | 100% | 100% | 100% | 100% |
+| burst as a guard only, not contradicted | 0.0% | 84.5% | **39.2%** | 100% | 100% |
+| **burst demonstrated on 200 (adopted)** | **2.0%** | 100% | 100% | 100% | 100% |
+| burst demonstrated on 300 | 0.1% | 100% | 100% | 100% | 100% |
+
+*Cells are the share of calibration runs that fail: the false-failure rate under the good model,
+the power to catch a retune under the others. The goods-gate row comes from the analysis script
+rather than `:experiments:guard`, because a band target has no way to share its confidence —
+which is itself the point below.*
+
+### What it found
+
+**Compounding across the three checks is present, and negligible.** On two hundred seeds, of the
+2% the two quiet checks contribute about a tenth of a point between them. Their true values sit
+far from their bands — quiet villages burst within a month about 0.1% of the time against a 3%
+ceiling, and over 500 days at 0.12 per 100 village-days against 0.5 — so neither fails an
+unchanged model more than a handful of times in five thousand.
+
+**The defect was the burst check on its own.** Demonstrated inside 25–60% on a hundred seeds,
+its interval is so wide relative to the band that the estimate had to land between about 34% and
+50% to pass, when the true rate is 38%. It failed an unchanged model one time in six. The fixed
+calibration seeds happened to give 43%, inside the window, which is why it never showed.
+
+**The goods gate's fix makes it worse, and why.** That gate fails when a difference's interval
+*excludes* zero, so widening intervals means fewer false alarms. A demonstrated band fails when
+the interval *pokes outside* it, so widening means more — 33.6%, double. The same word,
+"confidence", does opposite work in the two kinds of target, and a band has no `comparisons`
+argument precisely because sharing it there would be wrong.
+
+**Making the burst check a guard fixes the alarms by going blind.** Not contradicted, it almost
+never fails an unchanged model, and misses a loop that has quietened to an 18% burst rate six
+times in ten. That is the regression the check exists to catch, so it stays demonstrated.
+
+**More data fixes it without moving the target.** The band, the claim and the standard are
+unchanged; only the sample is doubled, to 200 seeds. False failures fall to 2%, inside the same
+5% budget the goods gate is held to, and every retune is still caught every time.
+
+**Which check catches what**, since I first credited the burst check with all of it and a test
+caught me: the burst check catches loops that go quiet and the runaway at 0.45; the runaway at
+0.35 moves the burst rate only to 47%, inside the band, and is caught by the 500-day check alone.
+
+### Proof in the suite
+
+`CalibrationTest` now pins the sizing to the burst target object itself: two thousand samples
+at the real model's pooled burst rate must fail under 5% of the time, and at the quiet and
+extreme rates over 95%. Shrinking the check back to a hundred seeds fails it, reporting 16.85% —
+agreeing with the 16.8% from resampling the real model.
+
+The calibration seeds 1001–1200 give 34.5% [28.3, 41.3], inside the band.
+
+**Decision.** The burst check runs on 200 seeds. Nothing else changes. No parameter moved.

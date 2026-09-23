@@ -97,3 +97,11 @@ tasks.register<JavaExec>("goods") {
     mainClass = "hearsay.experiments.GoodTargets"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** CalibrationTest's false-failure rate and power: ./gradlew :experiments:guard */
+tasks.register<JavaExec>("guard") {
+    group = "application"
+    description = "Resamples calibration runs from the real model to size CalibrationTest's checks."
+    mainClass = "hearsay.experiments.CalibrationGuard"
+    classpath = sourceSets["main"].runtimeClasspath
+}
