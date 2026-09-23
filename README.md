@@ -6,7 +6,7 @@ Minecraft villagers already gossip. I'm teaching them to lie, to remember who wa
 
 A belief-driven village economy with deterministic simulation and counterfactual replay. Every run is reproducible from its seed, its settings and the lies you told, so the same village can be replayed with one lie removed to see what it would have done instead.
 
-**A planted rumour bursts the price within a month in about 38% of villages. In villages nobody lied to: 0%.** Left alone long enough a village will talk itself into one unaided, at a background rate of **0.19 bursts per 100 village-days** (95% interval 0.10–0.29), measured over thirty thousand village-days.
+**A planted rumour bursts the price within a month in about 38% of villages. In villages nobody lied to: 0%.** Left alone, a village almost never talks itself into one: **about 0.001 bursts per 100 village-days** (95% interval 0.000–0.002) — one in 120,000 village-days. That figure was 0.19 until 2026-09-23, when it turned out (E47) that most of those unaided panics were a flaw in how villagers read the price: a price recovering from a dip was taken as a sign of shortage even while still below normal. Villagers now read only the part of a move beyond normal as evidence, and the lie kept its bubbles (34.5% before, 38.0% after, on the same seeds).
 
 Both figures are quoted with the window they were measured in, because they move without one: a share of runs that bubbled depends on how long you watched, and crediting a lie with a bubble five months later credits it with the village's own wandering. Whether a particular lie caused a particular bubble is a question the counterfactual answers — the same village, same seed, same everything, with the lie removed — rather than a claim the model makes.
 

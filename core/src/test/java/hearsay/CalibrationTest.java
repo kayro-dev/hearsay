@@ -35,7 +35,7 @@ class CalibrationTest {
     // 50% and 85%, which a perfectly mixed village reached and a real one never does: once
     // the model meets as few people as a played village, half-believing falls to 1%. What
     // survives as a measure of the loop working is how often the lie bursts the price,
-    // measured at 39% on these seeds.
+    // measured at 39% on these seeds; 38.0% on 1001-1200 under E47's level gate.
     /**
      * How long after a lie a bubble may still be laid at its door.
      *
@@ -61,12 +61,16 @@ class CalibrationTest {
      * demonstrated band this narrow failed an unchanged model <strong>16.8%</strong> of the
      * time, measured by resampling five thousand calibration runs from the real model's own
      * runs; the estimate had to land between about 34% and 50% when the true rate is 38%.
-     * On two hundred it fails 2.0%. Together the three checks still catch every retune
-     * tried, every time, but not all by this one: this check catches loops quietened to a
-     * 13% or 18% burst rate and the runaway at 63%; the runaway at 47% sits inside the band
-     * and is caught by the lifetime check below instead. Sharing the
-     * confidence across the three checks, as the goods gate does, was tried and made it
-     * worse, 33.6%: for a demonstrated band a wider interval fails more, not less.
+     * On two hundred it fails 2.0%. Sharing the confidence across the three checks, as the
+     * goods gate does, was tried and made it worse, 33.6%: for a demonstrated band a wider
+     * interval fails more, not less.
+     *
+     * <p><strong>Since E47 this check catches every retune on its own.</strong> Under the
+     * level gate the real model bursts at 41.3% (pooled over 3,000 fresh lies), and this
+     * fails it 0.2% of the time; the quietened loops burst at 13.0% and 17.9% and the
+     * runaways at 66.8% and 89.5%, and all four fail it every time. Before the gate the
+     * runaway at 0.35 burst at 47%, inside the band, and only the lifetime check caught it
+     * (E43); under the gate that runaway runs past 60% within the month.
      */
     private static final Target.Band A_LIE_BURSTS = Target.demonstrates(
             "a lie bursts the price within 30 days", 0.25, 0.60, SEEDS);
@@ -75,10 +79,12 @@ class CalibrationTest {
      * Villages nobody lied to, and how many of them may talk themselves into a bubble.
      *
      * <p>This used to demand none at all, which was a claim about a hundred seeds dressed
-     * up as a law. Measured across nine hundred seeds the rate is about 0.33%: one in
+     * up as a law. Measured across nine hundred seeds the rate was about 0.33%: one in
      * 1001-1300, one in 2001-2200, one in 5000-5399. A village that panics unaided is rare,
      * not impossible, and a test that forbids it outright fails the first time an unlucky
-     * seed is added to the set.
+     * seed is added to the set. Under E47's level gate it is rarer still — about 0.03% of
+     * months, pooled over 9,000 — because most of those panics were a random dip recovering
+     * and being read as a shortage, the same mechanism as E45's selling rebounds.
      *
      * <p>Three hundred seeds with a ceiling of four keeps the power that matters. At the
      * measured rate four or more happens about three times in a thousand, so it will not
@@ -103,9 +109,13 @@ class CalibrationTest {
      * the thirty-day check no longer fails at all — because a runaway loop still needs time
      * to talk itself into something. Over five hundred days it has that time.
      *
-     * <p>Sixty villages of five hundred days each. At the defaults these give 0.100 [0.025,
-     * 0.175] bursts per 100 village-days; at 0.35 they give 1.06 [0.72, 1.39], and at 0.45,
-     * 1.34 [0.95, 1.72]. The ceiling sits between them, with room on both sides.
+     * <p>Sixty villages of five hundred days each. Before E47 these gave 0.100 [0.025,
+     * 0.175] bursts per 100 village-days at the defaults, 1.06 at observationWeight 0.35 and
+     * 1.34 at 0.45, and the ceiling sat between them. <strong>Under the level gate they give
+     * 0.000, and even the runaways stay at 0.012 and 0.043</strong>: the gate stopped the
+     * rebounds that runaway loops used to burst on, and the burst check above now catches
+     * those retunes instead. This check still states the guarantee over a whole life, but
+     * against these retunes it has no power left (E47).
      *
      * <p>The length is fixed, and has to be. A rate per village-day is still not quite
      * independent of how long anyone watched: villages need a while to warm up before they
@@ -197,18 +207,17 @@ class CalibrationTest {
 
     @Test
     void theBurstCheckRarelyFailsAnUnchangedModelAndCatchesTheRetunesItIsFor() {
-        // The rates are the real model's, pooled over 3,000 lies on fresh seeds each (E43).
-        // Pinned to the check itself, so shrinking it back to a hundred seeds fails here:
-        // at a hundred an unchanged model fails about one time in six.
-        double unchanged = failureRateAt(0.384);
+        // The rates are the real model's under E47's level gate, pooled over 3,000 lies on
+        // fresh seeds each (./gradlew :experiments:guard). Pinned to the check itself, so
+        // shrinking it back to a hundred seeds fails here.
+        double unchanged = failureRateAt(0.413);
         assertTrue(unchanged < 0.05, "the burst check fails an unchanged model "
                 + unchanged * 100 + "% of the time");
 
-        // Its job: loops that have gone quiet, and a runaway far enough to leave the band.
-        // A runaway to 47% stays inside 25-60% and is the lifetime check's to catch, which
-        // it does every time (E43); claiming it here would credit this check with another's
-        // work.
-        for (double retuned : new double[] {0.131, 0.176, 0.633}) {
+        // Its job: loops that have gone quiet, and loops running away. Under the gate both
+        // runaways leave the band (E47); before it, the one at 0.35 did not, and the
+        // lifetime check caught it instead (E43).
+        for (double retuned : new double[] {0.130, 0.179, 0.668, 0.895}) {
             assertTrue(failureRateAt(retuned) > 0.95, "a model retuned to a " + retuned * 100
                     + "% burst rate should fail the check almost always, but failed only "
                     + failureRateAt(retuned) * 100 + "% of the time");

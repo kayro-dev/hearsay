@@ -2584,6 +2584,12 @@ both from the start and **from the largest swing onward**. Thirty seeds each.
 | mean price, last quarter | **100.8** |
 | bubbles caused by the lie | 63% |
 
+> **Under the level gate (E47/E48, the default since 2026-09-23)** these read: decay after the
+> largest swing 0.945, settled within 10% in 100% of runs, last-quarter price 100.0 — on 200
+> runs rather than thirty. The village settles more surely and swings once rather than
+> several times, because a bubble's fall above normal is no longer read as a glut; it also
+> comes down more slowly, on decay alone. The figures below are for `levelGate` 0.
+
 **The village already calms down.** Measured from the peak — once it has got as bad as it is
 going to get — the swings shrink by 9% each, four villages in five settle within 10% of
 normal, and the average price over the last quarter of the run is **100.8**, which is normal
@@ -2653,6 +2659,12 @@ Sixty villages nobody lied to, five hundred days each — thirty thousand villag
 | bursts | 56 |
 | **rate** | **0.19 per 100 village-days** |
 | 95% interval | **0.10 to 0.29** |
+
+> **Superseded by E47/E48 (2026-09-23).** Under the level gate, now the default, the rate is
+> **0.001 per 100 village-days [0.000, 0.002]** over 120,000 village-days. E47 found the old
+> rate was mostly the E45 rebound bug: a random dip recovering and being read as a shortage
+> while the price was still below normal. The figure below is correct for the reading it was
+> measured under, `levelGate` 0.
 
 That is the figure to quote. "0.33% of seeds" (E30) and "6% of seeds" (E37) were the same
 model measured over fifty days and a hundred and seventy-five; a rate per hundred days is
@@ -3423,3 +3435,78 @@ The lie told at the same moment is untouched: 39% either way.
 **Decision: none yet.** `levelGate` stays at 0 until the user has seen this table. Adopting it
 changes the model every experiment since E20 measured, so what adoption would touch is listed
 for that decision rather than done.
+
+---
+
+## E48 — The level gate adopted, and everything it touches re-measured
+
+```
+./gradlew :experiments:goods --args="--good gold"   # and iron, wheat, bread
+./gradlew :experiments:guard
+./gradlew test
+```
+
+`levelGate` is 1 by default from 2026-09-23, on E47's table. Every experiment before E47 was
+measured at 0 and stands for that reading; old recipes read as 0 and replay exactly.
+
+### The pins
+
+`PinnedLogsTest`'s five diamond logs were recorded before stage 2, under what is now
+`levelGate` 0. They now run under that rule explicitly (`RECORDED_UNDER`), and pass with their
+original checksums untouched: they go on proving what they proved. The same five villages under
+the new defaults are pinned in `DefaultLogsTest`, checked identical across two runs and checked
+to fail if the gate moves by a thousandth or the market noise by 0.001. Seed 1165, pinned as a
+village that bubbled with nobody lying to it, no longer does; the new pin asserts it.
+
+Three fixtures, behind five tests that failed on the new default, needed a village to bubble and
+then bust — they check how bubbles and busts are counted, how paired worlds are compared and
+which way a reading points, not the calibrated model — and now pin
+`levelGate` 0 the way they already pinned `mixing`, with the reason in place: under the gate a
+bubble never overshoots into a bust, and at the paired-worlds seed none of eight pairs bubbles.
+The gate itself is read back off real runs under the defaults: every conclusion of scarcity
+from a price above normal, every conclusion of plenty from one below.
+
+### CalibrationTest under the gate
+
+All three checks pass on 1001–1200 / 1001–1300 / 60 × 500 days: the lie bursts in 38.0%
+[31.6, 44.9]; no quiet village bursts within a month; none over five hundred days. Resampled
+from 30 fresh blocks per weight (`:experiments:guard`):
+
+| observationWeight | lie bursts (pooled) | quiet months | quiet / 100 days | burst check fails | quiet-month check | lifetime check |
+| --- | --- | --- | --- | --- | --- | --- |
+| **0.28** (default) | 0.413 | 0.0003 | 0.000 | **0.2%** | 0.0% | 0.0% |
+| 0.10 | 0.130 | 0 | 0.000 | 100% | 0.0% | 0.0% |
+| 0.15 | 0.179 | 0 | 0.000 | 100% | 0.0% | 0.0% |
+| 0.35 | 0.668 | 0.0042 | 0.012 | 100% | 3.9% | **0.0%** |
+| 0.45 | 0.895 | 0.0114 | 0.043 | 100% | 45.8% | **0.0%** |
+
+On two hundred seeds the burst check fails an unchanged model 0.2% of the time (2.0% before the
+gate) and catches every retune every time, **runaways included**: both now push the lie past
+60% within the month. **The lifetime check E41 added has no power left against these
+retunes.** It was there because the runaway at 0.35 stayed inside the burst band and could only
+be caught by villages bursting unaided over a long life; under the gate even the runaway at
+0.45 bursts unaided at 0.043 per 100 days against a ceiling of 0.5. Nothing loses cover — the
+burst check catches both — but the lifetime check now states a guarantee rather than guarding
+against a retune. Its ceiling was not changed; that is a decision, not a correction. The sizing
+test in `CalibrationTest` is repinned to the new pooled rates and still fails at a hundred
+seeds (8.55%, against resampling's 8.3%).
+
+### The goods gate, all four goods again
+
+| good | bursts within 30 days (diamond 45%) | quiet / 100 days | decay after the largest swing | settled | paired: only with the lie | verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| gold | 46% [36.6, 55.7] | 0.000 | 0.944 | 100% | 41.0% | **PASS all eight** |
+| iron | 47% [37.5, 56.7] | 0.001 | 0.948 | 100% | 38.0% | **PASS all eight** |
+| wheat | 45% [35.6, 54.8] | 0.001 | 0.944 | 100% | 35.0% | **PASS all eight** |
+| bread | 47% [37.5, 56.7] | 0.000 | 0.943 | 100% | 38.0% | **PASS all eight** |
+
+Every good still passes every target, untuned. **The prediction of 33–46% half held.** It came
+from E47's selling table, where the lie was told on seeds 7001–7100 and burst in 33–46% of
+villages; the gate tells it on 1001–1100, where diamond itself bursts in 45%, and there the
+goods came in at 45–47%, iron and bread a point over the top of the range. The range was a
+property of one block of seeds, not of the goods — what the gate actually judges, each good
+against diamond on the same seeds, differs by 0–2 points.
+
+One thing the gate lost: with quiet bursts at 0.000–0.001 for every good, the quiet-rate
+comparison with diamond passes trivially. It would still catch a good that started bursting
+unaided, which is what it is for.

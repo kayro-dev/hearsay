@@ -97,6 +97,35 @@ public final class CalibrationGuard {
         System.out.println();
         System.out.println("Share of " + SYNTHETIC + " calibration runs that fail. Under 'good' it is the"
                 + " false-failure rate; under 'bad' the power to catch a retune.");
+
+        // What CalibrationTest's sizing test is pinned to, and which check catches what.
+        System.out.println();
+        System.out.println("Pooled rates, and each check alone at the sizes CalibrationTest uses (200 / 300 / 60):");
+        Target.Band burst200 = Target.demonstrates("burst", 0.25, 0.60, 200);
+        for (int w = 0; w < WEIGHTS.length; w++) {
+            Pool pool = pools.get(w);
+            double lieRate = pool.lies().stream().filter(b -> b).count() / (double) pool.lies().size();
+            double monthRate = pool.quietMonths().stream().filter(b -> b).count()
+                    / (double) pool.quietMonths().size();
+            double lifeRate = pool.lifetimes().stream().mapToInt(Integer::intValue).sum() * 100.0
+                    / (pool.lifetimes().size() * 500.0);
+            int[] alone = new int[3];
+            for (int run = 0; run < SYNTHETIC; run++) {
+                int[] lifetimes = new int[60];
+                for (int i = 0; i < 60; i++) {
+                    lifetimes[i] = pool.lifetimes().get(draws.nextInt(pool.lifetimes().size()));
+                }
+                alone[0] += burst200.judge(Estimate.proportion(count(pool.lies(), 200, draws), 200))
+                        .passed() ? 0 : 1;
+                alone[1] += quiet.judge(Estimate.proportion(count(pool.quietMonths(), 300, draws), 300))
+                        .passed() ? 0 : 1;
+                alone[2] += lifetime.judge(Estimate.ratePer(lifetimes, 500, 100)).passed() ? 0 : 1;
+            }
+            System.out.printf(Locale.ROOT, "  %.2f  lie bursts %.3f, quiet month %.4f, quiet per 100 days %.3f"
+                            + "  |  fails alone: burst %.1f%%, quiet month %.1f%%, lifetime %.1f%%%n",
+                    WEIGHTS[w], lieRate, monthRate, lifeRate, 100.0 * alone[0] / SYNTHETIC,
+                    100.0 * alone[1] / SYNTHETIC, 100.0 * alone[2] / SYNTHETIC);
+        }
     }
 
     private static Design design(String name, int lieSeeds, Target.Band burst,

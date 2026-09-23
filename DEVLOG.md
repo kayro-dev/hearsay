@@ -636,3 +636,20 @@ change as the price headline, glow by what a villager knows, and particle trails
 whispers.
 
 Stage 4 is no longer a prerequisite for anything. More goods is next.
+
+## Week 9 — broadcast evidence out-convinces gossip (2026-09-23)
+
+E47 compared a village recovering from a player's heavy selling with the same village told a
+lie at the same moment, under the old reading of the price. The recovering village's false
+panic was half as likely as the lie's to burst — 17% against 39% — but in its worst cases more
+villagers believed it: fifteen of twenty at the 90th percentile, against six for the lie.
+
+The difference is the channel. Everyone standing in the market reads the same price in the same
+tick and draws the same conclusion together; a lie has to be passed on one conversation at a
+time, losing confidence at every step and reaching only whoever happens to meet. One piece of
+evidence seen by a crowd at once can outrun anything mouth-to-mouth.
+
+The level gate removed that particular false panic, but not the channel. Anything that shows
+one claim to many villagers at once — a notice board, a cleric preaching to a crowd — is the
+same channel, and should be expected to convince more people, faster, than any gossip it is
+compared with.

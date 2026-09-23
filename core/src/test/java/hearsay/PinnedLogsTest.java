@@ -50,7 +50,16 @@ class PinnedLogsTest {
 
     private static final Claim SCARCE = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
-    private static String checksum(List<Event> log) throws Exception {
+    /**
+     * The rule these were recorded under. E47 made the level gate the default on
+     * 2026-09-23; these logs were recorded before it existed, under what is now
+     * {@code levelGate} 0, and they go on proving exactly what they proved — that stage 2
+     * did not change diamond — under that rule. The same five villages under the current
+     * defaults are pinned separately, in {@link DefaultLogsTest}.
+     */
+    static final Params RECORDED_UNDER = Params.defaults().withLevelGate(0.0);
+
+    static String checksum(List<Event> log) throws Exception {
         onlyDiamondWasPriced(log);
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         for (Event event : log) {
@@ -122,47 +131,53 @@ class PinnedLogsTest {
         assertEquals(night.toString(), frozen(night));
     }
 
+    static Run aLieTheOrdinaryWay(Params params) {
+        return Run.execute(42, params,
+                List.of(new PlantRumor(1, SCARCE, 1, planter(42, params))), 200);
+    }
+
+    static Run anotherSeedAnotherLie(Params params) {
+        return Run.execute(1001, params,
+                List.of(new PlantRumor(1, SCARCE, 1, planter(1001, params))), 200);
+    }
+
+    static Run aVillageThatPanicsWithNobodyLyingToIt(Params params) {
+        return Run.execute(1165, params, List.of(), 700);
+    }
+
     @Test
     void aLieTheOrdinaryWay() throws Exception {
         // 39 tellings, 2 mutations, 82 price readings.
-        Params params = Params.defaults();
-        Run run = Run.execute(42, params,
-                List.of(new PlantRumor(1, SCARCE, 1, planter(42, params))), 200);
-
-        assertEquals("df88fdc5bc65a8a8", checksum(run.log()));
+        assertEquals("df88fdc5bc65a8a8", checksum(aLieTheOrdinaryWay(RECORDED_UNDER).log()));
     }
 
     @Test
     void anotherSeedAnotherLie() throws Exception {
         // 102 tellings, 7 mutations, 131 price readings.
-        Params params = Params.defaults();
-        Run run = Run.execute(1001, params,
-                List.of(new PlantRumor(1, SCARCE, 1, planter(1001, params))), 200);
-
-        assertEquals("c3555d5d8a6f8a73", checksum(run.log()));
+        assertEquals("c3555d5d8a6f8a73", checksum(anotherSeedAnotherLie(RECORDED_UNDER).log()));
     }
 
     @Test
     void aVillageThatPanicsWithNobodyLyingToIt() throws Exception {
         // One of the few seeds that bubble unaided. 700 ticks, 261 tellings of rumours the
         // village invented from its own price, 316 readings.
-        Run run = Run.execute(1165, Params.defaults(), List.of(), 700);
-
-        assertEquals("cd3f613454132d75", checksum(run.log()));
+        assertEquals("cd3f613454132d75",
+                checksum(aVillageThatPanicsWithNobodyLyingToIt(RECORDED_UNDER).log()));
     }
 
     @Test
     void aLieAndAPlayerSellingIntoIt() throws Exception {
         // Stage 3's path: 30 villagers taking in a sale they watched.
-        Params params = Params.defaults();
+        assertEquals("ce423029018096f6", checksum(aLieAndAPlayerSellingIntoIt(RECORDED_UNDER).log()));
+    }
+
+    static Run aLieAndAPlayerSellingIntoIt(Params params) {
         List<Input> inputs = new ArrayList<>(
                 List.of(new PlantRumor(1, SCARCE, 1, planter(2160, params))));
         for (long tick = 60; tick < 140; tick += 8) {
             inputs.add(new PlayerTraded(tick, 0, Simulation.DIAMOND, 16, 128, near(0, 1, 2)));
         }
-        Run run = Run.execute(2160, params, inputs, 200);
-
-        assertEquals("ce423029018096f6", checksum(run.log()));
+        return Run.execute(2160, params, inputs, 200);
     }
 
     @Test
@@ -170,7 +185,12 @@ class PinnedLogsTest {
         // A severity-2 lie, trades, and reality checks turned on although they are off by
         // default, so the one rule that pulls rather than pushes is pinned too: 474
         // tellings, 20 mutations, 16 witnessed sales, 447 checks.
-        Params params = Params.defaults().withCheckWeight(0.30);
+        assertEquals("f6c036da458d28da", checksum(everythingSwitchedOnAtOnce(RECORDED_UNDER).log()));
+    }
+
+    /** Reality checks switched on over whatever rule is given. */
+    static Run everythingSwitchedOnAtOnce(Params rule) {
+        Params params = rule.withCheckWeight(0.30);
         List<Input> inputs = new ArrayList<>(
                 List.of(new PlantRumor(1, SCARCE, 2, planter(7, params))));
         for (long tick = 40; tick < 120; tick += 10) {
@@ -182,8 +202,6 @@ class PinnedLogsTest {
             }
         }
         inputs.sort(Comparator.comparingLong(Input::tick));
-        Run run = Run.execute(7, params, inputs, 200);
-
-        assertEquals("f6c036da458d28da", checksum(run.log()));
+        return Run.execute(7, params, inputs, 200);
     }
 }

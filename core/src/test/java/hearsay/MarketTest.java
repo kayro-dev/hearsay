@@ -205,7 +205,10 @@ class MarketTest {
 
     @Test
     void aRisingPriceMeansScarcityAndAFallingOneMeansPlenty() {
-        Run run = Run.execute(3, Params.defaults(),
+        // The reading before E47's level gate, where every move counts from the villager's
+        // own anchor. Under the gate a fall that stays above normal is no evidence at all,
+        // which LevelGateTest reads back off real runs.
+        Run run = Run.execute(3, Params.defaults().withLevelGate(0.0),
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, 12)), TICKS);
 
         WorldState mirror = new WorldState();

@@ -54,8 +54,48 @@ class LevelGateTest {
         int planter = Run.execute(42, Params.defaults(), List.of(), 1)
                 .finalState().gossipiestVillager().id();
         List<Input> lie = List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, planter));
-        assertNotEquals(Run.execute(42, Params.defaults(), lie, 200).log(),
+        assertNotEquals(Run.execute(42, Params.defaults().withLevelGate(0.0), lie, 200).log(),
                 Run.execute(42, Params.defaults().withLevelGate(1.0), lie, 200).log());
+    }
+
+    @Test
+    void theGateIsTheDefault() {
+        assertEquals(1.0, Params.defaults().levelGate(), "adopted in E47");
+    }
+
+    @Test
+    void underTheDefaultsNoConclusionIsDrawnFromTheWrongSideOfNormal() {
+        // The rule, read back off real runs: a lie, a player selling hard, a quiet village.
+        // Every reading of scarcity was of a price above normal, every reading of plenty of
+        // one below it. Today's rule broke this constantly — E45's rebounds are exactly a
+        // shortage read off a price still at half of normal.
+        int planter = Run.execute(3, Params.defaults(), List.of(), 1)
+                .finalState().gossipiestVillager().id();
+        List<Input> inputs = new java.util.ArrayList<>(
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 2, planter)));
+        for (long tick = 80; tick < 200; tick += 4) {
+            inputs.add(new PlayerTraded(tick, 0, Simulation.DIAMOND, 12, 96,
+                    new java.util.TreeSet<>(java.util.Set.of(0, 1, 2, 3, 4))));
+        }
+        int scarce = 0;
+        int plenty = 0;
+        for (long seed : new long[] {3, 1001, 2160}) {
+            for (List<Input> given : List.of(inputs, List.<Input>of())) {
+                for (Event event : Run.execute(seed, Params.defaults(), given, 300).log()) {
+                    if (event instanceof PriceObserved read) {
+                        if (read.claim().type() == ClaimType.SCARCE) {
+                            assertTrue(read.price() > NORMAL, "scarcity read off " + read);
+                            scarce++;
+                        } else {
+                            assertTrue(read.price() < NORMAL, "plenty read off " + read);
+                            plenty++;
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(scarce > 0 && plenty > 0, "both kinds of reading should have happened: "
+                + scarce + " scarce, " + plenty + " plenty");
     }
 
     @Test

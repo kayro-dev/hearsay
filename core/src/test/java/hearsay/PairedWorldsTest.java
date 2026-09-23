@@ -26,7 +26,11 @@ class PairedWorldsTest {
         // not about how clustered a village is. E23 and E24 fitted the clustering to
         // recorded traces, and that fit should not decide whether a fixture spreads
         // far enough to have anything to measure.
-        return PairedWorlds.run(SEED, Params.defaults().withMixing(1.0), theLie(), TICKS, PAIRS);
+        // The level gate likewise: eight pairs is enough to exercise the machinery only if
+        // some of them bubble, and at this seed none does under E47's gate. How often a lie
+        // causes a bubble under the defaults is CalibrationTest's to say, on 200 seeds.
+        return PairedWorlds.run(SEED, Params.defaults().withMixing(1.0).withLevelGate(0.0),
+                theLie(), TICKS, PAIRS);
     }
 
     @Test

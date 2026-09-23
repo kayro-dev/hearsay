@@ -233,9 +233,13 @@ public record Params(
      * not a famine starting (E45), and one falling back from a bubble toward normal is the
      * bubble ending, not a glut. At 0, today's rule. Between, a blend.
      *
-     * <p><strong>Zero by default</strong>, inert until E47's table has been seen.
+     * <p><strong>On by default since 2026-09-23 (E47).</strong> Today's rule read a glut's
+     * recovery as a famine: selling-only villages panicked 10-20 times as often as villages
+     * left alone (E45). With the gate the lie keeps its bubbles and the paired separation
+     * widens; the cost is that a bubble comes down on decay alone, about 45% more slowly.
+     * Every experiment before E47 was measured at 0, and old recipes read as 0.
      */
-    public static final double LEVEL_GATE = 0.0;
+    public static final double LEVEL_GATE = 1.0;
 
     public static Params defaults() {
         return new Params(0.25, 0.25, 0.5, 0.92, 0.05, 0.05, 1.0,

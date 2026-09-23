@@ -12,8 +12,11 @@ class MarketStatsTest {
     private static MarketStats afterARumor() {
         // A perfectly mixed village, pinned rather than inherited: this is about the shape of a bubble,
         // not about how clustered a village is, and E23's fit should not decide
-        // whether the fixture spreads far enough to test anything.
-        return MarketStats.of(Run.execute(3, Params.defaults().withMixing(1.0),
+        // whether the fixture spreads far enough to test anything. The level gate is pinned
+        // off for the same reason: these check how bubbles and busts are counted, and they
+        // need a village that does both. Since E47 a bubble comes down on decay alone and
+        // never overshoots into a bust, so only the reading it replaced still makes one.
+        return MarketStats.of(Run.execute(3, Params.defaults().withMixing(1.0).withLevelGate(0.0),
                 List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 12)), 200).log(), DIAMONDS_SCARCE);
     }
 
@@ -153,8 +156,10 @@ class MarketStatsTest {
     @Test
     void everyCountedBustFellAwayAndCameBackUp() {
         // E28: the village fell to 73 from a base of 100 after its bubble deflated, and
-        // nothing counted that at all. A deflating bubble overshoots, because the fall is
-        // read as evidence of plenty on the same terms the climb was read as scarcity.
+        // nothing counted that at all. Under the reading it was measured with, a deflating
+        // bubble overshoots, because the fall is read as evidence of plenty on the same terms
+        // the climb was read as scarcity; E47's level gate stopped that, and the fixture
+        // keeps the old reading so busts are still there to count.
         MarketStats stats = afterARumor();
 
         assertFalse(stats.busts().isEmpty(), "this run should bust as well as bubble");

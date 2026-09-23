@@ -70,7 +70,8 @@ logged so any crash can be replayed and compared against a counterfactual.
      minimum.
   3. **stage 2, more goods — in progress, plan in V2_PROPOSAL.md.** Goods are independent
      markets (no spillover), added one at a time behind gates: diamond, then gold, iron,
-     wheat and bread; diamond, gold (E39), iron (E40), wheat (E42) and bread (E44) are done. PinnedLogsTest holds five diamond
+     wheat and bread; diamond, gold (E39), iron (E40), wheat (E42) and bread (E44) are done,
+     and all four pass again under the level gate (E48). Bulk selling measured (E45). PinnedLogsTest holds five diamond
      logs bit for bit, through a frozen printer, and must never be updated to match a
      change — if it fails, stage 2 has changed diamond. IndependenceTest demands each
      good's events be equal with and without the others. Params.goods records which
@@ -90,15 +91,22 @@ logged so any crash can be replayed and compared against a counterfactual.
   data, not shared confidence (E43). `./gradlew :experiments:guard` measures
   CalibrationTest's false-failure rate and power against the real model on fresh seeds.
 - Figures that are shares of runs move with run length and must not be compared across
-  lengths. The quiet-village rate is 0.19 bursts per 100 village-days [0.10-0.29] (E38),
-  and a bubble is only laid at a lie's door within thirty days of it.
+  lengths. The quiet-village rate is 0.001 bursts per 100 village-days [0.000-0.002] over
+  120,000 village-days (E48, `./gradlew :experiments:goods`); it was 0.19 (E38) until E47
+  found most of it was the E45 rebound bug. A bubble is only laid at a lie's door within
+  thirty days of it.
 - Player-facing features built between stages must not touch the simulation's decisions or
   the calibration, and each needs a test proving it read-only, so no experiment re-runs.
-- Two readings of the market price are built and off. `trendAnchor` (E46): reading against a
-  trailing average follows momentum and made E45 worse; inert at 0, like the reality checks.
-  `levelGate` (E47): only the part of a move beyond normal is evidence; it removes E45's
-  glut-rebound panics and keeps the lie's bubbles, but deflation runs on decay alone. Off
-  pending the user's decision.
+- **`levelGate` is on by default since 2026-09-23 (E47, E48):** only the part of a price move
+  beyond normal is evidence, so a glut's recovery is not a famine and a bubble's unwinding is
+  not a glut. It removed E45's selling-rebound panics and kept the lie's bubbles; the cost is
+  that a bubble comes down on decay alone, about 45% more slowly, and no longer overshoots.
+  Every experiment before E47 was measured at levelGate 0, and old recipes read as 0.
+  PinnedLogsTest holds the pre-stage-2 logs under levelGate 0, the rule they were recorded
+  under; DefaultLogsTest pins the same five villages under the current defaults. Neither is
+  ever updated to match a change.
+- `trendAnchor` (E46) is built and inert at 0, like the reality checks: reading against a
+  trailing average follows momentum and made E45 worse.
 - E32's "never settles" is withdrawn (E37): measured from the largest swing, the village
   settles on its own. Measure oscillation after the peak, and never let a damper mute the
   village — only the oscillation measures beside the paired-worlds separation can tell
