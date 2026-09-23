@@ -68,7 +68,7 @@ their name, so **a number above a head means somebody believed something**.
 | State | Outline | Meaning |
 | --- | --- | --- |
 | Has heard it | grey glow | They know the rumour exists. It has not convinced them |
-| Believes it | warm glow | Confidence at or above `BELIEVES` (0.5). They will act on it |
+| Believes it | warm glow — **red** in game | Confidence at or above `BELIEVES` (0.5). They will act on it. Team colours are sixteen named colours, and the alarmed orange rounds to red |
 | Has not heard it | none | Most of the village, most of the time |
 
 Glow is a scoreboard team colour, so it shows through walls and needs nothing drawn each
