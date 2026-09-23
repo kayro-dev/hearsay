@@ -33,6 +33,19 @@ public final class RumorWords {
      * @throws IllegalArgumentException saying what is missing or doubled, for the player
      */
     public static Said read(List<String> words) {
+        return read(words, null);
+    }
+
+    /**
+     * The claim a player asks to watch. The same words, except that the claim may be left
+     * out and means scarce: watching changes nothing, so a default there cannot spoil an
+     * experiment the way one in a planted rumour did.
+     */
+    public static Said readWatched(List<String> words) {
+        return read(words, ClaimType.SCARCE);
+    }
+
+    private static Said read(List<String> words, ClaimType unsaid) {
         Good good = null;
         ClaimType type = null;
         for (String raw : words) {
@@ -56,8 +69,11 @@ public final class RumorWords {
         if (good == null) {
             throw new IllegalArgumentException("Which good? One of " + goodIds() + ".");
         }
-        if (type == null) {
+        if (type == null && unsaid == null) {
             throw new IllegalArgumentException("Scarce or abundant?");
+        }
+        if (type == null) {
+            type = unsaid;
         }
         return new Said(good, type);
     }

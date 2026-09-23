@@ -50,16 +50,17 @@ public final class BeliefReport {
      * given "golds" by the same rule.
      */
     private static String describe(Rumor version) {
-        String item = Good.of(version.claim()).plural();
+        Good good = Good.of(version.claim());
+        String item = good.plural() + " " + good.isOrAre();
         return switch (version.claim().type()) {
             case SCARCE -> switch (version.severity()) {
-                case 1 -> item + " are getting scarce";
-                case 2 -> item + " are running short";
-                default -> item + " are all but gone";
+                case 1 -> item + " getting scarce";
+                case 2 -> item + " running short";
+                default -> item + " all but gone";
             };
             case ABUNDANT -> switch (version.severity()) {
-                case 1 -> item + " are easy to come by";
-                case 2 -> item + " are everywhere";
+                case 1 -> item + " easy to come by";
+                case 2 -> item + " everywhere";
                 default -> "there is a glut of " + item;
             };
         };

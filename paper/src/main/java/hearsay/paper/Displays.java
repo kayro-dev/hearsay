@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import hearsay.ClaimType;
+import hearsay.Good;
 import hearsay.MarketRegion;
 import hearsay.PriceMood;
 import hearsay.Spot;
@@ -85,7 +86,7 @@ final class Displays {
      * <p>Colour and wording come from {@link PriceMood}, which the dashboard reads too, so
      * the bar and the page never disagree about what counts as a panic.
      */
-    void showPrice(int price, int basePrice) {
+    void showPrice(Good good, int price, int basePrice) {
         float lowest = basePrice * 0.5f;
         float highest = basePrice * 2.0f;
         float fraction = Math.clamp((price - lowest) / (highest - lowest), 0f, 1f);
@@ -93,12 +94,25 @@ final class Displays {
 
         PriceMood mood = PriceMood.of(price, basePrice);
         priceBar.color(barColour(mood));
-        priceBar.name(Component.text("Diamonds  ")
+        priceBar.name(Component.text(title(good) + "  ")
                 .color(NamedTextColor.GRAY)
                 .append(Component.text(PriceMood.describe(price, basePrice))
                         .color(TextColor.fromHexString(mood.hex())))
                 .append(Component.text("   " + mood.label().toLowerCase(java.util.Locale.ROOT),
                         NamedTextColor.GRAY)));
+    }
+
+    /** The bar before the market has opened, naming the good it is waiting to price. */
+    void showNoMarket(Good good) {
+        priceBar.progress(0f);
+        priceBar.color(BossBar.Color.YELLOW);
+        priceBar.name(Component.text(title(good) + ": no market yet", NamedTextColor.GRAY));
+    }
+
+    /** "Diamonds", "Gold ingots", "Wheat": the good as the bar names it. */
+    private static String title(Good good) {
+        String plural = good.plural();
+        return Character.toUpperCase(plural.charAt(0)) + plural.substring(1);
     }
 
     /**

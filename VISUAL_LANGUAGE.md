@@ -13,6 +13,18 @@ good news for whoever owns the thing. Here a rising price is a village that has 
 itself into a shortage that may not exist, and colouring that as good news would tell the
 player the opposite of what is happening. Rising runs warm the way an alarm does.
 
+## One claim at a time
+
+A village trading four goods holds eight claims and four prices. **The world shows one claim
+at a time**: the heads, the glow, the ❗ when a rumour takes and the boss bar all follow the
+same one, and the bar names its good ("Wheat ▲ +12%"). Planting a rumour switches them to
+the claim just planted; `/hearsay watch <good> [scarce|abundant]` switches them by hand. A
+head carrying every good is the clutter the labels were cut down to remove. What a villager
+thinks about everything else is one crouch-right-click away, and never on display.
+
+Switching is display only — `OnDisplay` in core is tested to change nothing — so watching
+wheat instead of diamonds is never a different experiment.
+
 ## Price
 
 The index is built so **100 is normal**, which makes the raw number the less useful half of

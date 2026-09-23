@@ -83,8 +83,11 @@ disagree, the village is dying.
 | 11c | Sell iron to the Armorer, then diamonds, then close the window | Two separate lines in chat, "took 32 iron ingots for 8 emeralds" and "took 1 diamond for …" — each sale is evidence about its own good only |
 | 12a | **Find a Farmer and open their trades — the decisive wheat test** | A trade taking **60 wheat in each of two slots** for 6 emeralds. Click it with 120+ wheat in your inventory: both slots should fill with 60, and the trade should complete. **If it does not fill both, or will not complete, stop and report it** — the fallback is 18 hay bales for 8 emeralds (E42) |
 | 12b | Sell wheat to the Farmer twice with villagers watching, then close the window | In chat: "<name> took 240 wheat for 12 emeralds. N villagers saw it." — **120 a trade**, not 60: both slots are counted. The action bar says the same while trading but is hidden behind the window, so the chat line is the one to read |
-| 12c | `/hearsay rumor wheat scarce` next to a villager, let it spread | The Farmer's wheat trade pays more than 6. No other good's trade moves |
+| 12c | `/hearsay rumor wheat scarce` next to a villager, let it spread | "Heads, glow and the bar now follow wheat scarce." The bar reads **Wheat**, the villager told glows gold, and heads show a wheat price change as it spreads. Whispers say "about wheat". The Farmer's wheat trade pays more than 6. No other good's trade moves |
 | 12d | Sell into the famine | Watchers grow less sure the harvest failed. A famine rumour can be punctured the way a diamond panic can |
+| 12e | `/hearsay watch diamonds` mid-famine | The bar reads **Diamonds**, back near no change, and the glow goes: nobody believes anything about diamonds. `/hearsay watch wheat` brings the famine back. Nothing else about the village changes |
+| 12f | `/hearsay watch` alone | Refused, "Which good?". `/hearsay status` names the claim on display |
+| 12g | Crouch-right-click a villager who heard the famine | "wheat **is** getting scarce", not "wheat are" |
 | 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |
 | 9b | Plant a rumour and wait several days | It should struggle. A village that can see a stack of diamonds is hard to convince they are gone |
 | 9c | Crouch-right-click a villager who did believe it | Their confidence falls day by day while the chest is there |

@@ -43,6 +43,10 @@ class GoodTest {
         assertEquals("gold ingots", Good.GOLD.plural());
         assertEquals("iron ingots", Good.IRON.plural());
         assertEquals("wheat", Good.WHEAT.plural(), "wheat is a mass noun, not 'wheats'");
+        assertEquals("is", Good.WHEAT.isOrAre(), "and so wheat is scarce, not 'wheat are'");
+        assertEquals("are", Good.DIAMOND.isOrAre());
+        assertEquals("are", Good.GOLD.isOrAre());
+        assertEquals("are", Good.IRON.isOrAre());
         assertEquals("120 wheat", Good.WHEAT.amount(120));
     }
 

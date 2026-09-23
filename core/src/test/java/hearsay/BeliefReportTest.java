@@ -63,6 +63,18 @@ class BeliefReportTest {
     }
 
     @Test
+    void wheatIsScarceNotWheatAre() {
+        // A played session, 2026-09-23, said "wheat are getting scarce".
+        Params params = Params.defaults().withGoods(Good.values());
+        WorldState world = Simulation.replay(Run.execute(42, params, List.of(
+                new PlantRumor(1, new Claim("wheat", ClaimType.SCARCE), 1, 3)), 2).log());
+
+        List<String> said = BeliefReport.of(world, 3);
+        assertEquals(1, said.size(), "the villager lied to should hold the one belief: " + said);
+        assertTrue(said.get(0).startsWith("wheat is getting scarce"), said.get(0));
+    }
+
+    @Test
     void itSaysWhereTheyHadItFrom() {
         WorldState world = villageToldALie().finalState();
 

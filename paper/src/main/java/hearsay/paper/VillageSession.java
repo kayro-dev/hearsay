@@ -6,6 +6,7 @@ import hearsay.ClaimType;
 import hearsay.Good;
 import hearsay.MeetingSource;
 import hearsay.ObservedMeeting;
+import hearsay.OnDisplay;
 import hearsay.Params;
 import hearsay.Personality;
 import hearsay.PlantRumor;
@@ -54,7 +55,11 @@ final class VillageSession {
     private final long seed;
     private final Simulation simulation;
     private final Map<Integer, UUID> bodies = new LinkedHashMap<>();
-    private final Claim tracked;
+    /**
+     * The claim the heads, glow and price bar follow. Diamonds scarce until the player plants
+     * or asks to watch something else. Display only: nothing the simulation decides reads it.
+     */
+    private Claim shown = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
 
     /**
      * Where everybody stood, tick by tick. Held in memory and written beside the recipe at
@@ -66,7 +71,6 @@ final class VillageSession {
         this.seed = seed;
         this.simulation = simulation;
         this.bodies.putAll(bodies);
-        this.tracked = new Claim(Simulation.DIAMOND, ClaimType.SCARCE);
     }
 
     /**
@@ -116,8 +120,12 @@ final class VillageSession {
         return Map.copyOf(bodies);
     }
 
-    Claim tracked() {
-        return tracked;
+    Claim shown() {
+        return shown;
+    }
+
+    void show(Claim claim) {
+        shown = claim;
     }
 
     long tick() {
@@ -281,32 +289,18 @@ final class VillageSession {
     }
 
     /**
-     * What each bound villager makes of the claim, for the text above their head.
+     * What the screen shows of the claim on display. Read-only, and tested to be in
+     * {@link OnDisplay}.
      *
-     * <p>Read from the simulation's villagers rather than from the bound bodies, which is
-     * the difference between working and bringing the session down. A body is bound the
-     * moment the village is, but the mind inside it is created by the first tick like every
-     * other change, so asking the bound ids what they believe before that tick has run
-     * asks about villagers who do not exist yet.
-     *
-     * <p>This is a read for the screen and must never throw. When it did, the exception
-     * came out of the scheduled tick before the villagers were created, so they were never
-     * created, so it threw again on the next tick and every tick after: the village stayed
-     * "still waking up" for ever and no command worked. The same mistake cost a session
-     * once before through {@code /hearsay who}.
+     * <p>This is a read for the screen and must never throw. When the old version of it
+     * did, the exception came out of the scheduled tick before the villagers were created,
+     * so they were never created, so it threw again on the next tick and every tick after:
+     * the village stayed "still waking up" for ever and no command worked. Reading the
+     * simulation's villagers rather than the bound bodies is what keeps it safe, since the
+     * minds are created by the first tick and the bodies are bound before it.
      */
-    Map<Integer, Double> confidences() {
-        Map<Integer, Double> held = new LinkedHashMap<>();
-        simulation.state().villagers().forEach((id, villager) -> {
-            if (!bodies.containsKey(id)) {
-                return;
-            }
-            var belief = villager.belief(tracked);
-            if (belief != null) {
-                held.put(id, belief.confidence());
-            }
-        });
-        return held;
+    OnDisplay onDisplay() {
+        return OnDisplay.of(simulation, shown);
     }
 
     /** How much this villager talks, which decides whether a rumor told to them travels. */

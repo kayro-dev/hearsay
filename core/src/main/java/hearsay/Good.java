@@ -146,6 +146,14 @@ public enum Good {
     }
 
     /**
+     * "Wheat is", "diamonds are". A good whose plural is its singular is counted as a mass,
+     * and a mass takes "is": "wheat are scarce" is nobody talking.
+     */
+    public String isOrAre() {
+        return plural.equals(singular) ? "is" : "are";
+    }
+
+    /**
      * Where this good's rumour ids begin. Diamond at 0, so every id recorded before stage 2
      * is unchanged; each good after it a million further on.
      */

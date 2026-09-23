@@ -49,6 +49,19 @@ class RumorWordsTest {
     }
 
     @Test
+    void watchingMayLeaveTheClaimOutButNotTheGood() {
+        // Watching records nothing, so a default there is harmless; planting still refuses.
+        assertEquals(new RumorWords.Said(Good.WHEAT, ClaimType.SCARCE),
+                RumorWords.readWatched(List.of("wheat")));
+        assertEquals(new RumorWords.Said(Good.DIAMOND, ClaimType.ABUNDANT),
+                RumorWords.readWatched(List.of("diamonds", "abundant")));
+        assertThrows(IllegalArgumentException.class, () -> RumorWords.readWatched(List.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> RumorWords.readWatched(List.of("wheat", "gold")));
+        assertEquals("Scarce or abundant?", refusal("wheat"));
+    }
+
+    @Test
     void everyGoodCanBeNamed() {
         for (Good good : Good.values()) {
             assertEquals(good, read(good.id(), "scarce").good());

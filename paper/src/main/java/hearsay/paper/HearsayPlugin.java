@@ -2,9 +2,11 @@ package hearsay.paper;
 
 import hearsay.Bearing;
 import hearsay.Bubble;
+import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.Good;
 import hearsay.MarketRegion;
+import hearsay.OnDisplay;
 import hearsay.Params;
 import hearsay.RecipeFile;
 import hearsay.RumorWords;
@@ -166,13 +168,14 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         switch (action) {
             case "start" -> start(player, args);
             case "rumor", "rumour" -> plant(player, args);
+            case "watch" -> watch(player, args);
             case "status" -> status(player);
             case "who" -> who(player);
             case "market" -> market(player, args);
             case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
-                    "/hearsay start [seed] | rumor diamonds scarce | who | market <radius>"
+                    "/hearsay start [seed] | rumor diamonds scarce | watch wheat | who | market <radius>"
                     + " | market clear | status | stop"));
         }
         return true;
@@ -263,8 +266,9 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         session.survey(session.tick() + 1, bodies);
         // Kept from before the tick so a villager crossing into believing can be told from
         // one who already did. The mark is for the moment it took, not for every repetition.
-        Map<Integer, Double> before = new LinkedHashMap<>(session.confidences());
+        OnDisplay before = session.onDisplay();
         List<Telling> tellings = session.advance(positions, spots);
+        OnDisplay shown = session.onDisplay();
 
         Map<Integer, String> names = new LinkedHashMap<>();
         Map<Integer, Double> gossip = new LinkedHashMap<>();
@@ -273,11 +277,11 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             gossip.put(id, session.gossipOf(id));
         });
         Map<Integer, String> labels = session.labels();
-        displays.showBeliefs(world, bodies, names, labels, gossip, session.confidences(),
-                session.asks(Good.DIAMOND), Params.defaults().basePrice(),
+        displays.showBeliefs(world, bodies, names, labels, gossip, shown.confidences(),
+                shown.asks(), Params.defaults().basePrice(),
                 showingSpots ? spots : Map.of());
         displays.showWhoKnows(getServer().getScoreboardManager().getMainScoreboard(),
-                bodies, session.confidences(), lit);
+                bodies, shown.confidences(), lit);
         displays.fadeMarks(world);
         priceTheCounters(bodies);
         if (market != null) {
@@ -292,13 +296,19 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                         .ifPresent(session::reportStock);
             }
         }
-        session.price(Good.DIAMOND).ifPresent(price -> displays.showPrice(price, Params.defaults().basePrice()));
+        shown.price().ifPresentOrElse(
+                price -> displays.showPrice(shown.good(), price, Params.defaults().basePrice()),
+                () -> displays.showNoMarket(shown.good()));
 
         for (Telling telling : tellings) {
             Villager teller = bodies.get(telling.tellerId());
             Villager listener = bodies.get(telling.listenerId());
-            boolean tookHold = telling.newConfidence() >= BELIEVES
-                    && before.getOrDefault(telling.listenerId(), 0.0) < BELIEVES;
+            // Only for the claim on display: a wheat telling crossing 50% says nothing about
+            // whether the listener believes diamonds are scarce, and marking it as if it did
+            // would put a mark on the wrong villager.
+            boolean tookHold = telling.claim().equals(shown.claim())
+                    && telling.newConfidence() >= BELIEVES
+                    && before.confidences().getOrDefault(telling.listenerId(), 0.0) < BELIEVES;
             if (teller == null || listener == null) {
                 continue;
             }
@@ -324,7 +334,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
      */
     private void announceWhisper(Telling telling, Villager teller, Villager listener) {
         String said = session.nameOf(telling.tellerId()) + " whispers to "
-                + session.nameOf(telling.listenerId());
+                + session.nameOf(telling.listenerId()) + " about "
+                + Good.of(telling.claim()).plural();
         getLogger().info(said + " (" + Math.round(telling.newConfidence() * 100) + "%)");
 
         Player player = watcher == null ? null : getServer().getPlayer(watcher);
@@ -437,6 +448,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         }
         Good good = said.good();
         ClaimType type = said.type();
+        Claim planted = new Claim(good.id(), type);
 
         Integer nearest = nearestBoundVillager(player);
         if (nearest == null) {
@@ -447,8 +459,15 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         session.plantRumorIn(nearest, good, type);
         double gossip = session.gossipOf(nearest);
         player.sendMessage(Component.text("You tell " + session.nameOf(nearest)
-                + " that " + good.plural() + " are " + type.name().toLowerCase() + ".",
-                NamedTextColor.GOLD));
+                + " that " + good.plural() + " " + good.isOrAre() + " "
+                + type.name().toLowerCase() + ".", NamedTextColor.GOLD));
+        // The screen follows the lie the player is telling. Watching diamonds while lying
+        // about wheat showed nothing changing at all (manual test 12, 2026-09-23).
+        if (!planted.equals(session.shown())) {
+            session.show(planted);
+            player.sendMessage(Component.text("Heads, glow and the bar now follow "
+                    + describe(planted) + ". /hearsay watch switches them.", NamedTextColor.GRAY));
+        }
 
         // Who you tell is worth about a third of whether a rumor takes hold, and gossip
         // predicts it: see E8. Telling a quiet villager is a wasted session, and there is
@@ -460,6 +479,39 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             player.sendMessage(Component.text("A quieter villager than you want. "
                     + "/hearsay who lists the talkers.", NamedTextColor.YELLOW));
         }
+    }
+
+    /**
+     * Chooses the claim the heads, glow and price bar follow: {@code /hearsay watch gold},
+     * or {@code /hearsay watch diamonds abundant}. Scarce unless said otherwise.
+     *
+     * <p>Display only. Nothing planted, nothing recorded, and {@link OnDisplay} is tested to
+     * change nothing, so a player can flick between goods mid-session without the session
+     * becoming a different experiment.
+     */
+    private void watch(Player player, String[] args) {
+        if (session == null) {
+            player.sendMessage(Component.text("Nothing bound. /hearsay start first.",
+                    NamedTextColor.RED));
+            return;
+        }
+        RumorWords.Said said;
+        try {
+            said = RumorWords.readWatched(List.of(args).subList(1, args.length));
+        } catch (IllegalArgumentException refused) {
+            player.sendMessage(Component.text(refused.getMessage()
+                    + " For example: /hearsay watch wheat.", NamedTextColor.RED));
+            return;
+        }
+        Claim claim = new Claim(said.good().id(), said.type());
+        session.show(claim);
+        player.sendMessage(Component.text("Heads, glow and the bar now follow "
+                + describe(claim) + ".", NamedTextColor.AQUA));
+    }
+
+    /** "wheat scarce", as the status line and the switch messages name a claim. */
+    private static String describe(Claim claim) {
+        return Good.of(claim).plural() + " " + claim.type().name().toLowerCase(java.util.Locale.ROOT);
     }
 
     private Integer nearestBoundVillager(Player player) {
@@ -769,7 +821,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         if (notReady(player)) {
             return;
         }
-        Map<Integer, Double> confidences = session.confidences();
+        OnDisplay shown = session.onDisplay();
+        Map<Integer, Double> confidences = shown.confidences();
         long believers = confidences.values().stream().filter(c -> c >= 0.5).count();
 
         int alive = whoIsAround().size();
@@ -779,7 +832,8 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
                     + "the simulation still counts them.", NamedTextColor.RED));
         }
         player.sendMessage(Component.text("Tick " + session.tick()
-                + " | price " + session.price(Good.DIAMOND).orElse(Params.defaults().basePrice())
+                + " | " + describe(shown.claim())
+                + " | price " + shown.price().orElse(Params.defaults().basePrice())
                 + " | heard " + confidences.size() + "/" + session.boundCount()
                 + " | believe " + believers + "/" + session.boundCount()
                 + " | a bubble is above " + Bubble.PEAK_ABOVE + " and back under "
