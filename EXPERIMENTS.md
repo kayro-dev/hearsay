@@ -3130,3 +3130,96 @@ named without a plural "s".
 
 **Decision.** Bread joins every village in the game. Headless stays diamond alone. With it
 stage 2's goods are all in: diamond, gold, iron, wheat and bread.
+
+---
+
+## E45 — Selling in bulk: a glut's rebound is read as a famine
+
+```
+./gradlew :experiments:selling
+```
+
+The measurement stage 2's plan owed: evidence from a sale is now weighed by its value in
+emeralds, saturating at 128, and the plan asked whether a player selling as much as counters
+will take can start a panic in a village nobody lied to — the bug it named in advance.
+
+**Method.** Headless runs have no player, so the sales are scripted: once a village day from
+the third, at the day's busiest market tick, a sale of one bundle or twelve (a counter's
+restock limit), at one counter or three, witnessed by everyone standing in the market — the
+generous end of what a player can do. Where villagers stand is decided by the movement stream,
+which reads no belief, so each village is run unsold to find who is in the market and again
+with the sales; every move was identical between the two in every run. Seeds 7001–7240, 175
+days, the goods gate's length; villages lied to, 7001–7100 over 50 days. Bread is left out:
+villagers sell it, and buying it is refused as evidence (E44).
+
+**Written before the first run:** selling alone must not raise the burst rate of a village
+nobody lied to, judged at **three counters a day** as the hardest case, one comparison per good
+sharing the 5%.
+
+### The results, by good
+
+| good | pace | quiet bursts / 100 days | a burst by day 30 | by day 60 | a bust by day 30 | lowest price | lie bursts within 30 days |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| diamond | nobody sells | 0.019 [0.003, 0.035] | 0.4% | 0.4% | 1% | 60 | 35% |
+| | 1 bundle a day | 0.007 | 0.0% | 0.0% | 1% | 47 | 35% |
+| | **12 a day, one counter** | **0.410** [0.344, 0.475] | 0.4% | **7.1%** | 96% | 24 | 33% |
+| | 12 a day, three counters | 0.038 | 0.4% | 1.3% | 73% | 24 | **27%** |
+| gold | nobody sells | 0.026 | 0.0% | 0.0% | 1% | 34 | 35% |
+| | **12 a day, one counter** | **0.414** | 0.8% | **7.5%** | 98% | 23 | 29% |
+| | 12 a day, three counters | 0.021 | 0.4% | 0.4% | 63% | 23 | **18%** |
+| iron | nobody sells | 0.043 | 0.0% | 0.8% | 2% | 34 | 31% |
+| | **12 a day, one counter** | **0.500** | 1.7% | **12.9%** | 98% | 24 | 32% |
+| | 12 a day, three counters | 0.017 | 0.4% | 0.4% | 63% | 23 | **18%** |
+| wheat | nobody sells | 0.040 | 0.4% | 1.3% | 0% | 34 | 42% |
+| | **12 a day, one counter** | **0.531** | 0.4% | **7.9%** | 83% | 24 | 41% |
+| | 12 a day, three counters | 0.098 | 1.3% | 2.9% | 87% | 23 | **29%** |
+
+One bundle a day does nothing measurable to anything, for every good.
+
+### The gate as written passed, and was aimed at the wrong pace
+
+At three counters a day, all four goods pass: the difference from an unsold village contains
+zero for each. **But three counters is not the worst case.** Sold into that hard, the price is
+pinned at its floor and rarely comes back up. At **one counter a day** it crashes, recovers,
+and overshoots: selling-only villages burst **10 to 20 times** as often as villages left alone,
+and every good fails, by 0.39 to 0.49 bursts per 100 village-days with intervals nowhere near
+zero. Judging both paces, eight comparisons sharing the 5%: **four fail, four pass.**
+
+### Why: the rebound from a glut is read as a shortage
+
+Traced on seed 7004, diamonds, twelve a day at one counter. Around day 105 the selling tips the
+village into believing in plenty — believers in a glut go from 0 to 18 — and the price falls
+from 107 to **25, the floor** (`priceSensitivity` 0.75 lets an ask fall to a quarter). Belief in
+plenty then fades as beliefs do, the price starts back up, and **the climb itself is observed as
+evidence of scarcity**: believers in a shortage go from 0 to 17 in six days, *while the player
+is still selling every day*, and the price overshoots to 131.
+
+The market observation rule reads a rising price as a reason to fear a shortage, whatever
+level it rises from. From 25 to 48 is a rise, and it is also a price still at half of normal.
+**A glut ending is not a famine starting**, and the rule cannot tell the two apart.
+
+### How much it matters
+
+- **In a played session it is rare.** A selling-only burst by day 30 happened in 0.4–1.7% of
+  villages, against 0–0.4% unsold. Played sessions so far have run well under thirty days.
+- **In a long-lived world it is common.** By day 60, 7–13% of villages sold into at one counter
+  have panicked with nobody lying; over 175 days, about half of them. An iron farm feeding one
+  Armorer every day is exactly this pace.
+- **Busts are near certain and are honest.** Flooding a market should crash its price, and 83–98%
+  of villages bust within a month at a counter's full restock. That is real evidence of plenty,
+  not a false belief.
+
+### Two answers the plan also asked for
+
+**Selling into a lie punctures it, at volume.** Three counters a day cut the lie's 30-day burst
+rate from 35% to 27% for diamonds and from 31–42% to 18–29% for the rest; one bundle a day
+changes nothing. This is the question manual test 12d skipped: at bundle sizes a sale is a
+nudge, and it takes a player selling everything they can to see it (E34's +0.004 per sale).
+
+**The witness weight has room, in the opposite direction from E33.** At the hardest selling,
+0.28 keeps the price pinned and bursts fall to zero; 0.07 lets it rebound and bursts rise to
+0.14–0.29. E33 found 0.28 *caused* quiet bursts at light diamond-only selling. Neither sweep
+alone says the weight is wrong — it moves the rebound, and the rebound is the cause.
+
+**Decision: none yet.** Nothing is retuned. Whether and how to change the observation rule is
+proposed to the user, since it is the rule every calibration since E20 rests on.

@@ -105,3 +105,11 @@ tasks.register<JavaExec>("guard") {
     mainClass = "hearsay.experiments.CalibrationGuard"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Can bulk selling start a panic nobody lied about: ./gradlew :experiments:selling */
+tasks.register<JavaExec>("selling") {
+    group = "application"
+    description = "Sells every buyable good as hard as a player can, into quiet and lied-to villages."
+    mainClass = "hearsay.experiments.Selling"
+    classpath = sourceSets["main"].runtimeClasspath
+}
