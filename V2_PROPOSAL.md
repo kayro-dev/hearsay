@@ -257,9 +257,11 @@ when a player trades, so it touches no calibration.
 
 ### The screen
 
-One boss bar per good **that is not normal**, rather than four bars at all times. The same
-principle that thinned the name plates: a bar that says "· 0%" is saying nothing, and four of
-them bury the one that matters. A village with nothing going on shows nothing.
+*Planned:* one boss bar per good **that is not normal**, rather than four bars at all times.
+*Built instead (2026-09-23):* one claim on display at a time — heads, glow, marks and one bar
+together — chosen by the last rumour planted or by `/hearsay watch`. Several bars would each
+need their own heads and glow to mean anything, and five sets on one villager is the clutter
+the name plates were thinned to remove. See VISUAL_LANGUAGE.md, "One claim at a time".
 
 ### The gates, in order
 
@@ -271,7 +273,7 @@ them bury the one that matters. A village with nothing going on shows nothing.
 | **3. + iron** | ✓ **done (E40).** Every good identical alone and in every village trading anything else; iron passes all eight `GoodTargets` untuned. Armorer trade, 32 for 8 — the first villager with two counters |
 | **4. + wheat** | ✓ **done (E42).** Passes every target untuned. The stack limit is checked against Paper's javadoc (two ingredients, each within a stack), so 120 goes as two sixties. Investigating wheat's one miss found the gate itself failed an identical good 23% of the time; it now shares its 5% across its comparisons, and all three goods pass. The same-item-in-both-slots behaviour is a manual test, with hay bales as the fallback |
 | **5. + bread** | ✓ **done (E44).** Passes every target untuned, identical alone and alongside every other good. Farmer sells, 48 for 8 — the Farmer now keeps two counters, one each way. A bread purchase is refused as an input, so it carries no evidence by construction rather than by convention |
-| **6. the screen** | boss bars per non-normal good; `BeliefReport` and labels say "gold ingots", "wheat" and "bread" |
+| **6. the screen** | ✓ **done, differently.** One claim on display at a time rather than a bar per non-normal good: planting switches it, `/hearsay watch` switches it by hand, and `OnDisplay` is tested read-only. `BeliefReport`, the narrator and the plant message say "gold ingots", "wheat is" and "bread is". A warning for a good not being watched was considered and left out (2026-09-23): nothing in stage 2 lets one good's panic reach another, so there is nothing for it to warn about until spillover exists |
 
 **Wheat before bread** because wheat is a buy-side good and follows the path diamond has
 already proved. Bread brings the one genuinely new thing — a villager selling — and goes last,
