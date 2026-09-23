@@ -115,6 +115,7 @@ public final class RecipeFile {
                 + " emptyEvidence=" + p.emptyEvidence()
                 + " trendAnchor=" + p.trendAnchor()
                 + " trendWindowTicks=" + p.trendWindowTicks()
+                + " levelGate=" + p.levelGate()
                 + " goods=" + String.join(",", p.goods().stream().map(Good::id).toList());
     }
 
@@ -166,6 +167,8 @@ public final class RecipeFile {
                 values.containsKey("trendAnchor") ? number(values, "trendAnchor") : 0.0,
                 values.containsKey("trendWindowTicks")
                         ? (int) number(values, "trendWindowTicks") : Params.TREND_WINDOW_TICKS,
+                // Written before prices were read against normal; 0 is the rule then.
+                values.containsKey("levelGate") ? number(values, "levelGate") : 0.0,
                 // Written before a village could trade in anything but diamonds, so that is
                 // what those villages traded in.
                 goodsIn(values));

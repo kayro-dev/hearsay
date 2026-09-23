@@ -48,7 +48,7 @@ public final class TrendSweep {
             // the answer depends on it.
             new Setting("full, 15-day window", 1.0, 60));
 
-    private static final Good[] SOLD = {Good.DIAMOND, Good.GOLD, Good.IRON, Good.WHEAT};
+    static final Good[] SOLD = {Good.DIAMOND, Good.GOLD, Good.IRON, Good.WHEAT};
     private static final List<Selling.Pace> PACES = List.of(
             new Selling.Pace("1 a day", 1, 1),
             new Selling.Pace("3 a day", 3, 1),
@@ -83,7 +83,7 @@ public final class TrendSweep {
     }
 
     /** CalibrationTest's three checks, seeds and lengths exactly as the suite runs them. */
-    private static void calibration(Params params) {
+    static void calibration(Params params) {
         int burst = 0;
         for (long seed = 1001; seed < 1201; seed++) {
             if (lied(seed, params, 200).bubbleWithin(1, 30).isPresent()) {
@@ -109,7 +109,7 @@ public final class TrendSweep {
     }
 
     /** The goods gate's measures on diamond, and how a lie's bubble comes down. */
-    private static void village(Params params) {
+    static void village(Params params) {
         int[] quietCounts = new int[240];
         for (int i = 0; i < 240; i++) {
             quietCounts[i] = MarketStats.of(Run.execute(3001 + i, params, List.of(), 2000).log(),
@@ -175,7 +175,7 @@ public final class TrendSweep {
     }
 
     /** E45 again: selling-only villages, short and long, and selling into a lie. */
-    private static void selling(Params params, Good good) {
+    static void selling(Params params, Good good) {
         Claim scarce = new Claim(good.id(), ClaimType.SCARCE);
         System.out.println("  Selling " + good.id() + ":");
         for (Selling.Pace pace : withNobody()) {

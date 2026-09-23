@@ -94,6 +94,11 @@ logged so any crash can be replayed and compared against a counterfactual.
   and a bubble is only laid at a lie's door within thirty days of it.
 - Player-facing features built between stages must not touch the simulation's decisions or
   the calibration, and each needs a test proving it read-only, so no experiment re-runs.
+- Two readings of the market price are built and off. `trendAnchor` (E46): reading against a
+  trailing average follows momentum and made E45 worse; inert at 0, like the reality checks.
+  `levelGate` (E47): only the part of a move beyond normal is evidence; it removes E45's
+  glut-rebound panics and keeps the lie's bubbles, but deflation runs on decay alone. Off
+  pending the user's decision.
 - E32's "never settles" is withdrawn (E37): measured from the largest swing, the village
   settles on its own. Measure oscillation after the peak, and never let a damper mute the
   village — only the oscillation measures beside the paired-worlds separation can tell

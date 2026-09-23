@@ -121,3 +121,11 @@ tasks.register<JavaExec>("trend") {
     mainClass = "hearsay.experiments.TrendSweep"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Evidence only beyond normal, swept as E45's fix: ./gradlew :experiments:level */
+tasks.register<JavaExec>("level") {
+    group = "application"
+    description = "Sweeps the level gate: selling, calibration, settling, and the overshoot after selling."
+    mainClass = "hearsay.experiments.LevelSweep"
+    classpath = sourceSets["main"].runtimeClasspath
+}

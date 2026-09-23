@@ -3322,3 +3322,104 @@ count — quiet villages burst five times as often, only 31% settle, the lie's p
 **No window rescues it**, because the defect is the lag, and a longer window only lags more.
 
 **Decision: none.** `trendAnchor` stays at 0, where it is inert. Nothing is retuned.
+
+---
+
+## E47 — Evidence only beyond normal: E45 gone, the lie intact, deflation slower
+
+```
+./gradlew :experiments:level
+```
+
+The rule: **only the part of a price move on the claim's side of normal is evidence for it.** A
+rise is measured from normal if it started below, so a price climbing back from a glut reads
+as nothing and one crossing normal reads only the part above; a fall is measured from normal
+if it started above. Moves already past normal — a lie's bubble growing, a glut deepening —
+read exactly as they did. Built as `levelGate` on top of the reading `trendAnchor` leaves (0,
+inert), **off by default**; with it off every pinned log is bit-identical, and as with E46 the
+blend at 0 is today's reading to the last bit. Tests fail if the sign check goes, if the gate
+is one-sided, if it is never applied, or if a recipe loses it.
+
+### The calibration and the village
+
+| | off (today) | **on** |
+| --- | --- | --- |
+| **CalibrationTest: lie bursts within 30 days** (25–60% demonstrated) | 34.5% [28.3, 41.3] PASS | **38.0%** [31.6, 44.9] **PASS** |
+| CalibrationTest: quiet villages within 30 days (under 3%) | 0.0% PASS | 0.0% PASS |
+| CalibrationTest: quiet, per 100 days over 500 (under 0.5) | 0.100 PASS | **0.000** PASS |
+| quiet bursts / 100 days, 240 × 500 days | 0.140 [0.092, 0.188] | **0.001** [0.000, 0.002] |
+| decay after the largest swing | 0.928 (n=95) | 0.945 (n=179) |
+| settled within 10% over 175 days | 72.5% | **100%** [98.1, 100] |
+| last-quarter price | 100.7 | 100.0 |
+| mean peak after a lie | 133 | 129 |
+| **paired: bubbling only with the lie** | 31.5% | **35.5%** [29.2, 42.3] |
+| paired: bubbling only without | 0.0% | 0.0% |
+
+The lie keeps its bubbles — slightly more of them — and the paired separation widens. By the
+project's own test of muting, this is not muting: the village is quieter only where nobody
+lied. **Villages nobody lied to all but stop panicking on their own**, from 0.14 to 0.001 per
+100 days, and their lowest prices without any selling rise from 34–60 to 67–82: most of the
+"quiet-village rate" since E30 was this same mechanism, a dip from market noise recovering and
+being read as a shortage.
+
+### Deflation — the concern named in advance, confirmed
+
+| | off | on |
+| --- | --- | --- |
+| lie bubbles, 200 runs × 175 days | 215 | 77 |
+| **days from peak back under 110** | 8.2 [7.8, 8.6] | **11.9** [10.8, 13.0] |
+| readings of plenty per run | 172 | **1.6** |
+| a bust within 30 days of a bubble's peak | 64% | **0%** |
+
+**A bubble now comes down on daily decay alone**, 45% more slowly: the fall from a peak, being
+above normal all the way down, is no longer evidence of plenty, and the plenty readings that
+used to carry it all but vanish. It no longer overshoots into a bust either, and the village
+stops oscillating — 77 bubbles instead of 215, because the second and third swings of each lie
+are gone. Every village still settles; it settles once.
+
+### E45 again — selling into villages nobody lied to
+
+Bursts per 100 village-days over 175 days, 240 villages, off → on:
+
+| good | nobody sells | 1 a day | 3 a day | **12 a day** | **12 × 3 counters** |
+| --- | --- | --- | --- | --- | --- |
+| diamond | 0.019 → 0.000 | 0.007 → 0.000 | 0.010 → 0.000 | **0.410 → 0.000** | 0.038 → 0.000 |
+| gold | 0.026 → 0.000 | 0.029 → 0.000 | 0.026 → 0.000 | **0.414 → 0.000** | 0.021 → 0.000 |
+| iron | 0.043 → 0.000 | 0.019 → 0.000 | 0.007 → 0.000 | **0.500 → 0.000** | 0.017 → 0.000 |
+| wheat | 0.040 → 0.000 | 0.031 → 0.000 | 0.033 → 0.000 | **0.531 → 0.000** | 0.098 → 0.000 |
+
+In 30-day runs, no burst at any pace for any good. The glut itself still happens — twelve a day
+still takes the price to 22–27 — and selling into a lie still punctures it: at three counters a
+day the lie's 30-day burst rate falls from 37% to 26% (diamond), 39% to 17% (gold), 33% to 18%
+(iron) and 46% to 30% (wheat).
+
+### The overshoot, compared with a real lie
+
+200 villages sold into at twelve a day for a month (days 3–30; 198 of them fell under 85, median
+low ≈50), then left alone — beside **the same villages, unsold, lied to at the same moment**.
+The month after:
+
+| | burst | peak price, median / 90th / max | believers at most, median / 90th / max (of 20) |
+| --- | --- | --- | --- |
+| **off**: recovering from selling | 17.0% | 121 / 137 / 157 | 3 / **15** / **20** |
+| **off**: lied to | 39.0% | 127 / 145 / 163 | 3 / 6 / 10 |
+| **on**: recovering from selling | **0.0%** | **103 / 106 / 110** | **0 / 0 / 0** |
+| **on**: recovering, and crossed normal (172) | 0.0% | 104 / 107 / 110 | 0 / 0 / 0 |
+| **on**: lied to | 39.0% | 127 / 146 / 163 | 3 / 5 / 10 |
+
+**Today, a glut's rebound is a false panic about half as likely as a real lie's, and in its
+worst cases more widely believed than any lie.** At the 90th percentile fifteen villagers
+believe in a shortage, against six for a real lie, because everyone standing in the market
+reads the same rising price in the same tick, where a lie has to be told from mouth to mouth.
+
+**With the gate on, the overshoot stays small, and nothing believes it.** 172 of 200 villages
+cross normal on the way back, but they peak at 103–110 — the market's own noise — and not one
+villager in any of them comes to believe in a shortage. Only the part above 100 counts, and
+it has to beat the 10% threshold to count at all, so a recovery that drifts to 110 is below
+notice. Nothing sustains it above normal: the anchors that carried today's rebound upward were
+set at the bottom of the glut, and measured from normal instead they have nothing to push.
+The lie told at the same moment is untouched: 39% either way.
+
+**Decision: none yet.** `levelGate` stays at 0 until the user has seen this table. Adopting it
+changes the model every experiment since E20 measured, so what adoption would touch is listed
+for that decision rather than done.

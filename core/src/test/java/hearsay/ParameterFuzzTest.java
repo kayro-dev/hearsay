@@ -51,6 +51,7 @@ class ParameterFuzzTest {
                 fraction(),                     // emptyEvidence
                 fraction(),                     // trendAnchor
                 1 + fuzz.nextInt(40),           // trendWindowTicks
+                fraction(),                     // levelGate
                 someGoods());
     }
 

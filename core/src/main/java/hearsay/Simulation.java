@@ -709,16 +709,20 @@ public final class Simulation {
                 continue;
             }
             int anchor = villager.lastObservedPrice(good).orElse(params.basePrice());
+            double against;
             double move;
             if (params.trendAnchor() == 0) {
+                against = anchor;
                 move = (price - anchor) / (double) anchor;
             } else {
-                // E46: read against the market's own recent trend, so a recovery toward
-                // the level it has been at is a glut ending rather than a famine starting,
-                // and only breaking past that level counts as news.
-                double against = (1 - params.trendAnchor()) * anchor
+                // E46: read against the market's own recent trend. Inert by default: it
+                // follows momentum and made E45 worse.
+                against = (1 - params.trendAnchor()) * anchor
                         + params.trendAnchor() * trailing.orElse(anchor);
                 move = (price - against) / against;
+            }
+            if (params.levelGate() > 0) {
+                move = beyondNormal(move, price, against, params.basePrice(), params.levelGate());
             }
             if (Math.abs(move) <= params.observationThreshold()) {
                 continue;
@@ -738,6 +742,26 @@ public final class Simulation {
             int rumorId = held != null ? held.rumorId() : observedRumorFor(claim);
             record(new PriceObserved(tick, villager.id(), price, claim, rumorId, after));
         }
+    }
+
+    /**
+     * E47: only the part of a move on the claim's side of normal is evidence for it. A rise
+     * is measured from normal if it started below, so a price climbing back toward normal
+     * from a glut reads as nothing and one crossing it reads only the part above; a fall
+     * likewise from normal if it started above. {@code gate} blends this with the plain
+     * move, 0 being today's rule.
+     *
+     * @param move    the move as read today, from {@code against}
+     * @param against what the villager compares the price with
+     */
+    static double beyondNormal(double move, int price, double against, int normal, double gate) {
+        double from = price > against ? Math.max(against, normal) : Math.min(against, normal);
+        double gated = (price - from) / from;
+        // A rise that ends below normal, or a fall that ends above it, says nothing.
+        if (Math.signum(gated) != Math.signum(move)) {
+            gated = 0;
+        }
+        return (1 - gate) * move + gate * gated;
     }
 
     /** The id of the observation-born family for this claim, existing or about to exist. */
