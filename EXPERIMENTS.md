@@ -3223,3 +3223,102 @@ alone says the weight is wrong — it moves the rebound, and the rebound is the 
 
 **Decision: none yet.** Nothing is retuned. Whether and how to change the observation rule is
 proposed to the user, since it is the rule every calibration since E20 rests on.
+
+---
+
+## E46 — The trailing-average anchor: it follows momentum, and makes E45 worse
+
+```
+./gradlew :experiments:trend
+```
+
+The fix proposed for E45: a villager reading the market compares the price not with their own
+last conclusion but with the market's **trailing average**, so a recovery toward its recent
+level is little news and only breaking past that level counts. Built as `trendAnchor`, a blend
+from today's anchor (0) to the trailing average (1), over `trendWindowTicks`; **off by
+default**, and with it off every pinned log is bit-identical — the blended formula at 0 gives
+today's anchor to the last bit, so even removing the off-branch leaves the pins passing. The
+price history it reads lives in `WorldState`, and a world rebuilt from its log reads the same
+trend as the live one.
+
+Swept at off, half and full with a four-day window, and — not asked for, because the window
+is a judgment call — full with a fifteen-day window.
+
+### The calibration and the village
+
+| | off (today) | half | full | full, 15-day |
+| --- | --- | --- | --- | --- |
+| **CalibrationTest: lie bursts within 30 days** (1001–1200, 25–60% demonstrated) | 34.5% **PASS** | 26.5% [20.9, 33.0] **FAIL** | 23.5% **FAIL** | 21.5% **FAIL** |
+| CalibrationTest: quiet villages within 30 days (under 3%) | 0.0% PASS | 0.0% PASS | 2.7% [1.4, 5.2] **FAIL** | 1.3% [0.5, 3.4] **FAIL** |
+| CalibrationTest: quiet, per 100 days over 500 (under 0.5) | 0.10 PASS | 0.007 PASS | 0.09 PASS | 0.76 **FAIL** |
+| quiet bursts / 100 days, 240 × 500 days | 0.140 | 0.009 | 0.100 | 0.681 |
+| decay after the largest swing | 0.928 | 0.937 | 0.939 | 0.919 |
+| settled within 10% over 175 days | 72.5% | 98.5% | 94.0% | 31.0% |
+| last-quarter price | 100.7 | 100.0 | 100.1 | 90.4 |
+| mean peak after a lie | 133 | 127 | 130 | 160 |
+| paired: bubbling only with the lie | 31.5% | 25.0% | 29.0% | 28.0% |
+| paired: bubbling only without | 0.0% | 0.0% | 0.5% | 1.5% |
+
+### Deflation — the concern named in advance
+
+| | off | half | full | full, 15-day |
+| --- | --- | --- | --- | --- |
+| lie bubbles (200 runs × 175 days) | 215 | 90 | 148 | 355 |
+| days from peak back under 110, mean | 8.2 [7.8, 8.6] | 8.1 [7.3, 8.9] | 9.1 [8.2, 10.0] | 11.5 [11.1, 11.9] |
+| readings of plenty per run | 172 | 53 | 69 | 767 |
+| a bust within 30 days of a bubble's peak | 64% | 38% | 45% | 34% |
+
+**Confirmed, in the evidence and only partly in the speed.** At a four-day window the fall from
+a peak produces a third as many readings of plenty as today, and bubbles overshoot into busts
+far less often. The bubbles that do form still come down in about the same eight days — decay
+alone carries them — but at fifteen days they take half as long again.
+
+### E45 again — selling into villages nobody lied to
+
+Bursts per 100 village-days over 175 days (240 villages; a burst within a 30-day run in brackets):
+
+| good | pace | off | half | full | full, 15-day |
+| --- | --- | --- | --- | --- | --- |
+| diamond | nobody sells | 0.019 (0.0%) | 0.000 (0.0%) | 0.079 (0.4%) | 0.271 (0.0%) |
+| | 1 a day | 0.007 | 0.000 | 0.069 | 0.267 |
+| | 3 a day | 0.010 | 0.000 | 0.102 | 0.269 |
+| | **12 a day** | **0.410** (0.0%) | **1.324** (0.8%) | **1.576** (2.1%) | **1.543** (0.0%) |
+| | 12 × 3 counters | 0.038 (0.4%) | 0.338 (1.7%) | 1.174 (6.7%) | 1.790 (0.0%) |
+| gold | 12 a day | 0.414 | 1.207 | 1.760 | 1.536 |
+| | 12 × 3 counters | 0.021 | 0.450 | 1.110 | 1.831 |
+| iron | 12 a day | 0.500 | 1.255 | 1.740 | 1.517 |
+| | 12 × 3 counters | 0.017 | 0.412 | 1.181 | 1.821 |
+| wheat | 12 a day | 0.531 | 1.031 | 1.340 | 1.376 |
+| | 12 × 3 counters | 0.098 | 0.817 | 1.538 | 1.771 |
+
+One or three bundles a day stay at each setting's own background for every good (full table in
+the command's output). **At a counter's full restock, every on-setting makes selling-only panics
+three to four times as common as today**, and three counters a day, which today pins the price
+harmlessly to the floor, joins them.
+
+### Why: a trailing average lags every trend
+
+Traced on seed 7001, diamonds, twelve a day, at full. The price climbs from 67 to 150 over forty
+ticks; its four-day average climbs behind it, from 73 to 131, and **the price stays above its
+own average for the whole climb**. Every tick of the rise breaks past the average, so every
+tick is news: five to fourteen readings of scarcity a tick, all the way up.
+
+Today's rule has a reset built in. A villager who concludes at a price measures the next move
+from *that* price, so a climb has to go a further 10% before it tells them anything again. The
+trailing average removes the reset: it is a momentum signal, and a momentum signal amplifies
+whatever trend is running — the glut's rebound included. It reads a recovery from a trough as
+"breaking past the recent level" as soon as the recent level has sunk to meet the trough, which
+at four days is almost at once.
+
+**The half setting's calmer village is the village being muted, not settled.** Quiet bursts fall
+fifteenfold and 98.5% settle — but the lie's bursts fall with them, below CalibrationTest's
+band, and the paired separation drops from 31.5% to 25%. That is the trade the project's rules
+exist to refuse.
+
+### The window
+
+Four days is too short to cover a rebound, as E45's trace suggested; fifteen is worse on every
+count — quiet villages burst five times as often, only 31% settle, the lie's peak rises to 160.
+**No window rescues it**, because the defect is the lag, and a longer window only lags more.
+
+**Decision: none.** `trendAnchor` stays at 0, where it is inert. Nothing is retuned.

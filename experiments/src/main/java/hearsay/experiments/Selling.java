@@ -70,7 +70,7 @@ public final class Selling {
                     + "as when left alone", QUIET_RUNS);
 
     /** How a player sells: bundles per sale, and sales at different counters per day. */
-    private record Pace(String name, int bundles, int counters) {
+    record Pace(String name, int bundles, int counters) {
         boolean sells() {
             return bundles > 0;
         }
@@ -193,7 +193,7 @@ public final class Selling {
      * <p>The run it reads is the one with the other inputs but no sales, and the moves are
      * checked afterwards to be the same with them.
      */
-    private static List<Input> sales(long seed, Params params, Good good, Pace selling,
+    static List<Input> sales(long seed, Params params, Good good, Pace selling,
                                      List<Input> others, int ticks) {
         List<Input> sales = new ArrayList<>();
         if (!selling.sells()) {

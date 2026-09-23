@@ -49,6 +49,8 @@ class ParameterFuzzTest {
                 fraction(),                     // witnessWeight
                 fraction(),                     // checkWeight
                 fraction(),                     // emptyEvidence
+                fraction(),                     // trendAnchor
+                1 + fuzz.nextInt(40),           // trendWindowTicks
                 someGoods());
     }
 

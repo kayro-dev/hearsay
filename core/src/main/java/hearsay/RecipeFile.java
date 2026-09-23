@@ -113,6 +113,8 @@ public final class RecipeFile {
                 + " witnessWeight=" + p.witnessWeight()
                 + " checkWeight=" + p.checkWeight()
                 + " emptyEvidence=" + p.emptyEvidence()
+                + " trendAnchor=" + p.trendAnchor()
+                + " trendWindowTicks=" + p.trendWindowTicks()
                 + " goods=" + String.join(",", p.goods().stream().map(Good::id).toList());
     }
 
@@ -159,6 +161,11 @@ public final class RecipeFile {
                         ? number(values, "checkWeight") : Params.CHECK_WEIGHT,
                 values.containsKey("emptyEvidence")
                         ? number(values, "emptyEvidence") : Params.EMPTY_EVIDENCE,
+                // Written before the market had a trend to read, when every villager read
+                // the price against their own last conclusion. 0 is that rule exactly.
+                values.containsKey("trendAnchor") ? number(values, "trendAnchor") : 0.0,
+                values.containsKey("trendWindowTicks")
+                        ? (int) number(values, "trendWindowTicks") : Params.TREND_WINDOW_TICKS,
                 // Written before a village could trade in anything but diamonds, so that is
                 // what those villages traded in.
                 goodsIn(values));

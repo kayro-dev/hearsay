@@ -698,13 +698,28 @@ public final class Simulation {
             return;
         }
         int price = settledThisTick.getAsInt();
+        // The market's recent level, the same for everyone reading it. Only looked up when
+        // trendAnchor is on, so with it off not one number is computed differently.
+        java.util.OptionalDouble trailing = params.trendAnchor() == 0
+                ? java.util.OptionalDouble.empty()
+                : state.trailingPrice(good, tick, params.trendWindowTicks());
 
         for (Villager villager : state.villagers().values()) { // id order
             if (villager.spot() != Spot.MARKET) {
                 continue;
             }
             int anchor = villager.lastObservedPrice(good).orElse(params.basePrice());
-            double move = (price - anchor) / (double) anchor;
+            double move;
+            if (params.trendAnchor() == 0) {
+                move = (price - anchor) / (double) anchor;
+            } else {
+                // E46: read against the market's own recent trend, so a recovery toward
+                // the level it has been at is a glut ending rather than a famine starting,
+                // and only breaking past that level counts as news.
+                double against = (1 - params.trendAnchor()) * anchor
+                        + params.trendAnchor() * trailing.orElse(anchor);
+                move = (price - against) / against;
+            }
             if (Math.abs(move) <= params.observationThreshold()) {
                 continue;
             }

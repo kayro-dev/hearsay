@@ -113,3 +113,11 @@ tasks.register<JavaExec>("selling") {
     mainClass = "hearsay.experiments.Selling"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** The trend anchor, swept as E45's fix: ./gradlew :experiments:trend */
+tasks.register<JavaExec>("trend") {
+    group = "application"
+    description = "Sweeps reading the price against its trailing average: selling, calibration, settling."
+    mainClass = "hearsay.experiments.TrendSweep"
+    classpath = sourceSets["main"].runtimeClasspath
+}

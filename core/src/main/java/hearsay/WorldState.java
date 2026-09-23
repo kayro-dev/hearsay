@@ -27,6 +27,15 @@ public final class WorldState {
      */
     private final Map<Good, Integer> marketPrice = new EnumMap<>(Good.class);
 
+    /**
+     * Every price each market has settled on, by tick, so a villager can read the price
+     * against its own recent trend (E46). In the world rather than in the simulation,
+     * because a decision reads it: a forked or resumed world that lost it would read a
+     * different trend and decide differently.
+     */
+    private final Map<Good, java.util.NavigableMap<Long, Integer>> priceHistory =
+            new EnumMap<>(Good.class);
+
     /** How far each good's wobble currently stands from nothing. */
     private final Map<Good, Double> marketNoiseLevel = new EnumMap<>(Good.class);
 
@@ -113,6 +122,8 @@ public final class WorldState {
             case MarketPriceSet e -> {
                 tick = e.tick();
                 marketPrice.put(Good.of(e.item()), e.price());
+                priceHistory.computeIfAbsent(Good.of(e.item()), g -> new java.util.TreeMap<>())
+                        .put(e.tick(), e.price());
             }
             case PriceObserved e -> {
                 tick = e.tick();
@@ -180,6 +191,30 @@ public final class WorldState {
         return price == null ? OptionalInt.empty() : OptionalInt.of(price);
     }
 
+    /**
+     * The market's recent level: the mean of the prices it settled on in the
+     * {@code window} ticks before {@code tick}, not counting {@code tick} itself. When the
+     * market was shut for all of them, the last price it settled on before; empty if it
+     * has never settled at all.
+     */
+    public java.util.OptionalDouble trailingPrice(Good good, long tick, int window) {
+        java.util.NavigableMap<Long, Integer> history = priceHistory.get(good);
+        if (history == null) {
+            return java.util.OptionalDouble.empty();
+        }
+        java.util.NavigableMap<Long, Integer> recent = history.subMap(tick - window, true, tick, false);
+        if (!recent.isEmpty()) {
+            double total = 0;
+            for (int price : recent.values()) { // tick order
+                total += price;
+            }
+            return java.util.OptionalDouble.of(total / recent.size());
+        }
+        Map.Entry<Long, Integer> before = history.lowerEntry(tick);
+        return before == null ? java.util.OptionalDouble.empty()
+                : java.util.OptionalDouble.of(before.getValue());
+    }
+
     /** The id the next rumour about this good will take. */
     public int nextRumorId(Good good) { return nextRumorId.getOrDefault(good, good.firstRumorId()); }
 
@@ -242,6 +277,7 @@ public final class WorldState {
         return o instanceof WorldState w
             && tick == w.tick
             && marketPrice.equals(w.marketPrice)
+            && priceHistory.equals(w.priceHistory)
             && marketNoiseLevel.equals(w.marketNoiseLevel)
             && nextRumorId.equals(w.nextRumorId)
             && villagers.equals(w.villagers)
@@ -250,7 +286,8 @@ public final class WorldState {
 
     @Override
     public int hashCode() {
-        return Objects.hash(tick, marketPrice, marketNoiseLevel, nextRumorId, villagers, rumors);
+        return Objects.hash(tick, marketPrice, priceHistory, marketNoiseLevel, nextRumorId,
+                villagers, rumors);
     }
 
     @Override
