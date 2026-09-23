@@ -50,6 +50,8 @@ disagree, the village is dying.
 | 5g | Look at any villager's name plate before any lie | Their name and nothing else. A villager asking the ordinary price has nothing to say |
 | 5g2 | Plant a rumour, wait a tick, look again | The villager you told now carries a second line, `▲ +38%` or similar, in the rising colours. A number above a head means somebody believed something |
 | 6 | Stand next to that villager, `/hearsay rumor diamonds scarce` | "You tell <name> that diamonds are scarce", then a line saying how talkative they are. Below 60% it warns you: telling a quiet villager wastes the session |
+| 6a | `/hearsay rumor` alone, then `/hearsay rumor wheat` | Both refused in red, "Which good?" and "Scarce or abundant?", ending "Nothing was planted." Nobody starts whispering. A bare command used to plant a diamond rumour |
+| 6b | `/hearsay rumor wheat is abundant` | "You tell <name> that wheat are abundant" — abundant, not scarce. Words in between are ignored; this one used to plant the opposite |
 | 5h | `/hearsay market` before marking one | "No market marked", and who counts as a trader is still guessed from workstations |
 | 5i | Stand in an open square, `/hearsay market 8` | "The market is here, 16 blocks across". A ring of white particles appears at its edge each tick |
 | 5j | Watch a villager walk into the ring | From the next tick their name plate reads `MARKET` with `/hearsay debug` on, whatever their workstation is. A farmer in the square is a trader |
@@ -78,9 +80,9 @@ disagree, the village is dying.
 | 10d | Sell gold to the Cleric with villagers watching | "Cleric takes 24 gold ingots. N watching." Evidence about gold only |
 | 11a | Find an Armorer and open their trades | **Two** managed trades: 1 diamond for 8 emeralds and 32 iron ingots for 8 emeralds. The first villager with two counters |
 | 11b | `/hearsay rumor iron scarce` next to a villager, let it spread | The Armorer's iron trade pays more; their diamond trade stays at 8, because nobody said anything about diamonds |
-| 11c | Sell iron to the Armorer, then diamonds | Two separate lines on the action bar, "takes 32 iron ingots" and "takes 1 diamond" — each sale is evidence about its own good only |
+| 11c | Sell iron to the Armorer, then diamonds, then close the window | Two separate lines in chat, "took 32 iron ingots for 8 emeralds" and "took 1 diamond for …" — each sale is evidence about its own good only |
 | 12a | **Find a Farmer and open their trades — the decisive wheat test** | A trade taking **60 wheat in each of two slots** for 6 emeralds. Click it with 120+ wheat in your inventory: both slots should fill with 60, and the trade should complete. **If it does not fill both, or will not complete, stop and report it** — the fallback is 18 hay bales for 8 emeralds (E42) |
-| 12b | Sell wheat to the Farmer with villagers watching | "Farmer takes 120 wheat. N watching." — **120**, not 60: both slots are counted |
+| 12b | Sell wheat to the Farmer twice with villagers watching, then close the window | In chat: "<name> took 240 wheat for 12 emeralds. N villagers saw it." — **120 a trade**, not 60: both slots are counted. The action bar says the same while trading but is hidden behind the window, so the chat line is the one to read |
 | 12c | `/hearsay rumor wheat scarce` next to a villager, let it spread | The Farmer's wheat trade pays more than 6. No other good's trade moves |
 | 12d | Sell into the famine | Watchers grow less sure the harvest failed. A famine rumour can be punctured the way a diamond panic can |
 | 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |

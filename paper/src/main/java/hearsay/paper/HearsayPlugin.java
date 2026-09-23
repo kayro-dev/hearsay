@@ -7,6 +7,7 @@ import hearsay.Good;
 import hearsay.MarketRegion;
 import hearsay.Params;
 import hearsay.RecipeFile;
+import hearsay.RumorWords;
 import hearsay.Simulation;
 import hearsay.Spot;
 
@@ -23,7 +24,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import io.papermc.paper.event.player.PlayerTradeEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -421,15 +424,19 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         if (notReady(player)) {
             return;
         }
-        ClaimType type = args.length > 2 && args[2].equalsIgnoreCase("abundant")
-                ? ClaimType.ABUNDANT : ClaimType.SCARCE;
-        // "/hearsay rumor gold scarce" or "iron"; anything else, including "diamonds", means
-        // diamonds, so the command everyone already types still does what it did.
-        String named = args.length > 1 ? args[1].toLowerCase() : "";
-        Good good = named.startsWith("gold") ? Good.GOLD
-                : named.startsWith("iron") ? Good.IRON
-                : named.startsWith("wheat") ? Good.WHEAT
-                : Good.DIAMOND;
+        // Read strictly: a guessed good or claim is recorded for good and replayed by every
+        // counterfactual asked of the session. See RumorWords.
+        RumorWords.Said said;
+        try {
+            said = RumorWords.read(List.of(args).subList(1, args.length));
+        } catch (IllegalArgumentException refused) {
+            player.sendMessage(Component.text(refused.getMessage()
+                    + " For example: /hearsay rumor wheat scarce. Nothing was planted.",
+                    NamedTextColor.RED));
+            return;
+        }
+        Good good = said.good();
+        ClaimType type = said.type();
 
         Integer nearest = nearestBoundVillager(player);
         if (nearest == null) {
@@ -534,6 +541,55 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         event.getPlayer().sendActionBar(Component.text(
                 session.nameOf(trader) + " takes " + good.amount(soFar) + ". "
                         + watching.size() + " watching.", NamedTextColor.AQUA));
+
+        SaleSeen.Total total = salesInWindow
+                .computeIfAbsent(event.getPlayer().getUniqueId(), p -> new SaleSeen(trader))
+                .sales.computeIfAbsent(good, g -> new SaleSeen.Total());
+        total.sold += sold;
+        total.emeralds += emeralds;
+        total.watching.addAll(watching);
+    }
+
+    /**
+     * What a player has sold since they opened this trade window, said in chat once they
+     * close it.
+     *
+     * <p>The action bar alone was not enough: it is drawn behind the trade window and gone in
+     * a few seconds, so a player trading with the window open never saw it (manual test 12b,
+     * 2026-09-23 — the sales were recorded, the line was not seen). Chat stays readable after
+     * the window closes. Display only: nothing here is read by the session.
+     */
+    private static final class SaleSeen {
+        final int trader;
+        final Map<Good, Total> sales = new java.util.EnumMap<>(Good.class);
+
+        SaleSeen(int trader) {
+            this.trader = trader;
+        }
+
+        static final class Total {
+            int sold;
+            int emeralds;
+            final java.util.NavigableSet<Integer> watching = new java.util.TreeSet<>();
+        }
+    }
+
+    private final Map<UUID, SaleSeen> salesInWindow = new LinkedHashMap<>();
+
+    @EventHandler
+    public void onTradeWindowClosed(InventoryCloseEvent event) {
+        if (!(event.getInventory() instanceof MerchantInventory)) {
+            return;
+        }
+        SaleSeen seen = salesInWindow.remove(event.getPlayer().getUniqueId());
+        if (seen == null || session == null) {
+            return; // nothing sold, or the session ended with the window open
+        }
+        seen.sales.forEach((good, total) -> event.getPlayer().sendMessage(Component.text(
+                session.nameOf(seen.trader) + " took " + good.amount(total.sold) + " for "
+                        + total.emeralds + " emerald" + (total.emeralds == 1 ? "" : "s")
+                        + ". " + total.watching.size() + " villagers saw it.",
+                NamedTextColor.AQUA)));
     }
 
     /**
@@ -777,6 +833,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         session = null;
         displays = null;
         world = null;
+        salesInWindow.clear();
         watcher = null;
     }
 }
