@@ -123,6 +123,8 @@ class CalibrationTest {
      * the defaults the difference is inside the noise, but the figure is only ever quoted
      * with its length.
      */
+    // Kept as is (2026-09-24): it demonstrates the long-run stability of a village nobody
+    // lied to; catching runaway retunes is the 30-day burst check's job since E48.
     private static final int LONG_RUNS = 60;
     private static final int LONG_TICKS = 2000; // five hundred days
     private static final Target.Band BACKGROUND_RATE = Target.demonstrates(

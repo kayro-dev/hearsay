@@ -3510,3 +3510,39 @@ against diamond on the same seeds, differs by 0–2 points.
 One thing the gate lost: with quiet bursts at 0.000–0.001 for every good, the quiet-rate
 comparison with diamond passes trivially. It would still catch a good that started bursting
 unaided, which is what it is for.
+
+---
+
+## E49 — Broadcast against gossip: the advantage was the bug
+
+```
+./gradlew :experiments:channels
+```
+
+E47 found a glut's rebound, read off the market by everyone at once, more widely believed than
+a lie spread mouth to mouth — fifteen villagers against six at the 90th percentile. The gate
+removed the rebound, so that comparison cannot be repeated under it. A lie spreads through both
+channels, so instead every villager who crosses into believing it (0.5) is attributed to the
+event that tipped them: a **telling**, or a **reading of the price**. 200 villages, a lie at
+tick 1, fifty days, seeds 1001–1200.
+
+| | gate off | gate on |
+| --- | --- | --- |
+| tipped into believing by gossip | 430 | 367 |
+| tipped into believing by the price | **636** | 187 |
+| one telling converts | 3.1% [2.8, 3.4] | 3.9% [3.5, 4.3] |
+| one price reading converts | **5.5%** [5.1, 5.9] | 3.7% [3.2, 4.3] |
+| most converted by gossip in one tick, median / 90th / max | 1 / 2 / 4 | 1 / 2 / 4 |
+| most converted by the price in one tick, median / 90th / max | 1 / **4** / **10** | 0 / 2 / 3 |
+
+**Under the old reading the market out-convinced gossip** — nearly twice as likely to convert
+the villager it reached, and able to tip ten at once where gossip never tipped more than four.
+**Under the gate it does not**: a price reading converts at the rate a telling does, within the
+intervals, and never more villagers in one tick than gossip does. The price still reaches
+everyone standing in the market at once; what it no longer does is draw conclusions from
+prices on the wrong side of normal, and that is where the advantage came from.
+
+**No smaller real effect survives on these measures.** Limits: fifty days, one lie, diamonds,
+the default weights. A broadcast channel added later (a notice board, a cleric) will convince
+as much as its weight makes it, and should be measured against gossip this way rather than
+assumed stronger.

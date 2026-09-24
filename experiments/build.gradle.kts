@@ -129,3 +129,11 @@ tasks.register<JavaExec>("level") {
     mainClass = "hearsay.experiments.LevelSweep"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+/** Broadcast against gossip, with and without the level gate: ./gradlew :experiments:channels */
+tasks.register<JavaExec>("channels") {
+    group = "application"
+    description = "Attributes every villager's conversion to the telling or the price reading that tipped them."
+    mainClass = "hearsay.experiments.Channels"
+    classpath = sourceSets["main"].runtimeClasspath
+}

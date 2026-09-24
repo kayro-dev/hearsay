@@ -105,6 +105,9 @@ logged so any crash can be replayed and compared against a counterfactual.
   PinnedLogsTest holds the pre-stage-2 logs under levelGate 0, the rule they were recorded
   under; DefaultLogsTest pins the same five villages under the current defaults. Neither is
   ever updated to match a change.
+- CalibrationTest's 500-day quiet check demonstrates the long-run stability of a village
+  nobody lied to. Under the gate it no longer catches runaway retunes (E48); the 30-day
+  burst check does. Kept as is, not tightened.
 - `trendAnchor` (E46) is built and inert at 0, like the reality checks: reading against a
   trailing average follows momentum and made E45 worse.
 - E32's "never settles" is withdrawn (E37): measured from the largest swing, the village

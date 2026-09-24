@@ -649,7 +649,15 @@ tick and draws the same conclusion together; a lie has to be passed on one conve
 time, losing confidence at every step and reaching only whoever happens to meet. One piece of
 evidence seen by a crowd at once can outrun anything mouth-to-mouth.
 
-The level gate removed that particular false panic, but not the channel. Anything that shows
-one claim to many villagers at once — a notice board, a cleric preaching to a crowd — is the
-same channel, and should be expected to convince more people, faster, than any gossip it is
-compared with.
+**E49 (2026-09-24): that advantage was the bug, not the channel.** Attributing every
+conversion in 200 lied-to villages to the event that tipped it: with the old reading, a price
+reading converted 5.5% of the villagers it reached against 3.1% for a telling, and up to ten
+villagers in a single tick against four. Under the level gate a price reading converts 3.7%
+against a telling's 3.9% — the same, within the intervals — and its largest single-tick crowd
+is three, against gossip's four. The market's reach is still structural (one price, everyone
+standing there, the same tick), but it does not out-convince gossip. What made it look as if
+it did were conclusions drawn from prices still on the wrong side of normal.
+
+So a notice board or a preaching cleric will not be stronger than gossip by nature. How much
+more a broadcast claim convinces will be whatever weight it is given, and should be measured
+against gossip the way E49 measured the market, not assumed.
