@@ -745,6 +745,43 @@ settle is not one to build more onto.
 | **Shared mood** | a village in a panic about anything is slightly readier to believe a scarcity rumour about everything | one parameter rather than a matrix, and prices stay independent. Kept as the lighter alternative to budgets |
 | **Notice board** | a place the player can post a claim to the whole village at once | trivial to build and easy to abuse; it wants credibility first, or it is a panic button |
 
+### Specified, not scheduled: a sold-out counter as evidence of scarcity
+
+Recorded 2026-09-24. **Not built, not scheduled.** Bread's default stays as built in E44: a
+player buying from a villager carries no evidence, and `PlayerTraded` refuses it.
+
+**Why a purchase is not the evidence.** Buying forty-eight loaves is ordinary demand and says
+nothing about supply. What does is the counter running out: after twelve purchases vanilla
+crosses the trade out until the villager restocks. An empty stall is a visible fact about
+supply — the same kind of thing as stage 4's chests — not a sale in reverse.
+
+**The input.** `CounterEmptied(tick, villagerId, good, witnesses)`, recorded by the plugin
+when a managed sell-side trade reaches its restock limit, with everyone near enough to see it,
+exactly as `PlayerTraded` records watchers. An input, because the player did it; a session with
+one still replays from seed + params + inputs.
+
+**The evidence.** Scarcity of that good only — never another good, since stage 2's markets are
+independent (a famine emptying the bakery needs spillover, which is also unscheduled). Combined
+by the rule a telling uses. **The villager whose counter emptied weighs it most**, as the trader
+does a sale (`tradeWeight`); watchers weigh it less (`witnessWeight`'s role). It is not a price
+reading, so the level gate does not apply to it.
+
+**The weight.** A new `soldOutWeight`, **0 by default**, so building it changes no run, pin
+or experiment until a sweep says otherwise.
+
+**The sweep, before it is ever turned on.** A scripted player buys out a sell-side counter once,
+daily, and at every sell-side counter daily, at `soldOutWeight` 0, 0.07, 0.14 and 0.28; in
+quiet villages and in villages told a bread lie; short runs and long, as E45 did. Reported:
+panics from buying alone against villages left alone (the E45 gate, one comparison per pace
+sharing the 5%), whether it amplifies a real lie, `CalibrationTest`'s checks, settling, and
+the paired-worlds separation.
+
+**Intended, and not a bug to be swept away:** it should let a player **start a panic by buying
+a stall empty on purpose.** That is a lie told with the hands instead of the mouth, and it is
+the point of the mechanic. What the sweep decides is how hard it should be — how many stalls,
+how many days — not whether it is possible. A panic from ordinary shopping, a stall emptied
+once in passing, is the bug; a player setting out to empty every stall for days is playing.
+
 ## Order of work
 
 1. ~~Stage 1, which is small and makes the existing measurements honest.~~ **Built.**
