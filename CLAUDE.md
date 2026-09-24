@@ -68,10 +68,13 @@ logged so any crash can be replayed and compared against a counterfactual.
      Swing decay and the quiet-village rate are both length-dependent and must only be
      compared between runs of the same length; MarketStats.ENOUGH_SWINGS enforces the
      minimum.
-  3. **stage 2, more goods — in progress, plan in V2_PROPOSAL.md.** Goods are independent
+  3. **stage 2, more goods — done (E39-E48).** Goods are independent
      markets (no spillover), added one at a time behind gates: diamond, then gold, iron,
      wheat and bread; diamond, gold (E39), iron (E40), wheat (E42) and bread (E44) are done,
-     and all four pass again under the level gate (E48). Bulk selling measured (E45). PinnedLogsTest holds five diamond
+     and all four pass again under the level gate (E48). Bulk selling measured (E45). Bread
+     is the one good villagers sell, and buying it carries no evidence (PlayerTraded refuses
+     it); a villager holding two counters (Farmer: wheat and bread; Armorer: diamond and
+     iron) keeps them independent, tested in OneVillagerTwoCountersTest. PinnedLogsTest holds five diamond
      logs bit for bit, through a frozen printer, and must never be updated to match a
      change — if it fails, stage 2 has changed diamond. IndependenceTest demands each
      good's events be equal with and without the others. Params.goods records which

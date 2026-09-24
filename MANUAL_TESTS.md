@@ -93,6 +93,7 @@ disagree, the village is dying.
 | 13c | `/hearsay rumor bread scarce` next to a talker, sprint `/tick sprint 800` a few times | "…now follow bread scarce", bar reads **Bread**. As villagers glow red, the Farmer's bread costs more than 8 emeralds — a Farmer who believes it charges more |
 | 13d | `/hearsay watch wheat` during the bread panic | Calm: nobody said anything about wheat. The Farmer's wheat trade still pays 6 |
 | 13e | Crouch-right-click a believer | "bread **is** getting scarce" |
+| 13f | `/hearsay rumor wheat scarce` told to the Farmer, sprint until they glow red, open their trades | The wheat trade pays more than 6; the bread trade still costs 8. One villager, two counters, and a famine rumour leaves the loaves alone |
 | 9a | Put a chest inside the market ring with 64 diamonds in it | Nothing visible yet. Villagers look once a day |
 | 9b | Plant a rumour and wait several days | It should struggle. A village that can see a stack of diamonds is hard to convince they are gone |
 | 9c | Crouch-right-click a villager who did believe it | Their confidence falls day by day while the chest is there |

@@ -32,6 +32,8 @@ Villagers who trade in a village Hearsay is running still keep all their ordinar
 
 **Only diamond is repriced.** At vanilla's one emerald a 30% panic cannot be shown at all, and diamonds are not renewable, so pricing them higher cannot be farmed. Gold, iron, wheat and bread are all at vanilla's value per item, because they *are* farmable and paying more than vanilla would turn a farm into an emerald printer. A panic can raise any of them by at most 75%, and only while the village believes it.
 
+**Selling to a villager is evidence; buying from one is not.** When you sell diamonds, gold, iron or wheat in front of villagers, the ones watching become a little more sure there is plenty — you just showed them some. Bread goes the other way: the farmer sells it to you, and buying it tells the village nothing. A villager who keeps two counters, like the farmer (wheat and bread), prices each on what they believe about that good alone, so a famine rumour moves the wheat and leaves the loaves where they were.
+
 Every managed offer is available from a villager's first level, where vanilla puts most of these later. A tool for watching rumours spread should not depend on first levelling up a villager. Vanilla's demand and reputation adjustments are switched off on managed offers only, because they are state held on the villager rather than in the saved session, and a session with them running could not be replayed.
 
 Work in progress.

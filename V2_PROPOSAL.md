@@ -15,7 +15,7 @@ names. This is the order:**
 | 2nd | **3 — real trades, diamonds only** *(built, E33)* | Depth before breadth. One good, taken all the way to the player's hands |
 | 3rd | **measure the selling** *(done, E34)* | A played session and a headless sweep |
 | 4th | ~~**4 — reality checks**~~ *(built, turned off, E37)* | There was nothing to damp. Not a prerequisite for anything |
-| 5th | **2 — more goods** | **Next.** No longer waiting on stage 4 |
+| 5th | **2 — more goods** *(built, E39–E48)* | Five goods, independent markets; bulk selling measured and the level gate adopted on the way |
 
 > **The gate that stood in front of stage 2 has been met by the baseline itself.** E37
 > measured decay after the peak at **0.91**, settling in 80% of runs, at a mean price of
@@ -83,7 +83,7 @@ workstation. Core is untouched apart from the geometry, exactly as proposed.
 
 ---
 
-## Stage 2 — more than one thing to be wrong about — **NEXT, plan for review**
+## Stage 2 — more than one thing to be wrong about — **BUILT** (E39–E48)
 
 Gold, iron, wheat and bread join diamond. **Plan reviewed; step 0 (pinning) is done.**
 

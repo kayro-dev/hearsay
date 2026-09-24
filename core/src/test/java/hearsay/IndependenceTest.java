@@ -53,7 +53,7 @@ class IndependenceTest {
     }
 
     /** One good's events, and everyone's, in the order they happened. */
-    private static List<Event> seenBy(Good good, List<Event> log) {
+    static List<Event> seenBy(Good good, List<Event> log) {
         List<Event> kept = new ArrayList<>();
         for (Event event : log) {
             Good about = goodOf(event);
