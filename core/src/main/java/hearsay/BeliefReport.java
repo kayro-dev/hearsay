@@ -50,15 +50,20 @@ public final class BeliefReport {
      * given "golds" by the same rule.
      */
     private static String describe(Rumor version) {
-        Good good = Good.of(version.claim());
+        return inWords(version.claim(), version.severity());
+    }
+
+    /** A claim at a severity, as a villager would say it: "wheat is running short". */
+    static String inWords(Claim claim, int severity) {
+        Good good = Good.of(claim);
         String item = good.plural() + " " + good.isOrAre();
-        return switch (version.claim().type()) {
-            case SCARCE -> switch (version.severity()) {
+        return switch (claim.type()) {
+            case SCARCE -> switch (severity) {
                 case 1 -> item + " getting scarce";
                 case 2 -> item + " running short";
                 default -> item + " all but gone";
             };
-            case ABUNDANT -> switch (version.severity()) {
+            case ABUNDANT -> switch (severity) {
                 case 1 -> item + " easy to come by";
                 case 2 -> item + " everywhere";
                 default -> "there is a glut of " + item;

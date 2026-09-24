@@ -26,11 +26,12 @@ import java.util.Map;
 public final class RecipeFile {
 
     /** What this writes today. Version 1 had no village size, because it was always 20. */
-    private static final String HEADER = "hearsay-recipe 7";
+    private static final String HEADER = "hearsay-recipe 8";
 
     private static final java.util.Set<String> READABLE_HEADERS =
             java.util.Set.of("hearsay-recipe 1", "hearsay-recipe 2", "hearsay-recipe 3",
-                    "hearsay-recipe 4", "hearsay-recipe 5", "hearsay-recipe 6", HEADER);
+                    "hearsay-recipe 4", "hearsay-recipe 5", "hearsay-recipe 6",
+                    "hearsay-recipe 7", HEADER);
 
     private RecipeFile() {
     }
@@ -44,6 +45,9 @@ public final class RecipeFile {
         for (Input input : run.inputs()) {
             lines.add("input " + describe(input));
         }
+        // What the session actually did, so anything reading the recipe later can confirm
+        // that rerunning it reproduces the same village rather than trusting that it does.
+        lines.add("checksum " + checksum(run.log()));
         try {
             if (path.getParent() != null) {
                 Files.createDirectories(path.getParent());
@@ -51,6 +55,36 @@ public final class RecipeFile {
             Files.write(path, lines);
         } catch (IOException e) {
             throw new UncheckedIOException("Could not save the recipe to " + path, e);
+        }
+    }
+
+    /**
+     * The checksum of the log the session was saved with, if the recipe carries one. Recipes
+     * saved before version 8 do not.
+     */
+    public static java.util.Optional<String> checksumIn(Path path) {
+        try {
+            for (String line : Files.readAllLines(path)) {
+                if (line.startsWith("checksum ")) {
+                    return java.util.Optional.of(line.substring("checksum ".length()).trim());
+                }
+            }
+            return java.util.Optional.empty();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read a recipe from " + path, e);
+        }
+    }
+
+    /** SHA-256 over every event as it prints, in order, one per line. */
+    public static String checksum(List<Event> log) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            for (Event event : log) {
+                digest.update((event + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is always there", e);
         }
     }
 
@@ -83,6 +117,7 @@ public final class RecipeFile {
                 case "ticks" -> ticks = Integer.parseInt(parts[1].trim());
                 case "params" -> params = readParams(parts[1]);
                 case "input" -> inputs.add(readInput(parts[1]));
+                case "checksum" -> { } // read by checksumIn, not needed to rerun
                 default -> throw new IllegalArgumentException("Unknown line in recipe: " + trimmed);
             }
         }

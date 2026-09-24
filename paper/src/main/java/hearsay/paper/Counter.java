@@ -176,6 +176,6 @@ final class Counter {
 
     /** What a bundle of this good costs at this price index, in whole emeralds. */
     static int emeraldsFor(Good good, int index, Params params) {
-        return Math.max(1, Math.round(good.normalEmeralds() * index / (float) params.basePrice()));
+        return good.emeraldsAt(index, params.basePrice());
     }
 }

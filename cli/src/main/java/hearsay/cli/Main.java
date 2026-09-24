@@ -37,6 +37,8 @@ public final class Main {
             case "counterfactual" -> Counterfactual.print(rest);
             case "worlds" -> Worlds.print(rest);
             case "dashboard" -> Dashboard.write(rest);
+            case "report" -> Report.report(rest);
+            case "chronicle" -> Report.chronicle(rest);
             case "demo" -> demo(rest);
             default -> {
                 System.out.println("Unknown command: " + command);
@@ -52,6 +54,8 @@ public final class Main {
               counterfactual --seed N         one village, with and without the lie
               counterfactual --file PATH      a session you played, with and without it
               worlds --seed N --pairs M       many paired worlds, with and without the lie
+              report --file PATH              what a played session did, and what the lie did
+              chronicle --file PATH           a played session's story, in order
               dashboard --file PATH           write a played session to an HTML page
               dashboard --seed N [--ticks N]  write a simulated village to one
                         [--out PATH]          default build/dashboard.html

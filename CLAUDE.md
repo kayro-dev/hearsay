@@ -52,6 +52,13 @@ logged so any crash can be replayed and compared against a counterfactual.
   self-contained HTML page. It embeds its numbers rather than fetching CSVs, because a
   page opened from file:// cannot fetch anything at all; the page builder lives in core
   as DashboardPage so it can be tested, and the cli command is a thin wrapper.
+- A played session has a report and a chronicle, both read-only and both in core:
+  `./gradlew :cli:run --args="report --file PATH"` and `... "chronicle --file PATH"`. The
+  report answers what the lie did, against reruns without it; the chronicle tells what
+  happened in order and never claims a cause, pointing at the report where it discusses the
+  same moment. Earnings always state their assumption: the same sales, at the same times, in
+  an honest village. Recipes from version 8 carry a checksum of their log, and the report
+  refuses one that replays into a different village.
 - The player-facing colours, icons and sounds are defined in VISUAL_LANGUAGE.md, and the
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.

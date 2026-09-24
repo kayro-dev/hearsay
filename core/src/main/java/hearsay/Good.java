@@ -127,6 +127,15 @@ public enum Good {
         return bundle;
     }
 
+    /**
+     * What a villager asking this price index pays for one bundle, in whole emeralds. The one
+     * definition, shared by the plugin's counters and the session report, so the report
+     * prices a sale exactly as the counter did.
+     */
+    public int emeraldsAt(int priceIndex, int basePrice) {
+        return Math.max(1, Math.round(normalEmeralds * priceIndex / (float) basePrice));
+    }
+
     /** What one bundle is worth when nobody believes anything. */
     public int normalEmeralds() {
         return normalEmeralds;
