@@ -70,6 +70,10 @@ public final class Chronicle {
             rumours();
             sales();
             List<String> out = new ArrayList<>();
+            if (SessionReport.beforeTheGate(played)) {
+                out.add(SessionReport.BEFORE_THE_GATE);
+                out.add("");
+            }
             long day = -1;
             for (Map.Entry<Long, List<String>> entry : lines.entrySet()) {
                 long tick = entry.getKey();
@@ -82,7 +86,7 @@ public final class Chronicle {
                             DayPart.of(tick).description(), line));
                 }
             }
-            if (out.isEmpty()) {
+            if (out.stream().noneMatch(line -> line.startsWith("Day "))) {
                 out.add("Nothing happened worth retelling: no lies, no sales, and no price that "
                         + "went further than the market's everyday wobble.");
             }

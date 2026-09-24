@@ -10,6 +10,10 @@ A belief-driven village economy with deterministic simulation and counterfactual
 
 Both figures are quoted with the window they were measured in, because they move without one: a share of runs that bubbled depends on how long you watched, and crediting a lie with a bubble five months later credits it with the village's own wandering. Whether a particular lie caused a particular bubble is a question the counterfactual answers — the same village, same seed, same everything, with the lie removed — rather than a claim the model makes.
 
+### After a session
+
+Stopping a session prints its report in chat: what you did, what your lie did — the same village, the same meetings and the same sales, rerun without it — and what it earned you, with the assumption that figure rests on said in the sentence rather than a footnote. `/hearsay chronicle` gives you the session so far as a written book, day by day, which tells what happened and leaves what caused it to the report. Both read the saved session and change nothing; `./gradlew :cli:run --args="report --file PATH"` and `"chronicle --file PATH"` print them in full.
+
 ### Which goods a village trades
 
 **A village run headless trades diamonds alone. A village in the game trades every good there is** — diamonds, gold ingots, iron ingots, wheat and bread. The difference is deliberate, and it does not undermine the figures above.

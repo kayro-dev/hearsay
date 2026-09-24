@@ -184,6 +184,35 @@ class SessionReportTest {
     }
 
     @Test
+    void theBriefVersionDropsOnlyWhatHappened() {
+        Run run = liedAndSold(1001, 200);
+        List<String> full = report(run);
+        List<String> brief = SessionReport.brief(run, Optional.of(RecipeFile.checksum(run.log())));
+        assertFalse(brief.contains("What happened"));
+        assertTrue(brief.size() < full.size());
+        for (String line : brief) {
+            assertTrue(full.contains(line), "the brief says something the report does not: " + line);
+        }
+        for (String kept : List.of("What you did", "What your lie did", "What your lie earned you")) {
+            assertTrue(brief.contains(kept), "the brief lost " + kept);
+        }
+        assertTrue(brief.stream().anyMatch(l -> l.contains("This assumes you made exactly the same sales")),
+                "the earnings' assumption must survive into the brief");
+    }
+
+    @Test
+    void aSessionFromBeforeTheGateSaysSoAtTheTopOfBoth() {
+        Run before = Run.execute(7, Params.defaults().withLevelGate(0.0),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 0)), 60);
+        Run after = Run.execute(7, Params.defaults(),
+                List.of(new PlantRumor(1, DIAMONDS_SCARCE, 1, 0)), 60);
+        assertTrue(report(before).contains(SessionReport.BEFORE_THE_GATE));
+        assertEquals(SessionReport.BEFORE_THE_GATE, Chronicle.of(before).get(0));
+        assertFalse(report(after).contains(SessionReport.BEFORE_THE_GATE));
+        assertFalse(Chronicle.of(after).contains(SessionReport.BEFORE_THE_GATE));
+    }
+
+    @Test
     void theyNameGoodsTheWayAPersonWould() {
         Params params = Params.defaults().withGoods(Good.values());
         Claim bread = new Claim(Good.BREAD.id(), ClaimType.SCARCE);

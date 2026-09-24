@@ -2,6 +2,11 @@ package hearsay.paper;
 
 import hearsay.Bearing;
 import hearsay.Bubble;
+import hearsay.SessionReport;
+import hearsay.Run;
+import hearsay.DayPart;
+import hearsay.Chronicle;
+import hearsay.BookPages;
 import hearsay.Claim;
 import hearsay.ClaimType;
 import hearsay.Good;
@@ -17,6 +22,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Location;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -137,7 +145,12 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
     private void loadEverythingSavingNeeds() {
         Path warmUp = getDataFolder().toPath().resolve("sessions").resolve(".warmup");
         try {
-            RecipeFile.write(new Simulation(0, Params.defaults(), List.of()).toRun(), warmUp);
+            Run tiny = new Simulation(0, Params.defaults(), List.of()).toRun();
+            RecipeFile.write(tiny, warmUp);
+            // And what runs straight after a save — the report, read back from the file — and
+            // the chronicle book, for the same reason.
+            SessionReport.brief(RecipeFile.read(warmUp), RecipeFile.checksumIn(warmUp));
+            BookPages.of(Chronicle.of(tiny));
             Files.deleteIfExists(warmUp);
         } catch (RuntimeException | IOException e) {
             getLogger().warning("Could not check that saving works: " + e.getMessage());
@@ -170,13 +183,14 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             case "start" -> start(player, args);
             case "rumor", "rumour" -> plant(player, args);
             case "watch" -> watch(player, args);
+            case "chronicle" -> giveChronicle(player);
             case "status" -> status(player);
             case "who" -> who(player);
             case "market" -> market(player, args);
             case "debug" -> toggleSpots(player);
             case "stop" -> stopFor(player, args);
             default -> player.sendMessage(Component.text(
-                    "/hearsay start [seed] | rumor diamonds scarce | watch wheat | who | market <radius>"
+                    "/hearsay start [seed] | rumor diamonds scarce | watch wheat | chronicle | who | market <radius>"
                     + " | market clear | status | stop"));
         }
         return true;
@@ -862,6 +876,7 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
             player.sendMessage(Component.text("A survey of " + session.sightingsRecorded()
                     + " sightings was saved beside it, for sweeping the spot mapping.",
                     NamedTextColor.GRAY));
+            summarise(player.getUniqueId(), saved);
         } catch (RuntimeException | LinkageError e) {
             // Keep the session bound: it is still in memory, and throwing it away would
             // turn a failed save into a lost one.
@@ -878,6 +893,84 @@ public final class HearsayPlugin extends JavaPlugin implements Listener {
         }
         displays.hidePriceBarFrom(player);
         stop();
+    }
+
+    /**
+     * The session's report, short, in chat once it is saved: what you did, what your lie did
+     * against the same village without it, and what it earned you, with its assumption.
+     *
+     * <p>Read back from the file just written, not from the session in memory, so it is also
+     * the check that the saved recipe replays into the village that was played; the report
+     * refuses if it does not. Off the server thread, because it reruns the village three or
+     * four times, and back on it to talk to the player. Reads a file and prints; nothing it
+     * does reaches any village.
+     */
+    private void summarise(UUID playerId, Path saved) {
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            List<String> lines;
+            NamedTextColor colour = NamedTextColor.WHITE;
+            try {
+                lines = SessionReport.brief(RecipeFile.read(saved), RecipeFile.checksumIn(saved));
+            } catch (SessionReport.NotThisSession refused) {
+                lines = List.of(refused.getMessage());
+                colour = NamedTextColor.RED;
+                getLogger().severe("The saved session does not replay: " + saved);
+            } catch (RuntimeException e) {
+                lines = List.of("Could not read the session back for its report: " + e);
+                colour = NamedTextColor.RED;
+            }
+            List<String> said = lines;
+            NamedTextColor tone = colour;
+            getServer().getScheduler().runTask(this, () -> {
+                Player player = getServer().getPlayer(playerId);
+                if (player == null) {
+                    return;
+                }
+                for (String line : said) {
+                    boolean heading = !line.startsWith(" ") && !line.isEmpty()
+                            && line.startsWith("What ");
+                    player.sendMessage(Component.text(line, heading ? NamedTextColor.GOLD : tone));
+                }
+                player.sendMessage(Component.text("The full report: report --file "
+                        + saved.getFileName(), NamedTextColor.GRAY));
+            });
+        });
+    }
+
+    /**
+     * The session so far as a written book. The chronicle of the village as it stands, laid
+     * out in pages by {@link BookPages}; built from a copy of the log off the server thread,
+     * and handed over on it. Reads the log; changes nothing.
+     */
+    private void giveChronicle(Player player) {
+        if (notReady(player)) {
+            return;
+        }
+        Run sofar = session.asRun();
+        long day = DayPart.dayOf(Math.max(1, sofar.ticks()));
+        UUID playerId = player.getUniqueId();
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            List<String> pages = BookPages.of(Chronicle.of(sofar));
+            getServer().getScheduler().runTask(this, () -> {
+                Player reader = getServer().getPlayer(playerId);
+                if (reader == null) {
+                    return;
+                }
+                ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+                BookMeta meta = (BookMeta) book.getItemMeta();
+                meta.title(Component.text("Chronicle, day " + day));
+                meta.author(Component.text("Hearsay"));
+                for (String page : pages) {
+                    meta.addPages(Component.text(page));
+                }
+                book.setItemMeta(meta);
+                reader.getInventory().addItem(book).values().forEach(
+                        spare -> reader.getWorld().dropItem(reader.getLocation(), spare));
+                reader.sendMessage(Component.text("The chronicle so far, " + pages.size() + " page"
+                        + (pages.size() == 1 ? "" : "s") + ". What caused what is the report's "
+                        + "to say, at /hearsay stop.", NamedTextColor.AQUA));
+            });
+        });
     }
 
     private void stop() {

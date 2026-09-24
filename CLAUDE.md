@@ -58,7 +58,10 @@ logged so any crash can be replayed and compared against a counterfactual.
   happened in order and never claims a cause, pointing at the report where it discusses the
   same moment. Earnings always state their assumption: the same sales, at the same times, in
   an honest village. Recipes from version 8 carry a checksum of their log, and the report
-  refuses one that replays into a different village.
+  refuses one that replays into a different village. In game: the brief report in chat after
+  /hearsay stop, read back from the saved file off the server thread; /hearsay chronicle as a
+  written book, paginated by BookPages in core. A session from before the level gate says so
+  at the top of both.
 - The player-facing colours, icons and sounds are defined in VISUAL_LANGUAGE.md, and the
   code follows it rather than the other way round. PriceMood in core is the one definition
   of what a price means, shared by the dashboard and the plugin so they cannot disagree.

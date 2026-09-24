@@ -59,6 +59,47 @@ public final class SessionReport {
         return new SessionReport.Writer(played, recorded.isPresent()).write();
     }
 
+    /**
+     * Said at the top of both outputs when a session was played before the level gate (E47),
+     * which is every recipe saved before the gate existed. Such a session replays under the
+     * reading it was played under, and a reader comparing it with a newer one should know.
+     */
+    public static final String BEFORE_THE_GATE = "Played under the price reading before E47: a "
+            + "price moving back toward normal still counted as news, so gluts could rebound "
+            + "into panics that would not happen now.";
+
+    static boolean beforeTheGate(Run played) {
+        return played.params().levelGate() == 0;
+    }
+
+    /**
+     * The report for the chat window at the end of a session: everything but "What happened",
+     * which the chronicle tells better and which is the longest part. What is kept is kept
+     * word for word, so the attribution and the earnings' stated assumption are exactly the
+     * full report's.
+     */
+    public static List<String> brief(Run played, Optional<String> recorded) {
+        List<String> full = of(played, recorded);
+        List<String> kept = new ArrayList<>();
+        boolean skipping = false;
+        for (String line : full) {
+            if (line.equals("What happened")) {
+                skipping = true;
+                if (!kept.isEmpty() && kept.get(kept.size() - 1).isEmpty()) {
+                    kept.remove(kept.size() - 1);
+                }
+                continue;
+            }
+            if (skipping && line.isEmpty()) {
+                skipping = false;
+            }
+            if (!skipping) {
+                kept.add(line);
+            }
+        }
+        return kept;
+    }
+
     /** The goods worth a line: lied about, sold, or driven far enough to have a mood. */
     static Set<Good> goodsOfInterest(Run played) {
         Set<Good> goods = new LinkedHashSet<>();
@@ -193,6 +234,9 @@ public final class SessionReport {
                     : "Saved before sessions carried a checksum: this is the session as this "
                             + "version of Hearsay replays it, and it cannot be checked against "
                             + "what was played.");
+            if (beforeTheGate(played)) {
+                out.add(BEFORE_THE_GATE);
+            }
         }
 
         private void whatYouDid() {

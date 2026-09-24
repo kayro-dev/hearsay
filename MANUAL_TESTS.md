@@ -109,8 +109,10 @@ disagree, the village is dying.
 | 12d | `/hearsay debug` again | Labels go back to beliefs only |
 | 13 | Watch the price bar | It moves as belief spreads — the bar fills between half the base price and double it |
 | 14 | `/hearsay status` | Tick, price, heard and believe counts, all plausible against what you can see |
+| 14b | `/hearsay chronicle` partway through | A written book, "Chronicle, day N", lands in your inventory (or at your feet if it is full): the session so far, day by day. Where it reaches the lie's peak or a bubble it says "(see the report for what caused this)" and nothing about causes. No page runs off the bottom |
 | 15 | `/hearsay stop` | "Saved session-….hearsay after N ticks", the price bar goes, all floating text disappears. If it cannot save it says so and keeps the session running rather than losing it; `/hearsay stop force` ends it anyway |
-| 16 | Check `plugins/Hearsay/sessions/` | Two files: `session-….hearsay`, readable plain text with a `seed` line, a `params` line and `input …` lines; and `survey-….csv`, one row per villager per tick |
+| 15b | Wait a moment after stopping | The report, short, in chat: "Replayed from its recipe and checked against the session it was saved from.", then What you did, What your lie did (peak with it and without), and What your lie earned you, ending with the sentence saying what it assumes. A red line instead means the saved recipe does not replay — report it |
+| 16 | Check `plugins/Hearsay/sessions/` | Two files: `session-….hearsay`, readable plain text with a `seed` line, a `params` line, `input …` lines and a last `checksum` line; and `survey-….csv`, one row per villager per tick |
 | 16b | Check the survey has real distances | Columns `toBed` and `toJobSite` should mostly be numbers, with `-1.00` only for villagers with no bed or no job |
 | 17 | Stop the server | No errors on shutdown, and no floating text left behind when you restart |
 
